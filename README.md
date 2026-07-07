@@ -180,3 +180,27 @@ To make the backend invoke your flow:
      ```
 2. Restart the FastAPI server. New sign-up operations will now immediately trigger the webhook and deliver the formatted email!
 
+---
+
+## ☁️ Azure Cloud Deployment Guide
+
+Follow these details to deploy the platform to Azure without configurations mistakes.
+
+### 1. Backend: FastAPI (Azure App Service - Linux Python)
+* **Python Runtime**: Python 3.10+
+* **Azure App Service Startup Command**:
+  Configure this under **Settings** -> **Configuration** -> **General Settings** -> **Startup Command**:
+  ```bash
+  gunicorn -w 4 -k uvicorn.workers.UvicornWorker backend.main:app
+  ```
+* **Required Environment Variables**:
+  Configure these in **Configuration** -> **Application Settings**:
+  * `DATABASE_URL`: Set to your Azure Database for PostgreSQL connection string. If omitted, the app automatically falls back to hosting via SQLite.
+  * `POWER_AUTOMATE_SIGNUP_WEBHOOK_URL`: The HTTP POST URL copied from your Power Automate flow.
+
+### 2. Frontend: Next.js (Azure App Service - Linux Node or Static Web Apps)
+* **Node Runtime**: Node.js 18+
+* **Required Build-time Environment Variables**:
+  * `NEXT_PUBLIC_API_URL`: Set this to the public URL of your deployed backend service (e.g. `https://your-backend.azurewebsites.net`). The API client resolves this dynamically.
+
+
