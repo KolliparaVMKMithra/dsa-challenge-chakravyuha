@@ -34,7 +34,7 @@ export default function Header() {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: Trophy, show: isLoggedIn && userType === 'student' },
     { href: '/dsa', label: 'DSA Sheet', icon: ClipboardList, show: isLoggedIn && userType === 'student' },
-    { href: '/admin/scan', label: 'QR Scanner', icon: QrCode, show: isLoggedIn && (userType === 'attendance_admin' || userType === 'super_admin') },
+    { href: '/admin/scan', label: 'QR Scanner', icon: QrCode, show: isLoggedIn && userType === 'attendance_admin' },
     { href: '/admin/super', label: 'Super Admin', icon: ShieldAlert, show: isLoggedIn && userType === 'super_admin' },
   ];
 

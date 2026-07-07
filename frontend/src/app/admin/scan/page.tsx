@@ -87,7 +87,7 @@ export default function QrScannerPage() {
     const token = getAuthToken();
     const type = getUserType();
     
-    if (!token || (type !== 'attendance_admin' && type !== 'super_admin')) {
+    if (!token || type !== 'attendance_admin') {
       setIsAdmin(false);
       setShowLoginPrompt(true);
       setLoading(false);
@@ -110,8 +110,8 @@ export default function QrScannerPage() {
         body: JSON.stringify({ username: adminUsername, password: adminPassword })
       });
 
-      if (data.user_type !== 'attendance_admin' && data.user_type !== 'super_admin') {
-        throw new Error('Access forbidden: Only Scan Admins or Super Admins can access this page.');
+      if (data.user_type !== 'attendance_admin') {
+        throw new Error('Access forbidden: Only Scan Admins can access this page.');
       }
 
       setAuthToken(data.access_token, data.user_type, data.name);
