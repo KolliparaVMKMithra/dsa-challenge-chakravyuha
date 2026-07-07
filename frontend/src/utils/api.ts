@@ -13,6 +13,7 @@ export function setAuthToken(token: string, userType: string, name: string) {
     localStorage.setItem('token', token);
     localStorage.setItem('user_type', userType);
     localStorage.setItem('name', name);
+    window.dispatchEvent(new Event('auth-change'));
   }
 }
 
@@ -21,6 +22,7 @@ export function clearAuth(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user_type');
     localStorage.removeItem('name');
+    window.dispatchEvent(new Event('auth-change'));
   }
 }
 

@@ -15,11 +15,19 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Re-check authentication state on mount and routing
-    const token = getAuthToken();
-    setIsLoggedIn(!!token);
-    setUserType(getUserType());
-    setUserName(getUserName());
+    const checkAuth = () => {
+      const token = getAuthToken();
+      setIsLoggedIn(!!token);
+      setUserType(getUserType());
+      setUserName(getUserName());
+    };
+
+    checkAuth();
+    
+    window.addEventListener('auth-change', checkAuth);
+    return () => {
+      window.removeEventListener('auth-change', checkAuth);
+    };
   }, [pathname]);
 
   const handleLogout = () => {
@@ -37,6 +45,14 @@ export default function Header() {
     { href: '/admin/scan', label: 'QR Scanner', icon: QrCode, show: isLoggedIn && userType === 'attendance_admin' },
     { href: '/admin/super', label: 'Super Admin', icon: ShieldAlert, show: isLoggedIn && userType === 'super_admin' },
   ];
+
+  // Do not render header/nav bar if we are on admin pages and not logged in as the correct admin type
+  if (pathname === '/admin/scan' && userType !== 'attendance_admin') {
+    return null;
+  }
+  if (pathname === '/admin/super' && userType !== 'super_admin') {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#8c7030]/30 bg-black/80 backdrop-blur-md">
