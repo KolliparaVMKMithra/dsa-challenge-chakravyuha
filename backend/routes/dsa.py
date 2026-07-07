@@ -1,0 +1,249 @@
+import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from typing import List, Dict, Any
+from backend.database import get_db
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation
+from backend.schemas import SubmissionCreate, SubmissionResponse, CodeChefParticipationResponse
+from backend.auth import get_current_active_student, get_current_user
+
+router = APIRouter(prefix="/api/dsa", tags=["dsa"])
+
+@router.get("/sheet")
+def get_dsa_sheet(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fetches the topic-wise DSA sheet with completion status for the current user."""
+    # Fetch all active problems
+    problems = db.query(Problem).filter(Problem.is_active == True).all()
+    
+    # Fetch submissions of current user
+    submissions = db.query(Submission).filter(Submission.student_id == current_user.id).all()
+    submissions_dict = {sub.problem_id: sub for sub in submissions}
+    
+    # Group problems by topic
+    topics_data: Dict[str, Dict[str, Any]] = {}
+    
+    for problem in problems:
+        topic = problem.topic
+        if topic not in topics_data:
+            topics_data[topic] = {
+                "name": topic,
+                "problems": [],
+                "solved_count": 0,
+                "total_count": 0
+            }
+        
+        submission = submissions_dict.get(problem.id)
+        solved = submission.solved if submission else False
+        submission_link = submission.submission_link if submission else None
+        completed_at = submission.completed_at if submission else None
+        
+        topics_data[topic]["total_count"] += 1
+        if solved:
+            topics_data[topic]["solved_count"] += 1
+            
+        topics_data[topic]["problems"].append({
+            "id": problem.id,
+            "title": problem.title,
+            "difficulty": problem.difficulty,
+            "leetcode_link": problem.leetcode_link,
+            "solved": solved,
+            "submission_link": submission_link,
+            "completed_at": completed_at
+        })
+        
+    return list(topics_data.values())
+
+@router.post("/submit", response_model=SubmissionResponse)
+def submit_solution(
+    sub_data: SubmissionCreate, 
+    current_user: Student = Depends(get_current_active_student), 
+    db: Session = Depends(get_db)
+):
+    """Submits a solution for a problem, updating the user's streak."""
+    # Check if problem exists
+    problem = db.query(Problem).filter(Problem.id == sub_data.problem_id, Problem.is_active == True).first()
+    if not problem:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Problem not found or inactive"
+        )
+    
+    # Check if submission already exists
+    existing_sub = db.query(Submission).filter(
+        Submission.student_id == current_user.id,
+        Submission.problem_id == sub_data.problem_id
+    ).first()
+    
+    today = datetime.date.today()
+    
+    # Calculate streak
+    # Get student to update streak
+    student = db.query(Student).filter(Student.id == current_user.id).first()
+    
+    if student.last_active_date is None:
+        student.streak_count = 1
+    else:
+        delta = today - student.last_active_date
+        if delta.days == 1:
+            student.streak_count += 1
+        elif delta.days > 1:
+            student.streak_count = 1
+        # If delta.days == 0 (already submitted today), streak remains same
+        
+    student.last_active_date = today
+    
+    if existing_sub:
+        existing_sub.submission_link = sub_data.submission_link
+        existing_sub.completed_at = datetime.datetime.utcnow()
+        db.commit()
+        db.refresh(existing_sub)
+        return existing_sub
+    else:
+        new_sub = Submission(
+            student_id=current_user.id,
+            problem_id=sub_data.problem_id,
+            submission_link=sub_data.submission_link,
+            solved=True
+        )
+        db.add(new_sub)
+        db.commit()
+        db.refresh(new_sub)
+        return new_sub
+
+@router.get("/codechef")
+def get_codechef_contest(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fetches the current week's CodeChef contest details and user participation status."""
+    # Get the latest contest
+    contest = db.query(CodeChefContest).order_by(CodeChefContest.week_number.desc()).first()
+    if not contest:
+        return {"contest": None, "participation": None}
+    
+    participation = db.query(CodeChefParticipation).filter(
+        CodeChefParticipation.student_id == current_user.id,
+        CodeChefParticipation.contest_id == contest.id
+    ).first()
+    
+    # Check if deadline passed
+    now = datetime.datetime.utcnow()
+    is_expired = now > contest.deadline
+    
+    # If no participation record and deadline passed, auto-create as 'missed'
+    if not participation and is_expired:
+        participation = CodeChefParticipation(
+            student_id=current_user.id,
+            contest_id=contest.id,
+            status="missed"
+        )
+        db.add(participation)
+        db.commit()
+        db.refresh(participation)
+        
+    return {
+        "contest": contest,
+        "participation": participation,
+        "is_expired": is_expired
+    }
+
+@router.post("/codechef/submit", response_model=CodeChefParticipationResponse)
+def submit_codechef_participation(
+    proof_data: Dict[str, Any], 
+    current_user: Student = Depends(get_current_active_student), 
+    db: Session = Depends(get_db)
+):
+    """Submits proof of CodeChef participation to mark as attended."""
+    contest_id = proof_data.get("contest_id")
+    submission_proof = proof_data.get("submission_proof")
+    
+    if not contest_id or not submission_proof:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="contest_id and submission_proof are required"
+        )
+        
+    contest = db.query(CodeChefContest).filter(CodeChefContest.id == contest_id).first()
+    if not contest:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contest not found"
+        )
+        
+    # Check if deadline has passed
+    if datetime.datetime.utcnow() > contest.deadline:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The deadline for this CodeChef contest has passed"
+        )
+        
+    participation = db.query(CodeChefParticipation).filter(
+        CodeChefParticipation.student_id == current_user.id,
+        CodeChefParticipation.contest_id == contest_id
+    ).first()
+    
+    if participation:
+        participation.status = "attended"
+        participation.submission_proof = submission_proof
+        participation.updated_at = datetime.datetime.utcnow()
+    else:
+        participation = CodeChefParticipation(
+            student_id=current_user.id,
+            contest_id=contest_id,
+            status="attended",
+            submission_proof=submission_proof
+        )
+        db.add(participation)
+        
+    db.commit()
+    db.refresh(participation)
+    return participation
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fetches stats for the student's dashboard: streaks, solved stats, attendance, etc."""
+    student_id = current_user.id
+    
+    # 1. Streaks
+    student = db.query(Student).filter(Student.id == student_id).first()
+    streak = student.streak_count
+    
+    # 2. Total solved breakdown by difficulty
+    solved_difficulty = db.query(
+        Problem.difficulty,
+        func.count(Submission.id)
+    ).join(Submission, Problem.id == Submission.problem_id)\
+     .filter(Submission.student_id == student_id, Submission.solved == True)\
+     .group_by(Problem.difficulty).all()
+     
+    difficulty_stats = {"Easy": 0, "Medium": 0, "Hard": 0}
+    for diff, count in solved_difficulty:
+        if diff in difficulty_stats:
+            difficulty_stats[diff] = count
+            
+    total_solved = sum(difficulty_stats.values())
+    
+    # 3. Total active problems in database
+    total_problems = db.query(func.count(Problem.id)).filter(Problem.is_active == True).scalar() or 0
+    completion_percentage = (total_solved / total_problems * 100) if total_problems > 0 else 0
+    
+    # 4. Attendance history
+    attendance = db.query(Attendance).filter(Attendance.student_id == student_id).order_by(Attendance.date.desc()).all()
+    attendance_dates = [att.date.strftime("%Y-%m-%d") for att in attendance]
+    
+    # 5. CodeChef history
+    codechef = db.query(
+        CodeChefContest.week_number,
+        CodeChefParticipation.status
+    ).join(CodeChefParticipation, CodeChefContest.id == CodeChefParticipation.contest_id)\
+     .filter(CodeChefParticipation.student_id == student_id).order_by(CodeChefContest.week_number.desc()).all()
+     
+    codechef_history = [{"week": cc[0], "status": cc[1]} for cc in codechef]
+    
+    return {
+        "streak": streak,
+        "solved_count": total_solved,
+        "total_problems": total_problems,
+        "completion_percentage": round(completion_percentage, 1),
+        "difficulty_breakdown": difficulty_stats,
+        "attendance_history": attendance_dates,
+        "codechef_history": codechef_history
+    }

@@ -1,0 +1,34 @@
+# Python runtime files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+backend/venv/
+backend/.venv/
+.env
+
+# Next.js and Node build folders
+node_modules/
+.next/
+out/
+build/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Local databases and logs
+*.db
+*.sqlite3
+*.log
+debug_emails.log
+debug_outbox.log
+backend/debug_emails.log
+backend/debug_outbox.log
+
+# System artifacts
+.DS_Store
+Thumbs.db
+.gemini/
+antigravity-ide/
