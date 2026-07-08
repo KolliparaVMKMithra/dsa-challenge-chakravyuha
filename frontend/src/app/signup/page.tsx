@@ -13,7 +13,7 @@ export default function Signup() {
     college_email: '',
     roll_number: '',
     phone_number: '',
-    branch: '',
+    branch: 'CSE',
     year: '1',
     password: '',
     confirm_password: '',
@@ -23,6 +23,7 @@ export default function Signup() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateField = (name: string, value: string, currentPassword?: string) => {
     let err = '';
@@ -93,7 +94,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const { confirm_password, ...payload } = formData;
+      const { confirm_password: _, ...payload } = formData;
       const data = await apiRequest('/api/auth/signup', {
         method: 'POST',
         body: JSON.stringify({
@@ -260,15 +261,20 @@ export default function Signup() {
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                       <BookOpen className="h-4 w-4 text-zinc-500" />
                     </div>
-                    <input
+                    <select
                       name="branch"
-                      type="text"
                       required
                       value={formData.branch}
                       onChange={handleChange}
-                      placeholder="Computer Science"
                       className="block w-full rounded border border-[#8c7030]/25 bg-zinc-900 py-2 pl-9 pr-3 text-sm text-white focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] focus:outline-none"
-                    />
+                    >
+                      <option value="CSE">CSE</option>
+                      <option value="AIE">AIE</option>
+                      <option value="AIDS">AIDS</option>
+                      <option value="CCE">CCE</option>
+                      <option value="ECE">ECE</option>
+                      <option value="Quantum Computing">Quantum Computing</option>
+                    </select>
                   </div>
                 </div>
 
@@ -291,7 +297,6 @@ export default function Signup() {
                       <option value="2">2nd Year</option>
                       <option value="3">3rd Year</option>
                       <option value="4">4th Year</option>
-                      <option value="5">5th Year</option>
                     </select>
                   </div>
                 </div>
@@ -307,7 +312,7 @@ export default function Signup() {
                     </div>
                     <input
                       name="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
                       value={formData.password}
                       onChange={handleChange}
@@ -333,7 +338,7 @@ export default function Signup() {
                     </div>
                     <input
                       name="confirm_password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
                       value={formData.confirm_password}
                       onChange={handleChange}
@@ -346,6 +351,20 @@ export default function Signup() {
                   {validationErrors.confirm_password && (
                     <span className="text-[10px] text-rose-400 mt-1 block">{validationErrors.confirm_password}</span>
                   )}
+                </div>
+
+                {/* Show Password Option */}
+                <div className="md:col-span-2 flex items-center">
+                  <input
+                    id="show-password-checkbox"
+                    type="checkbox"
+                    checked={showPassword}
+                    onChange={(e) => setShowPassword(e.target.checked)}
+                    className="h-4 w-4 rounded border-zinc-800 bg-zinc-900 text-[#d4af37] focus:ring-[#d4af37] accent-[#d4af37] cursor-pointer"
+                  />
+                  <label htmlFor="show-password-checkbox" className="ml-2 text-xs text-zinc-400 select-none cursor-pointer hover:text-zinc-300 transition-colors">
+                    Show Password
+                  </label>
                 </div>
 
                 {/* Submit button */}
