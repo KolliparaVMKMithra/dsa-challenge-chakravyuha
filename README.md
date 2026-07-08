@@ -182,30 +182,148 @@ To make the backend invoke your flow:
 
 ---
 
-## ☁️ AWS Cloud Deployment Guide (Dockerized)
+## ☁️ AWS Cloud Production Deployment Guide
 
-Follow these details to deploy the platform to AWS (using AWS App Runner, ECS, or Elastic Beanstalk).
+This guide details a step-by-step, secure, production-grade deployment of the Chakravyuha platform to Amazon Web Services (AWS) using **Amazon RDS (PostgreSQL)**, **AWS Secrets Manager**, **Amazon ECR**, and **AWS App Runner** (or **Amazon ECS Fargate**).
 
-### 🚀 Local Development / Testing via Docker Compose
-To spin up the entire application locally using Docker:
-1. Make sure you have Docker and Docker Compose installed.
-2. Build and run the containers:
+```mermaid
+flowchart TD
+    subgraph Public Internet
+        Client[Next.js Frontend Client]
+    end
+    subgraph AWS Cloud VPC
+        subgraph Public Subnets
+            AppRunnerFE[AWS App Runner: Frontend App Port 3000]
+            AppRunnerBE[AWS App Runner: Backend API Port 8000]
+        end
+        subgraph Private Isolated Subnets
+            RDS[(Amazon RDS PostgreSQL Port 5432)]
+        end
+        Secrets[AWS Secrets Manager]
+    end
+    Client -- HTTPS --> AppRunnerFE
+    AppRunnerFE -- API Requests --> AppRunnerBE
+    AppRunnerBE -- Fetch Secret --> Secrets
+    AppRunnerBE -- SQL Queries --> RDS
+```
+
+---
+
+### 🚀 Local Multi-Container Deployment (Docker Compose)
+To test the complete production setup locally:
+1. Ensure Docker Desktop and Docker Compose are installed.
+2. Spin up both containers:
    ```bash
    docker-compose up --build
    ```
-3. The frontend will be available at `http://localhost:3000` and the backend at `http://localhost:8000`.
+3. The frontend runs at `http://localhost:3000` and the backend gateway runs at `http://localhost:8000`.
 
-### 1. Backend: FastAPI (AWS App Runner / ECS / Elastic Beanstalk)
-You can deploy the backend using the provided `backend/Dockerfile`.
-* **Recommended Service**: **AWS App Runner** (highly recommended for simple, automated container deployments).
-* **Port**: Configure App Runner to route traffic to port `8000`.
-* **Required Environment Variables**:
-  * `DATABASE_URL`: Set to your AWS RDS PostgreSQL connection string. If omitted, the app falls back to SQLite.
-  * `POWER_AUTOMATE_SIGNUP_WEBHOOK_URL`: Your Power Automate trigger URL.
+---
 
-### 2. Frontend: Next.js (AWS App Runner / ECS / Elastic Beanstalk)
-Deploy the frontend using the optimized multi-stage `frontend/Dockerfile`.
-* **Recommended Service**: **AWS App Runner** or **AWS Amplify** (with custom container configuration).
-* **Port**: Configure App Runner/ECS to route traffic to port `3000`.
-* **Required Build-time Environment Variables**:
-  * `NEXT_PUBLIC_API_URL`: Set to the public HTTPS URL of your deployed AWS backend service (e.g. `https://xxxxxx.us-east-1.awsapprunner.com`).
+### 🛡️ Step-by-Step AWS Production Deployment
+
+#### Step 1: Set Up VPC and Security Groups
+To ensure database isolation and block unauthorized access:
+1. Open the **Amazon VPC Console**.
+2. Click **Create VPC** and select **VPC and More**:
+   * **IPv4 CIDR block**: `10.0.0.0/16`
+   * **Availability Zones (AZs)**: Choose 2 (e.g., `us-east-1a` and `us-east-1b` for high-availability).
+   * **Public Subnets**: 2 subnets (for frontend/backend App Runner instance nodes).
+   * **Private Subnets**: 2 subnets (fully isolated database subnet layer).
+3. Create two **Security Groups**:
+   * **`Chakravyuha-Backend-SG`**: Set inbound rules to allow port `8000` from anywhere (`0.0.0.0/0`) or from your custom domain origin.
+   * **`Chakravyuha-Database-SG`**: Set inbound rules to allow PostgreSQL port `5432` **strictly** from the source security group `Chakravyuha-Backend-SG`. *This blocks all unauthorized external database login attempts.*
+
+---
+
+#### Step 2: Provision Database Layer (Amazon RDS PostgreSQL)
+Create a managed relational database instance:
+1. Open the **Amazon RDS Console** and click **Create database**.
+2. **Engine Options**: Select **PostgreSQL**.
+3. **Templates**: Choose **Production** (or **Free Tier** for sandbox trials).
+4. **Settings**:
+   * **DB Instance Identifier**: `chakravyuha-dsa-db`
+   * **Master Username**: `postgres`
+   * **Master Password**: Set a strong, secure passcode (e.g., generated via Password Manager).
+5. **Connectivity**:
+   * **Virtual Private Cloud (VPC)**: Select the custom `10.0.0.0/16` VPC created in Step 1.
+   * **DB Subnet Group**: Select private isolated subnets.
+   * **Public Access**: Select **No** (Database remains inaccessible to the public internet).
+   * **VPC Security Group**: Select existing group `Chakravyuha-Database-SG`.
+6. Click **Create Database** and copy the **Endpoint url** once provisioned.
+
+---
+
+#### Step 3: Configure Environment Credentials (AWS Secrets Manager)
+To avoid hardcoding connection tokens:
+1. Navigate to the **AWS Secrets Manager Console** and click **Store a new secret**.
+2. **Secret type**: Select **Other type of secret**.
+3. Create key-value parameters:
+   * `DATABASE_URL`: `postgresql://postgres:<PASSWORD>@<RDS_ENDPOINT>:5432/dsa_challenge` *(Replace with your master password and copied RDS endpoint)*
+   * `POWER_AUTOMATE_SIGNUP_WEBHOOK_URL`: `https://...` *(Your Power Automate trigger URL)*
+4. Name the secret: `/production/chakravyuha` and click **Store**.
+
+---
+
+#### Step 4: Push Container Images to Amazon ECR
+Create repositories and push the Dockerized application code:
+1. Open the **Amazon ECR Console** and create two private repositories:
+   * `chakravyuha-backend`
+   * `chakravyuha-frontend`
+2. Authenticate your local Docker daemon with ECR (example for `us-east-1`):
+   ```bash
+   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+   ```
+3. Build, tag, and push the backend container:
+   ```bash
+   docker build -t chakravyuha-backend ./backend
+   docker tag chakravyuha-backend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/chakravyuha-backend:latest
+   docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/chakravyuha-backend:latest
+   ```
+4. Build, tag, and push the frontend container:
+   ```bash
+   docker build -t chakravyuha-frontend ./frontend
+   docker tag chakravyuha-frontend:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/chakravyuha-frontend:latest
+   docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/chakravyuha-frontend:latest
+   ```
+
+---
+
+#### Step 5: Deploy the Backend API Gateway (AWS App Runner)
+Deploy the FastAPI backend:
+1. Navigate to the **AWS App Runner Console** and click **Create service**.
+2. **Source**: Select **Container registry** and choose **Amazon ECR**.
+   * **Container Image URI**: Browse and select `chakravyuha-backend:latest`.
+   * **Deployment Settings**: Select **Automatic** (Auto-rebuilds and deploys when new tags are pushed).
+3. **Configure Service**:
+   * **Service Name**: `chakravyuha-backend-service`
+   * **Port**: Configure App Runner to listen on port `8000`.
+   * **Environment Variables**: Reference keys from Secrets Manager:
+     * `DATABASE_URL`: `{{resolve:secretsmanager:/production/chakravyuha:SecretString:DATABASE_URL}}`
+     * `POWER_AUTOMATE_SIGNUP_WEBHOOK_URL`: `{{resolve:secretsmanager:/production/chakravyuha:SecretString:POWER_AUTOMATE_SIGNUP_WEBHOOK_URL}}`
+   * **Health Check**:
+     * **Protocol**: `HTTP`
+     * **Path**: `/api/health` (FastAPI health checker)
+4. Under **Networking**, select **Custom VPC Configuration** to link the backend into your VPC, allowing it to talk to the RDS database in the private subnet.
+5. Create the service and record the **Public service URL** (e.g. `https://xxxxxx.us-east-1.awsapprunner.com`).
+
+---
+
+#### Step 6: Deploy the Frontend Application (AWS App Runner)
+Deploy the Next.js client pointing to the backend API endpoint:
+1. Create a new App Runner service pointing to **Amazon ECR** -> `chakravyuha-frontend:latest`.
+2. **Configure Service**:
+   * **Service Name**: `chakravyuha-frontend-service`
+   * **Port**: Configure App Runner to listen on port `3000`.
+   * **Environment Variables**:
+     * `NEXT_PUBLIC_API_URL`: Your deployed backend service URL from Step 5 (e.g., `https://xxxxxx.us-east-1.awsapprunner.com`).
+3. Click **Create and deploy**.
+
+---
+
+#### Step 7: Domain Association and SSL/HTTPS (Route 53 & ACM)
+Enforce encrypted SSL channels for secure scanning operations:
+1. Under your App Runner service dashboard, navigate to **Custom Domains** and click **Link Domain**.
+2. Enter your custom domain name (e.g., `chakravyuha.club` or `challenge.chakravyuha.club`).
+3. App Runner will generate DNS validation records (CNAME). Add these CNAME records to your registrar DNS Zone (or AWS Route 53 Hosted Zone) to generate free, managed SSL certificates.
+4. Once validated, all platform interactions, camera scanning APIs, and administrative control panels will run securely over encrypted **HTTPS**.
