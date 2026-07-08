@@ -182,25 +182,30 @@ To make the backend invoke your flow:
 
 ---
 
-## ☁️ Azure Cloud Deployment Guide
+## ☁️ AWS Cloud Deployment Guide (Dockerized)
 
-Follow these details to deploy the platform to Azure without configurations mistakes.
+Follow these details to deploy the platform to AWS (using AWS App Runner, ECS, or Elastic Beanstalk).
 
-### 1. Backend: FastAPI (Azure App Service - Linux Python)
-* **Python Runtime**: Python 3.10+
-* **Azure App Service Startup Command**:
-  Configure this under **Settings** -> **Configuration** -> **General Settings** -> **Startup Command**:
-  ```bash
-  gunicorn -w 4 -k uvicorn.workers.UvicornWorker backend.main:app
-  ```
+### 🚀 Local Development / Testing via Docker Compose
+To spin up the entire application locally using Docker:
+1. Make sure you have Docker and Docker Compose installed.
+2. Build and run the containers:
+   ```bash
+   docker-compose up --build
+   ```
+3. The frontend will be available at `http://localhost:3000` and the backend at `http://localhost:8000`.
+
+### 1. Backend: FastAPI (AWS App Runner / ECS / Elastic Beanstalk)
+You can deploy the backend using the provided `backend/Dockerfile`.
+* **Recommended Service**: **AWS App Runner** (highly recommended for simple, automated container deployments).
+* **Port**: Configure App Runner to route traffic to port `8000`.
 * **Required Environment Variables**:
-  Configure these in **Configuration** -> **Application Settings**:
-  * `DATABASE_URL`: Set to your Azure Database for PostgreSQL connection string. If omitted, the app automatically falls back to hosting via SQLite.
-  * `POWER_AUTOMATE_SIGNUP_WEBHOOK_URL`: The HTTP POST URL copied from your Power Automate flow.
+  * `DATABASE_URL`: Set to your AWS RDS PostgreSQL connection string. If omitted, the app falls back to SQLite.
+  * `POWER_AUTOMATE_SIGNUP_WEBHOOK_URL`: Your Power Automate trigger URL.
 
-### 2. Frontend: Next.js (Azure App Service - Linux Node or Static Web Apps)
-* **Node Runtime**: Node.js 18+
+### 2. Frontend: Next.js (AWS App Runner / ECS / Elastic Beanstalk)
+Deploy the frontend using the optimized multi-stage `frontend/Dockerfile`.
+* **Recommended Service**: **AWS App Runner** or **AWS Amplify** (with custom container configuration).
+* **Port**: Configure App Runner/ECS to route traffic to port `3000`.
 * **Required Build-time Environment Variables**:
-  * `NEXT_PUBLIC_API_URL`: Set this to the public URL of your deployed backend service (e.g. `https://your-backend.azurewebsites.net`). The API client resolves this dynamically.
-
-
+  * `NEXT_PUBLIC_API_URL`: Set to the public HTTPS URL of your deployed AWS backend service (e.g. `https://xxxxxx.us-east-1.awsapprunner.com`).
