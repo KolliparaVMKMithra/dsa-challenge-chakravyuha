@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -8,8 +6,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - POWER_AUTOMATE_SIGNUP_WEBHOOK_URL=${POWER_AUTOMATE_SIGNUP_WEBHOOK_URL}
-      - DATABASE_URL=${DATABASE_URL}
+      - POWER_AUTOMATE_SIGNUP_WEBHOOK_URL=${POWER_AUTOMATE_SIGNUP_WEBHOOK_URL:-}
+      - DATABASE_URL=${DATABASE_URL:-}
     restart: always
 
   frontend:
