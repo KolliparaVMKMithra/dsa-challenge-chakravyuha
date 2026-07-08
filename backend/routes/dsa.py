@@ -247,3 +247,33 @@ def get_dashboard_stats(current_user: Student = Depends(get_current_user), db: S
         "attendance_history": attendance_dates,
         "codechef_history": codechef_history
     }
+
+@router.get("/leaderboard")
+def get_leaderboard(db: Session = Depends(get_db)):
+    """Fetches public leaderboard showing students only, ranked by solved count and streak."""
+    leaderboard_query = db.query(
+        Student.id,
+        Student.full_name,
+        Student.roll_number,
+        Student.branch,
+        Student.year,
+        Student.streak_count,
+        func.count(Submission.id).label("solved_count")
+    ).join(Submission, Student.id == Submission.student_id, isouter=True)\
+     .filter(Student.is_admin == False)\
+     .group_by(Student.id)\
+     .order_by(func.count(Submission.id).desc(), Student.streak_count.desc(), Student.full_name.asc()).all()
+
+    leaderboard = []
+    for rank, r in enumerate(leaderboard_query, start=1):
+        leaderboard.append({
+            "rank": rank,
+            "id": r[0],
+            "full_name": r[1],
+            "roll_number": r[2],
+            "branch": r[3],
+            "year": r[4],
+            "streak": r[5],
+            "solved_count": r[6]
+        })
+    return leaderboard

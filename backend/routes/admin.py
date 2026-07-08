@@ -24,6 +24,7 @@ DEBUG_EMAILS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "de
 def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
     """Scans a student's QR key and marks them present for the day."""
     qr_key = payload.get("qr_key")
+    session = payload.get("session", "forenoon")
     if not qr_key:
         raise HTTPException(status_code=400, detail="qr_key is required")
         
@@ -36,19 +37,21 @@ def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_curren
     # Check duplicate attendance
     existing = db.query(Attendance).filter(
         Attendance.student_id == student.id,
-        Attendance.date == today
+        Attendance.date == today,
+        Attendance.session == session
     ).first()
     
     if existing:
         raise HTTPException(
             status_code=400, 
-            detail=f"Attendance already marked for today for {student.full_name} ({student.roll_number})"
+            detail=f"Attendance already marked for {session.capitalize()} today for {student.full_name} ({student.roll_number})"
         )
         
     # Mark present
     attendance = Attendance(
         student_id=student.id,
         date=today,
+        session=session,
         marked_by=current_admin.full_name
     )
     db.add(attendance)
@@ -61,12 +64,13 @@ def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_curren
         "roll_number": student.roll_number,
         "branch": student.branch,
         "year": student.year,
+        "session": session.capitalize(),
         "time": attendance.timestamp.strftime("%d-%m-%Y %I:%M %p")
     }
 
 @router.get("/attendance/today")
-def get_today_attendance(current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
-    """Lists all students marked present today."""
+def get_today_attendance(session: str = "forenoon", current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
+    """Lists all students marked present today for the specified session."""
     today = datetime.date.today()
     records = db.query(
         Attendance.timestamp,
@@ -74,21 +78,24 @@ def get_today_attendance(current_admin: Student = Depends(get_current_attendance
         Student.full_name,
         Student.roll_number,
         Student.branch,
-        Student.year
+        Student.year,
+        Attendance.session
     ).join(Student, Attendance.student_id == Student.id)\
-     .filter(Attendance.date == today)\
+     .filter(Attendance.date == today, Attendance.session == session)\
      .order_by(Attendance.timestamp.desc()).all()
      
     return [
         {
-            "name": r[2],
+            "timestamp": r[0],
+            "marked_by": r[1],
+            "full_name": r[2],
             "roll_number": r[3],
             "branch": r[4],
             "year": r[5],
-            "timestamp": r[0],
-            "marked_by": r[1]
+            "session": r[6]
         } for r in records
     ]
+
 
 @router.get("/attendance/export")
 def export_attendance(
@@ -105,7 +112,8 @@ def export_attendance(
         Student.full_name,
         Student.roll_number,
         Student.branch,
-        Student.year
+        Student.year,
+        Attendance.session
     ).join(Student, Attendance.student_id == Student.id)
     
     if start_date:
@@ -130,7 +138,7 @@ def export_attendance(
     ws.title = "Attendance Logs"
     
     # Title Banner
-    ws.merge_cells("A1:G1")
+    ws.merge_cells("A1:H1")
     ws["A1"] = "Chakravyuha Daily DSA Challenge - Attendance Logs"
     ws["A1"].font = Font(name="Calibri", size=16, bold=True, color="FFFFFF")
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
@@ -138,7 +146,7 @@ def export_attendance(
     ws.row_dimensions[1].height = 40
     
     # Headers
-    headers = ["Date", "Time", "Roll Number", "Full Name", "Branch", "Year", "Marked By"]
+    headers = ["Date", "Session", "Time", "Roll Number", "Full Name", "Branch", "Year", "Marked By"]
     ws.append([]) # Blank row 2
     ws.append(headers) # Row 3
     
@@ -163,6 +171,7 @@ def export_attendance(
     for rec in records:
         row_data = [
             rec[0].strftime("%Y-%m-%d"),
+            rec[7].capitalize(),
             rec[1].strftime("%I:%M %p"),
             rec[4],
             rec[3],
@@ -176,11 +185,11 @@ def export_attendance(
     for row in range(4, ws.max_row + 1):
         # Alternate row fill
         row_fill = PatternFill(start_color="F9F9F9" if row % 2 == 0 else "FFFFFF", end_color="F9F9F9" if row % 2 == 0 else "FFFFFF", fill_type="solid")
-        for col in range(1, 8):
+        for col in range(1, 9):
             cell = ws.cell(row=row, column=col)
             cell.fill = row_fill
             cell.border = thin_border
-            if col in [1, 2, 3, 6]:
+            if col in [1, 2, 3, 4, 7]:
                 cell.alignment = Alignment(horizontal="center")
                 
     # Auto-adjust column widths
@@ -398,6 +407,7 @@ def get_student_detail(student_id: str, current_admin: Student = Depends(get_cur
      
     return {
         "student": {
+            "id": student.id,
             "name": student.full_name,
             "roll_number": student.roll_number,
             "email": student.college_email,
@@ -420,7 +430,8 @@ def get_student_detail(student_id: str, current_admin: Student = Depends(get_cur
             {
                 "date": a.date,
                 "timestamp": a.timestamp,
-                "marked_by": a.marked_by
+                "marked_by": a.marked_by,
+                "session": a.session
             } for a in attendance
         ],
         "codechef": [
@@ -725,3 +736,69 @@ def delete_scan_admin(admin_id: str, current_admin: Student = Depends(get_curren
     db.delete(db_admin)
     db.commit()
     return {"detail": "Scan Admin deleted successfully."}
+
+# ----------------- SUPER ADMINS MANAGEMENT -----------------
+
+@router.get("/super-admins", response_model=List[ScanAdminResponse])
+def list_super_admins(current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Lists all Super Admins."""
+    return db.query(Student).filter(Student.is_admin == True, Student.admin_role == "super").order_by(Student.created_at.desc()).all()
+
+@router.post("/super-admins", response_model=ScanAdminResponse)
+def create_super_admin(admin_data: ScanAdminCreate, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Creates a new Super Admin."""
+    dup_email = db.query(Student).filter(Student.college_email == admin_data.college_email).first()
+    if dup_email:
+        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+
+    dup_roll = db.query(Student).filter(Student.roll_number == admin_data.roll_number).first()
+    if dup_roll:
+        raise HTTPException(status_code=400, detail="An account with this roll number already exists.")
+
+    import uuid
+    secret_suffix = uuid.uuid4().hex[:8].upper()
+    qr_key = f"CHAKRA-{admin_data.roll_number}-{secret_suffix}"
+
+    db_admin = Student(
+        full_name=admin_data.full_name,
+        college_email=admin_data.college_email,
+        roll_number=admin_data.roll_number,
+        phone_number=admin_data.phone_number,
+        branch="ADMIN",
+        year=1,
+        password_hash=get_password_hash(admin_data.password),
+        qr_key=qr_key,
+        is_admin=True,
+        admin_role="super"
+    )
+    db.add(db_admin)
+    db.commit()
+    db.refresh(db_admin)
+    return db_admin
+
+@router.delete("/super-admins/{admin_id}")
+def delete_super_admin(admin_id: str, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Deletes a Super Admin (prevents self-deletion)."""
+    if admin_id == current_admin.id:
+        raise HTTPException(status_code=400, detail="You cannot delete yourself.")
+
+    db_admin = db.query(Student).filter(Student.id == admin_id, Student.is_admin == True, Student.admin_role == "super").first()
+    if not db_admin:
+        raise HTTPException(status_code=404, detail="Super Admin not found.")
+
+    db.delete(db_admin)
+    db.commit()
+    return {"detail": "Super Admin deleted successfully."}
+
+# ----------------- STUDENT DELETION -----------------
+
+@router.delete("/students/{student_id}")
+def delete_student(student_id: str, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Deletes a student entirely from the database."""
+    student = db.query(Student).filter(Student.id == student_id, Student.is_admin == False).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found.")
+
+    db.delete(student)
+    db.commit()
+    return {"detail": "Student and all their associated records deleted successfully."}

@@ -51,6 +51,15 @@ export default function QrScannerPage() {
 
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
+  const [session, setSession] = useState<'forenoon' | 'afternoon'>('forenoon');
+  const sessionRef = useRef<'forenoon' | 'afternoon'>('forenoon');
+
+  const handleSessionChange = (newSession: 'forenoon' | 'afternoon') => {
+    setSession(newSession);
+    sessionRef.current = newSession;
+    fetchTodayAttendance(newSession);
+  };
+
   // Helper to play synthesized beep sounds using browser AudioContext API
   const playBeep = (type: 'success' | 'error') => {
     try {
@@ -125,10 +134,10 @@ export default function QrScannerPage() {
     }
   };
 
-  const fetchTodayAttendance = async () => {
+  const fetchTodayAttendance = async (sessionVal = sessionRef.current) => {
     setRecordsLoading(true);
     try {
-      const data = await apiRequest('/api/admin/attendance/today');
+      const data = await apiRequest(`/api/admin/attendance/today?session=${sessionVal}`);
       setAttendanceRecords(data);
     } catch (err: any) {
       console.error(err);
@@ -145,7 +154,7 @@ export default function QrScannerPage() {
       const token = getAuthToken();
       const type = getUserType();
       if (token && (type === 'attendance_admin' || type === 'super_admin')) {
-        fetchTodayAttendance();
+        fetchTodayAttendance(sessionRef.current);
       }
     }, 3000);
 
@@ -201,7 +210,7 @@ export default function QrScannerPage() {
     try {
       const result = await apiRequest('/api/admin/scan', {
         method: 'POST',
-        body: JSON.stringify({ qr_key: decodedText })
+        body: JSON.stringify({ qr_key: decodedText, session: sessionRef.current })
       });
       
       playBeep('success');
@@ -211,11 +220,11 @@ export default function QrScannerPage() {
         roll_number: result.roll_number,
         branch: result.branch,
         year: result.year,
-        time: result.time
+        time: `${result.time} (${result.session})`
       });
       
       // Reload today's attendance logs
-      fetchTodayAttendance();
+      fetchTodayAttendance(sessionRef.current);
     } catch (err: any) {
       playBeep('error');
       setScanResult({
@@ -355,6 +364,30 @@ export default function QrScannerPage() {
           <p className="text-xs text-zinc-500">
             Webcam-based real-time credential scanner for marking daily attendance. Fast and simple.
           </p>
+        </div>
+
+        {/* Session Selector (Forenoon / Afternoon) */}
+        <div className="flex bg-zinc-900/80 rounded-md border border-[#8c7030]/20 p-1">
+          <button
+            onClick={() => handleSessionChange('forenoon')}
+            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all focus:outline-none ${
+              session === 'forenoon'
+                ? 'bg-[#d4af37] text-black'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Forenoon (FN)
+          </button>
+          <button
+            onClick={() => handleSessionChange('afternoon')}
+            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all focus:outline-none ${
+              session === 'afternoon'
+                ? 'bg-[#d4af37] text-black'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Afternoon (AN)
+          </button>
         </div>
       </div>
 

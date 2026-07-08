@@ -76,3 +76,99 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Typography Scale-up for readability */
+@media (min-width: 640px) {
+  .text-xs {
+    font-size: 0.85rem !important;
+  }
+  .text-sm {
+    font-size: 0.95rem !important;
+  }
+  .text-md {
+    font-size: 1.05rem !important;
+  }
+}
+
+/* Warm Bronze/Parchment Light Theme */
+body.light {
+  background-color: #f6f5f0 !important; /* Premium cream parchment */
+  color: #1c1917 !important; /* Deep stone */
+  background-image: 
+    radial-gradient(at 50% 0%, rgba(140, 112, 48, 0.18) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, rgba(247, 245, 238, 1) 0px, transparent 100%) !important;
+}
+
+body.light .glass-panel {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(140, 112, 48, 0.35) !important;
+  box-shadow: 0 4px 30px rgba(140, 112, 48, 0.08) !important;
+}
+
+body.light .bg-zinc-950,
+body.light .bg-zinc-950/80,
+body.light .bg-black/40,
+body.light .bg-black/80 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #1c1917 !important;
+}
+
+body.light .bg-zinc-900,
+body.light .bg-zinc-900/60 {
+  background-color: #eae7df !important;
+  color: #1c1917 !important;
+}
+
+body.light .bg-zinc-900/30 {
+  background-color: rgba(234, 231, 223, 0.4) !important;
+}
+
+body.light .text-zinc-400,
+body.light .text-zinc-500 {
+  color: #57534e !important;
+}
+
+body.light .text-zinc-300 {
+  color: #292524 !important;
+}
+
+body.light .text-white {
+  color: #1c1917 !important;
+}
+
+body.light .border-zinc-900,
+body.light .border-zinc-800,
+body.light .border-zinc-800/50,
+body.light .border-zinc-700,
+body.light .border-[#8c7030]/15,
+body.light .border-[#8c7030]/20,
+body.light .border-[#8c7030]/30 {
+  border-color: rgba(140, 112, 48, 0.25) !important;
+}
+
+/* Form inputs & select components overrides */
+body.light input,
+body.light select,
+body.light textarea {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+  border-color: rgba(140, 112, 48, 0.35) !important;
+}
+
+body.light input:focus,
+body.light select:focus {
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 1px #d4af37 !important;
+}
+
+body.light input::placeholder {
+  color: #a8a29e !important;
+}
+
+body.light tr:hover {
+  background-color: rgba(140, 112, 48, 0.05) !important;
+}
+
+body.light ::-webkit-scrollbar-track {
+  background: #f1ebd9;
+}

@@ -42,10 +42,12 @@ def test_chakravyuha_platform():
     print("=> SUCCESS: Live registration validation filters are working.")
 
     # 2. Test valid signup
+    import random
+    suffix = str(random.randint(1000, 9999))
     valid_student = {
-        "full_name": "Arjuna Pandava",
-        "college_email": "arjuna@chakravyuha.edu",
-        "roll_number": "AV.SC.U4CSE23233",
+        "full_name": f"Arjuna Pandava {suffix}",
+        "college_email": f"arjuna{suffix}@chakravyuha.edu",
+        "roll_number": f"AV.SC.U4CSE{suffix}",
         "phone_number": "9998887770",
         "branch": "CSE",
         "year": 3,
@@ -115,29 +117,45 @@ def test_chakravyuha_platform():
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     print("=> SUCCESS: Logged in as Admin.")
 
-    # 6. Test Admin Scanner: Scan student's QR code key
-    print(f"\n[Test] Simulating QR Scan of Student Key: {student_qr_key}...")
-    scan_payload = {"qr_key": student_qr_key}
-    res = requests.post(f"{BASE_URL}/api/admin/scan", headers=admin_headers, json=scan_payload)
+    # 6. Test Admin Scanner: Scan student's QR code key (Forenoon)
+    print(f"\n[Test] Simulating QR Scan of Student Key: {student_qr_key} (Forenoon)...")
+    scan_payload_fn = {"qr_key": student_qr_key, "session": "forenoon"}
+    res = requests.post(f"{BASE_URL}/api/admin/scan", headers=admin_headers, json=scan_payload_fn)
     print(f"Status Code: {res.status_code}")
     assert res.status_code == 200
     scan_data = res.json()
-    print(f"Scan Confirmation: {scan_data['student_name']} marked PRESENT at {scan_data['time']}")
+    print(f"Scan Confirmation: {scan_data['student_name']} marked PRESENT for {scan_data['session']} at {scan_data['time']}")
     
-    # Try duplicate scan for same day
-    print("\n[Test] Verifying duplicate check-in prevention...")
-    res = requests.post(f"{BASE_URL}/api/admin/scan", headers=admin_headers, json=scan_payload)
+    # Try duplicate scan for same session
+    print("\n[Test] Verifying duplicate check-in prevention for same session...")
+    res = requests.post(f"{BASE_URL}/api/admin/scan", headers=admin_headers, json=scan_payload_fn)
     print(f"Status Code: {res.status_code}")
     print(f"Error Message: {res.json().get('detail')}")
     assert res.status_code == 400
-    print("=> SUCCESS: Duplicate scans prevented.")
+    print("=> SUCCESS: Same-session duplicate scans prevented.")
 
-    # 7. Test Today's Attendance list
-    print("\n[Test] Checking today's attendance roster...")
-    res = requests.get(f"{BASE_URL}/api/admin/attendance/today", headers=admin_headers)
+    # Mark Afternoon session (different session same day)
+    print(f"\n[Test] Simulating QR Scan of Student Key: {student_qr_key} (Afternoon)...")
+    scan_payload_an = {"qr_key": student_qr_key, "session": "afternoon"}
+    res = requests.post(f"{BASE_URL}/api/admin/scan", headers=admin_headers, json=scan_payload_an)
+    print(f"Status Code: {res.status_code}")
+    assert res.status_code == 200
+    scan_data = res.json()
+    print(f"Scan Confirmation: {scan_data['student_name']} marked PRESENT for {scan_data['session']} at {scan_data['time']}")
+
+    # Try duplicate scan for afternoon session
+    print("\n[Test] Verifying duplicate check-in prevention for afternoon session...")
+    res = requests.post(f"{BASE_URL}/api/admin/scan", headers=admin_headers, json=scan_payload_an)
+    print(f"Status Code: {res.status_code}")
+    assert res.status_code == 400
+    print("=> SUCCESS: Afternoon session duplicate scans prevented.")
+
+    # 7. Test Today's Attendance list (with session parameter)
+    print("\n[Test] Checking today's afternoon attendance roster...")
+    res = requests.get(f"{BASE_URL}/api/admin/attendance/today?session=afternoon", headers=admin_headers)
     assert res.status_code == 200
     today_list = res.json()
-    print(f"Solvers present today: {len(today_list)}")
+    print(f"Solvers present in afternoon today: {len(today_list)}")
     assert len(today_list) == 1
     assert today_list[0]["roll_number"] == valid_student["roll_number"]
 
@@ -194,6 +212,40 @@ def test_chakravyuha_platform():
     print(f"Status Code: {res.status_code}")
     assert res.status_code == 200
     print("=> SUCCESS: Scan Admin CRUD verified.")
+
+    # 11. Test Super Admins Management
+    print("\n[Test] Listing active Super Admins...")
+    res = requests.get(f"{BASE_URL}/api/admin/super-admins", headers=admin_headers)
+    assert res.status_code == 200
+    super_admins_list = res.json()
+    print(f"Active Super Admins found: {len(super_admins_list)}")
+    
+    print("[Test] Creating a new Super Admin...")
+    new_super_payload = {
+        "full_name": "Sahadeva Pandava",
+        "college_email": "sahadeva@chakravyuha.club",
+        "roll_number": "AV.SC.U4CSE23278",
+        "phone_number": "9998887778",
+        "password": "sahadevapassword"
+    }
+    res = requests.post(f"{BASE_URL}/api/admin/super-admins", headers=admin_headers, json=new_super_payload)
+    assert res.status_code == 200
+    created_super = res.json()
+    print(f"Created Super Admin: {created_super['full_name']} (id: {created_super['id']})")
+    
+    # Delete Sahadeva
+    print("[Test] Removing the created Super Admin...")
+    res = requests.delete(f"{BASE_URL}/api/admin/super-admins/{created_super['id']}", headers=admin_headers)
+    assert res.status_code == 200
+    print("=> SUCCESS: Super Admin CRUD verified.")
+
+    # 12. Test Public Leaderboard
+    print("\n[Test] Fetching Public Leaderboard...")
+    res = requests.get(f"{BASE_URL}/api/dsa/leaderboard")
+    assert res.status_code == 200
+    leaderboard_data = res.json()
+    print(f"Leaderboard students counted: {len(leaderboard_data)}")
+    print("=> SUCCESS: Public Leaderboard verified.")
 
     print("\n--------------------------------------------------")
     print("ALL PLATFORM CAPABILITIES FULLY VERIFIED")

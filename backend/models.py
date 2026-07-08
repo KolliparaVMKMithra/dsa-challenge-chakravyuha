@@ -58,12 +58,13 @@ class Submission(Base):
 class Attendance(Base):
     __tablename__ = "attendance"
     __table_args__ = (
-        UniqueConstraint('student_id', 'date', name='_student_date_uc'),
+        UniqueConstraint('student_id', 'date', 'session', name='_student_date_session_uc'),
     )
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, default=datetime.date.today, nullable=False)
+    session = Column(String(20), default="forenoon", nullable=False) # "forenoon" or "afternoon"
     timestamp = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     marked_by = Column(String(100), default="System", nullable=False)
 

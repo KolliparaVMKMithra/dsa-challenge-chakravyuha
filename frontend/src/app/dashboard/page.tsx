@@ -38,6 +38,21 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'stats' | 'leaderboard'>('stats');
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const data = await apiRequest('/api/dsa/leaderboard');
+      setLeaderboard(data);
+    } catch (err) {
+      console.error('Failed to fetch leaderboard:', err);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -230,8 +245,37 @@ export default function Dashboard() {
         {/* Center & Right Column: Analytics & Progress & History */}
         <div className="lg:col-span-2 space-y-8">
           
-          {/* Stats Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Tab Toggle Navigation */}
+          <div className="flex border-b border-[#8c7030]/20 pb-px mb-6">
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`pb-4 text-xs font-bold uppercase tracking-wider border-b-2 px-4 transition-all focus:outline-none ${
+                activeTab === 'stats' 
+                  ? 'border-[#d4af37] text-[#d4af37]' 
+                  : 'border-transparent text-zinc-550 hover:text-zinc-300'
+              }`}
+            >
+              My Warrior Stats
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('leaderboard');
+                fetchLeaderboard();
+              }}
+              className={`pb-4 text-xs font-bold uppercase tracking-wider border-b-2 px-4 transition-all focus:outline-none ${
+                activeTab === 'leaderboard' 
+                  ? 'border-[#d4af37] text-[#d4af37]' 
+                  : 'border-transparent text-zinc-550 hover:text-zinc-300'
+              }`}
+            >
+              Battlefield Leaderboard
+            </button>
+          </div>
+
+          {activeTab === 'stats' ? (
+            <>
+              {/* Stats Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
             {/* Stat 1: Solved Problems */}
             <div className="rounded-lg border border-[#8c7030]/15 bg-zinc-950/50 p-5 glass-panel flex items-center justify-between">
@@ -403,6 +447,74 @@ export default function Dashboard() {
             </div>
 
           </div>
+          </>
+          ) : (
+            <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-5 border-b border-zinc-900 pb-3 flex items-center gap-2">
+                <Trophy className="h-4.5 w-4.5 text-[#d4af37]" />
+                Global Solver Rankings
+              </h3>
+              
+              {leaderboardLoading ? (
+                <div className="text-center py-12">
+                  <RefreshCw className="mx-auto h-8 w-8 text-[#d4af37] animate-spin mb-2" />
+                  <span className="text-xs text-zinc-550 uppercase tracking-wider">Syncing Leaderboard Ranks...</span>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="text-center py-12 text-zinc-550 text-xs">
+                  No warriors on the leaderboard yet. Solve problems to enlist!
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+                        <th className="py-3 px-4 text-center w-16">Rank</th>
+                        <th className="py-3 px-4">Warrior Name</th>
+                        <th className="py-3 px-4">Roll Number</th>
+                        <th className="py-3 px-4 text-center">Problems Solved</th>
+                        <th className="py-3 px-4 text-center">Daily Streak</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/50 text-xs">
+                      {leaderboard.map((row) => {
+                        const isMe = row.roll_number === student.roll_number;
+                        return (
+                          <tr 
+                            key={row.id} 
+                            className={`transition-colors hover:bg-zinc-900/20 ${isMe ? 'bg-[#d4af37]/5 border-y border-[#d4af37]/25' : ''}`}
+                          >
+                            <td className="py-3 px-4 text-center font-bold">
+                              {row.rank === 1 ? (
+                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d4af37] text-black font-extrabold text-[10px]" title="First Rank">1</span>
+                              ) : row.rank === 2 ? (
+                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-zinc-400 text-black font-extrabold text-[10px]" title="Second Rank">2</span>
+                              ) : row.rank === 3 ? (
+                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-700 text-white font-extrabold text-[10px]" title="Third Rank">3</span>
+                              ) : (
+                                <span className="text-zinc-400 font-mono">#{row.rank}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-zinc-200">
+                              {row.full_name} {isMe && <span className="ml-1 text-[9px] bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30 px-1.5 py-0.5 rounded-full font-bold uppercase">You</span>}
+                            </td>
+                            <td className="py-3 px-4 font-mono text-zinc-400">{row.roll_number}</td>
+                            <td className="py-3 px-4 text-center font-bold text-zinc-200">{row.solved_count}</td>
+                            <td className="py-3 px-4 text-center font-bold text-orange-400">
+                              <span className="inline-flex items-center gap-1">
+                                {row.streak}
+                                <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
 

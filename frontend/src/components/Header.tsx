@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Trophy, QrCode, ClipboardList, User, LogOut, ShieldAlert } from 'lucide-react';
+import { Menu, X, Trophy, QrCode, ClipboardList, User, LogOut, ShieldAlert, Sun, Moon } from 'lucide-react';
 import { getAuthToken, getUserType, getUserName, clearAuth } from '@/utils/api';
 
 export default function Header() {
@@ -13,6 +13,33 @@ export default function Header() {
   const [userType, setUserType] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    // Initialize theme from localStorage
+    const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === 'light') {
+        document.body.classList.add('light');
+      } else {
+        document.body.classList.remove('light');
+      }
+    } else {
+      document.body.classList.remove('light');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    if (nextTheme === 'light') {
+      document.body.classList.add('light');
+    } else {
+      document.body.classList.remove('light');
+    }
+  };
 
   useEffect(() => {
     const checkAuth = () => {
@@ -97,8 +124,16 @@ export default function Header() {
           })}
         </nav>
 
-        {/* Auth Buttons */}
+        {/* Theme Toggle & Auth Buttons */}
         <div className="hidden md:flex items-center gap-4">
+          <button
+            onClick={toggleTheme}
+            className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-900 hover:text-[#d4af37] transition-colors focus:outline-none"
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {theme === 'dark' ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+          </button>
+
           {isLoggedIn ? (
             <div className="flex items-center gap-4">
               <span className="text-xs text-zinc-400 bg-zinc-900 border border-[#8c7030]/20 px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -163,7 +198,19 @@ export default function Header() {
             );
           })}
           
-          <div className="border-t border-zinc-900 pt-3">
+          <div className="border-t border-zinc-900 pt-3 space-y-2">
+            {/* Theme Toggle (Mobile) */}
+            <div className="flex items-center justify-between px-3 py-2">
+              <span className="text-xs text-zinc-400 font-medium">Theme Mode</span>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-1.5 rounded bg-zinc-900 border border-[#8c7030]/20 px-3 py-1 text-xs text-zinc-300 hover:text-[#d4af37] transition-all"
+              >
+                {theme === 'dark' ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-indigo-450" />}
+                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+              </button>
+            </div>
+
             {isLoggedIn ? (
               <div className="space-y-3">
                 <div className="px-3 py-1.5 text-xs text-zinc-400">

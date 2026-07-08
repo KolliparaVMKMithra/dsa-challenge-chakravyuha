@@ -103,7 +103,7 @@ export default function SuperAdminPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Scan Admins management states
+  // Scan/Super Admins management states
   const [scanAdmins, setScanAdmins] = useState<any[]>([]);
   const [adminsLoading, setAdminsLoading] = useState(false);
   const [newAdminForm, setNewAdminForm] = useState({
@@ -113,6 +113,20 @@ export default function SuperAdminPage() {
     phone_number: '',
     password: ''
   });
+
+  const [superAdmins, setSuperAdmins] = useState<any[]>([]);
+  const [superAdminsLoading, setSuperAdminsLoading] = useState(false);
+  const [newSuperAdminForm, setNewSuperAdminForm] = useState({
+    full_name: '',
+    college_email: '',
+    roll_number: '',
+    phone_number: '',
+    password: ''
+  });
+
+  // Leaderboard states
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   // Broadcaster Search & Selection States
   const [broadcasterStudents, setBroadcasterStudents] = useState<any[]>([]);
@@ -201,6 +215,88 @@ export default function SuperAdminPage() {
     checkAdminAuth();
   }, []);
 
+  const fetchSuperAdmins = async () => {
+    setSuperAdminsLoading(true);
+    try {
+      const data = await apiRequest('/api/admin/super-admins');
+      setSuperAdmins(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSuperAdminsLoading(false);
+    }
+  };
+
+  const handleAddSuperAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionError(null);
+    setActionSuccess(null);
+    setActionLoading(true);
+    try {
+      await apiRequest('/api/admin/super-admins', {
+        method: 'POST',
+        body: JSON.stringify(newSuperAdminForm)
+      });
+      setActionSuccess('Super Admin registered successfully!');
+      setNewSuperAdminForm({
+        full_name: '',
+        college_email: '',
+        roll_number: '',
+        phone_number: '',
+        password: ''
+      });
+      fetchSuperAdmins();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to add Super Admin.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteSuperAdmin = async (adminId: string) => {
+    if (!confirm('Are you sure you want to remove this Super Admin?')) return;
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await apiRequest(`/api/admin/super-admins/${adminId}`, {
+        method: 'DELETE'
+      });
+      setActionSuccess('Super Admin removed successfully.');
+      fetchSuperAdmins();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to remove Super Admin.');
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (!confirm(`WARNING: This will permanently delete student "${studentName}" and all their code submissions, attendance logs, and leaderboard rankings from the database. This action CANNOT be undone.\n\nAre you sure you want to continue?`)) return;
+    
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      setSelectedStudentDetail(null);
+      await apiRequest(`/api/admin/students/${studentId}`, {
+        method: 'DELETE'
+      });
+      setActionSuccess(`Student "${studentName}" deleted successfully.`);
+      fetchStudentsDirectory();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to delete student.');
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const data = await apiRequest('/api/dsa/leaderboard');
+      setLeaderboard(data);
+    } catch (err) {
+      console.error('Failed to fetch leaderboard:', err);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isAdmin) return;
     
@@ -212,6 +308,10 @@ export default function SuperAdminPage() {
       fetchProblems();
     } else if (activeTab === 'scan_admins') {
       fetchScanAdmins();
+    } else if (activeTab === 'super_admins') {
+      fetchSuperAdmins();
+    } else if (activeTab === 'leaderboard') {
+      fetchLeaderboard();
     } else if (activeTab === 'broadcast') {
       fetchBroadcasterStudents();
     }
@@ -587,7 +687,7 @@ export default function SuperAdminPage() {
       </div>
 
       {/* Tabs Row */}
-      <div className="flex border-b border-zinc-900 bg-zinc-950/40 p-1 rounded-lg max-w-2xl border border-[#8c7030]/15 overflow-x-auto">
+      <div className="flex border-b border-zinc-900 bg-zinc-950/40 p-1 rounded-lg max-w-4xl border border-[#8c7030]/15 overflow-x-auto">
         <button
           onClick={() => setActiveTab('analytics')}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold uppercase tracking-wider rounded transition-colors whitespace-nowrap ${
@@ -623,6 +723,24 @@ export default function SuperAdminPage() {
         >
           <ShieldCheck className="h-4 w-4" />
           Scan Admins
+        </button>
+        <button
+          onClick={() => setActiveTab('super_admins')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold uppercase tracking-wider rounded transition-colors whitespace-nowrap ${
+            activeTab === 'super_admins' ? 'bg-[#d4af37] text-black' : 'text-zinc-400 hover:text-white'
+          }`}
+        >
+          <ShieldAlert className="h-4 w-4" />
+          Super Admins
+        </button>
+        <button
+          onClick={() => setActiveTab('leaderboard')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold uppercase tracking-wider rounded transition-colors whitespace-nowrap ${
+            activeTab === 'leaderboard' ? 'bg-[#d4af37] text-black' : 'text-zinc-400 hover:text-white'
+          }`}
+        >
+          <Award className="h-4 w-4" />
+          Leaderboard
         </button>
         <button
           onClick={() => setActiveTab('broadcast')}
@@ -827,10 +945,11 @@ export default function SuperAdminPage() {
               >
                 <option value="">All Branches</option>
                 <option value="CSE">CSE</option>
-                <option value="IT">IT</option>
+                <option value="AIE">AIE</option>
+                <option value="AIDS">AIDS</option>
+                <option value="CCE">CCE</option>
                 <option value="ECE">ECE</option>
-                <option value="EEE">EEE</option>
-                <option value="MECH">MECH</option>
+                <option value="Quantum Computing">Quantum Computing</option>
               </select>
 
               {/* Year filter */}
@@ -875,6 +994,7 @@ export default function SuperAdminPage() {
                       <th className="py-3 px-3 text-center">Streak</th>
                       <th className="py-3 px-3 text-center">Attendance</th>
                       <th className="py-3 px-3 text-right">DSA Progress</th>
+                      <th className="py-3 px-3 text-center w-20">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
@@ -902,6 +1022,18 @@ export default function SuperAdminPage() {
                         <td className="py-3.5 px-3 text-right">
                           <span className="font-bold text-[#d4af37]">{student.percentage}%</span>
                           <span className="block text-[10px] text-zinc-500 font-normal">({student.solved}/{student.total_problems} solved)</span>
+                        </td>
+                        <td className="py-3.5 px-3 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteStudent(student.id, student.name);
+                            }}
+                            className="rounded p-1.5 text-zinc-550 hover:bg-rose-950/20 hover:text-rose-450 transition-colors"
+                            title="Delete Student Warrior"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1460,6 +1592,234 @@ export default function SuperAdminPage() {
         </div>
       )}
 
+      {/* 6. SUPER ADMINS TAB */}
+      {activeTab === 'super_admins' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Left Column: List Super Admins (8 cols) */}
+            <div className="lg:col-span-8 space-y-6">
+              <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
+                  <ShieldCheck className="h-4.5 w-4.5 text-[#d4af37]" />
+                  Active Super Admins Directory
+                </h3>
+
+                {superAdminsLoading && superAdmins.length === 0 ? (
+                  <div className="text-center py-10">
+                    <RefreshCw className="mx-auto h-6 w-6 text-[#d4af37] animate-spin" />
+                  </div>
+                ) : superAdmins.length === 0 ? (
+                  <div className="text-center py-12 text-xs text-zinc-500">
+                    No other super admins registered. Create one using the form on the right.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider">
+                          <th className="py-2.5 px-3">Name</th>
+                          <th className="py-2.5 px-3">Roll Number</th>
+                          <th className="py-2.5 px-3">Email</th>
+                          <th className="py-2.5 px-3">Phone</th>
+                          <th className="py-2.5 px-3 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
+                        {superAdmins.map((adm, idx) => (
+                          <tr key={idx} className="hover:bg-zinc-900/10">
+                            <td className="py-3 px-3 font-semibold text-white">{adm.full_name}</td>
+                            <td className="py-3 px-3 font-mono">{adm.roll_number}</td>
+                            <td className="py-3 px-3">{adm.college_email}</td>
+                            <td className="py-3 px-3 text-zinc-400">{adm.phone_number}</td>
+                            <td className="py-3 px-3 text-center">
+                              {adm.roll_number === 'AVSUPERADMIN' || adm.college_email === 'mithra@chakravyuha.club' ? (
+                                <span className="text-[10px] text-zinc-600 font-bold uppercase">Primary Owner</span>
+                              ) : (
+                                <button
+                                  onClick={() => handleDeleteSuperAdmin(adm.id)}
+                                  className="text-rose-500 hover:text-rose-455 transition-colors p-1"
+                                  title="Remove Super Admin"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Add Super Admin Form (4 cols) */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-5 shadow-md glass-panel">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
+                  <Plus className="h-4.5 w-4.5 text-[#d4af37]" />
+                  Add Super Admin
+                </h3>
+
+                <form onSubmit={handleAddSuperAdmin} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={newSuperAdminForm.full_name}
+                      onChange={(e) => setNewSuperAdminForm({ ...newSuperAdminForm, full_name: e.target.value })}
+                      placeholder="e.g. Rudrabhishek"
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">College Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={newSuperAdminForm.college_email}
+                      onChange={(e) => setNewSuperAdminForm({ ...newSuperAdminForm, college_email: e.target.value })}
+                      placeholder="e.g. rudra@chakravyuha.club"
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Roll Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={newSuperAdminForm.roll_number}
+                      onChange={(e) => setNewSuperAdminForm({ ...newSuperAdminForm, roll_number: e.target.value })}
+                      placeholder="e.g. AV.SC.U4CSE23001"
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Phone Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={newSuperAdminForm.phone_number}
+                      onChange={(e) => setNewSuperAdminForm({ ...newSuperAdminForm, phone_number: e.target.value })}
+                      placeholder="e.g. 9876543210"
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Password (Min 6 chars)</label>
+                    <input
+                      type="password"
+                      required
+                      value={newSuperAdminForm.password}
+                      onChange={(e) => setNewSuperAdminForm({ ...newSuperAdminForm, password: e.target.value })}
+                      placeholder="••••••••"
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t border-zinc-900 mt-5">
+                    <button
+                      type="submit"
+                      disabled={actionLoading}
+                      className="w-full flex items-center justify-center gap-2 rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] py-2.5 text-center text-black font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {actionLoading ? 'Creating...' : 'Register Super Admin'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 7. LEADERBOARD TAB */}
+      {activeTab === 'leaderboard' && (
+        <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel animate-fade-in">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-5 border-b border-zinc-900 pb-3 flex items-center gap-2">
+            <Award className="h-5 w-5 text-[#d4af37]" />
+            Global Solver Leaderboard Directory
+          </h3>
+          
+          {leaderboardLoading ? (
+            <div className="text-center py-12">
+              <RefreshCw className="mx-auto h-8 w-8 text-[#d4af37] animate-spin mb-2" />
+              <span className="text-xs text-zinc-550 uppercase tracking-wider">Syncing Leaderboard...</span>
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="text-center py-12 text-zinc-550 text-xs">
+              No students enrolled on the leaderboard.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+                    <th className="py-3 px-4 text-center w-16">Rank</th>
+                    <th className="py-3 px-4">Warrior Name</th>
+                    <th className="py-3 px-4">Roll Number</th>
+                    <th className="py-3 px-4">Branch/Year</th>
+                    <th className="py-3 px-4 text-center">Problems Solved</th>
+                    <th className="py-3 px-4 text-center">Daily Streak</th>
+                    <th className="py-3 px-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-900/50 text-zinc-350">
+                  {leaderboard.map((row) => (
+                    <tr 
+                      key={row.id} 
+                      className="transition-colors hover:bg-zinc-900/10 cursor-pointer"
+                      onClick={() => handleStudentClick(row.id)}
+                    >
+                      <td className="py-3 px-4 text-center font-bold">
+                        {row.rank === 1 ? (
+                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d4af37] text-black font-extrabold text-[10px]">1</span>
+                        ) : row.rank === 2 ? (
+                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-zinc-400 text-black font-extrabold text-[10px]">2</span>
+                        ) : row.rank === 3 ? (
+                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-700 text-white font-extrabold text-[10px]">3</span>
+                        ) : (
+                          <span className="text-zinc-500 font-mono">#{row.rank}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-white hover:text-[#d4af37]">{row.full_name}</td>
+                      <td className="py-3 px-4 font-mono text-zinc-400">{row.roll_number}</td>
+                      <td className="py-3 px-4">{row.branch} - Yr {row.year}</td>
+                      <td className="py-3 px-4 text-center font-bold text-[#d4af37]">{row.solved_count} solved</td>
+                      <td className="py-3 px-4 text-center font-bold text-orange-400">
+                        <span className="inline-flex items-center gap-1">
+                          {row.streak} 🔥
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteStudent(row.id, row.full_name);
+                          }}
+                          className="rounded p-1 text-zinc-550 hover:text-rose-450 hover:bg-rose-950/20"
+                          title="Delete Student Warrior"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* STUDENT DETAIL MODAL DRAWER OVERLAY */}
       {selectedStudentDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm">
@@ -1593,7 +1953,13 @@ export default function SuperAdminPage() {
               </div>
             </div>
 
-            <div className="border-t border-zinc-900 pt-4 mt-6 flex justify-end">
+            <div className="border-t border-zinc-900 pt-4 mt-6 flex justify-between items-center">
+              <button
+                onClick={() => handleDeleteStudent(selectedStudentDetail.student.id || '', selectedStudentDetail.student.name)}
+                className="rounded border border-rose-900 bg-rose-950/10 hover:bg-rose-950/30 px-5 py-2 text-xs font-bold uppercase text-rose-400 transition-all focus:outline-none"
+              >
+                Delete Student Profile
+              </button>
               <button 
                 onClick={() => setSelectedStudentDetail(null)}
                 className="rounded border border-zinc-800 bg-transparent px-5 py-2 text-xs font-bold uppercase text-zinc-400 hover:text-white"
