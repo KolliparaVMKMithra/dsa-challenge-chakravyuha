@@ -106,20 +106,20 @@ body.light .glass-panel {
 }
 
 body.light .bg-zinc-950,
-body.light .bg-zinc-950/80,
-body.light .bg-black/40,
-body.light .bg-black/80 {
+body.light .bg-zinc-950\/80,
+body.light .bg-black\/40,
+body.light .bg-black\/80 {
   background-color: rgba(255, 255, 255, 0.95) !important;
   color: #1c1917 !important;
 }
 
 body.light .bg-zinc-900,
-body.light .bg-zinc-900/60 {
+body.light .bg-zinc-900\/60 {
   background-color: #eae7df !important;
   color: #1c1917 !important;
 }
 
-body.light .bg-zinc-900/30 {
+body.light .bg-zinc-900\/30 {
   background-color: rgba(234, 231, 223, 0.4) !important;
 }
 
@@ -138,11 +138,11 @@ body.light .text-white {
 
 body.light .border-zinc-900,
 body.light .border-zinc-800,
-body.light .border-zinc-800/50,
+body.light .border-zinc-800\/50,
 body.light .border-zinc-700,
-body.light .border-[#8c7030]/15,
-body.light .border-[#8c7030]/20,
-body.light .border-[#8c7030]/30 {
+body.light .border-\[\#8c7030\]\/15,
+body.light .border-\[\#8c7030\]\/20,
+body.light .border-\[\#8c7030\]\/30 {
   border-color: rgba(140, 112, 48, 0.25) !important;
 }
 
