@@ -8,7 +8,14 @@ from sqlalchemy.orm import sessionmaker
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/dsa_challenge")
+DATABASE_URL_ENV = os.getenv("DATABASE_URL")
+if DATABASE_URL_ENV:
+    DATABASE_URL = DATABASE_URL_ENV
+    IS_PRODUCTION = True
+else:
+    DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/dsa_challenge"
+    IS_PRODUCTION = False
+
 FALLBACK_DATABASE_URL = "sqlite:///./dsa_challenge.db"
 
 def init_postgres_db():
@@ -43,7 +50,6 @@ def init_postgres_db():
 # Try to initialize postgres database
 init_postgres_db()
 
-# Set up main database engine
 try:
     logger.info(f"Connecting to primary database: {DATABASE_URL}")
     engine = create_engine(DATABASE_URL)
@@ -52,6 +58,9 @@ try:
         conn.execute(text("SELECT 1"))
     logger.info("Successfully connected to primary database.")
 except Exception as e:
+    if IS_PRODUCTION or DATABASE_URL.startswith("postgresql://") and DATABASE_URL != "postgresql://postgres:postgres@localhost:5432/dsa_challenge":
+        logger.error(f"Failed to connect to primary database ({DATABASE_URL}): {e}. SQLite fallback is disabled for production PostgreSQL configurations.")
+        raise e
     logger.error(f"Failed to connect to primary database ({DATABASE_URL}): {e}. Falling back to SQLite.")
     engine = create_engine(FALLBACK_DATABASE_URL, connect_args={"check_same_thread": False} if FALLBACK_DATABASE_URL.startswith("sqlite") else {})
 
