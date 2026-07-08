@@ -227,7 +227,22 @@ def get_dashboard_stats(current_user: Student = Depends(get_current_user), db: S
     
     # 4. Attendance history
     attendance = db.query(Attendance).filter(Attendance.student_id == student_id).order_by(Attendance.date.desc()).all()
-    attendance_dates = [att.date.strftime("%Y-%m-%d") for att in attendance]
+    grouped_attendance = {}
+    for att in attendance:
+        date_str = att.date.strftime("%Y-%m-%d")
+        if date_str not in grouped_attendance:
+            grouped_attendance[date_str] = []
+        grouped_attendance[date_str].append(att.session)
+        
+    attendance_dates = []
+    for date_str, sessions in grouped_attendance.items():
+        sess_abbrevs = []
+        if "forenoon" in sessions:
+            sess_abbrevs.append("FN")
+        if "afternoon" in sessions:
+            sess_abbrevs.append("AN")
+        sess_str = ", ".join(sess_abbrevs)
+        attendance_dates.append(f"{date_str} ({sess_str})")
     
     # 5. CodeChef history
     codechef = db.query(

@@ -61,6 +61,7 @@ def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_curren
     return {
         "success": True,
         "student_name": student.full_name,
+        "name": student.full_name,
         "roll_number": student.roll_number,
         "branch": student.branch,
         "year": student.year,
@@ -89,6 +90,7 @@ def get_today_attendance(session: str = "forenoon", current_admin: Student = Dep
             "timestamp": r[0],
             "marked_by": r[1],
             "full_name": r[2],
+            "name": r[2],
             "roll_number": r[3],
             "branch": r[4],
             "year": r[5],
@@ -428,11 +430,17 @@ def get_student_detail(student_id: str, current_admin: Student = Depends(get_cur
         ],
         "attendance": [
             {
-                "date": a.date,
-                "timestamp": a.timestamp,
-                "marked_by": a.marked_by,
-                "session": a.session
-            } for a in attendance
+                "date": f"{d_str} ({', '.join(['FN' if s == 'forenoon' else 'AN' for s in sorted(list(set(d_data['sessions'])))])})",
+                "timestamp": d_data["timestamp"],
+                "marked_by": ", ".join(list(set(d_data["marked_by_list"])))
+            } for d_str, d_data in (lambda atts: (
+                lambda grouped: (
+                    [grouped.setdefault(a.date.strftime("%Y-%m-%d"), {"sessions": [], "marked_by_list": [], "timestamp": a.timestamp})["sessions"].append(a.session) or 
+                     grouped[a.date.strftime("%Y-%m-%d")]["marked_by_list"].append(a.marked_by)
+                     for a in atts],
+                    grouped
+                )[1]
+            )({}))(attendance).items()
         ],
         "codechef": [
             {

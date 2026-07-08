@@ -464,7 +464,7 @@ export default function QrScannerPage() {
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">Attendance Marked</h3>
                   
                   <div className="bg-zinc-900/60 p-3.5 rounded border border-zinc-900/80 text-left text-xs space-y-2">
-                    <p className="text-zinc-400">Warrior: <span className="font-semibold text-white">{scanResult.name}</span></p>
+                    <p className="text-zinc-400">Warrior: <span className="font-semibold text-white">{scanResult.name || scanResult.student_name}</span></p>
                     <p className="text-zinc-400">Roll No: <span className="font-semibold text-white">{scanResult.roll_number}</span></p>
                     <p className="text-zinc-400">Branch/Year: <span className="font-semibold text-white">{scanResult.branch} - Year {scanResult.year}</span></p>
                     <p className="text-zinc-400">Marked At: <span className="font-semibold text-white">{scanResult.time}</span></p>
@@ -578,7 +578,7 @@ export default function QrScannerPage() {
                           {new Date(rec.timestamp).toLocaleString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                         </td>
                         <td className="py-3 px-3 font-semibold">{rec.roll_number}</td>
-                        <td className="py-3 px-3 text-white">{rec.name}</td>
+                        <td className="py-3 px-3 text-white">{rec.name || rec.full_name}</td>
                         <td className="py-3 px-3">{rec.branch} - Yr {rec.year}</td>
                         <td className="py-3 px-3 text-zinc-500">{rec.marked_by}</td>
                       </tr>
