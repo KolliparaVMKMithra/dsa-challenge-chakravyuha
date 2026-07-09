@@ -1,4 +1,14 @@
 services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: chakravyuha_secure_pass_123
+      POSTGRES_DB: dsa_challenge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   backend:
     build:
       context: ./backend
@@ -7,7 +17,9 @@ services:
       - "8000:8000"
     environment:
       - POWER_AUTOMATE_SIGNUP_WEBHOOK_URL=${POWER_AUTOMATE_SIGNUP_WEBHOOK_URL:-}
-      - DATABASE_URL=${DATABASE_URL:-}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:chakravyuha_secure_pass_123@db:5432/dsa_challenge}
+    depends_on:
+      - db
     restart: always
 
   frontend:
@@ -23,3 +35,6 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  postgres_data:
