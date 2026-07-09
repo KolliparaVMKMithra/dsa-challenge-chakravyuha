@@ -56,7 +56,7 @@ def send_mock_whatsapp_sms(student: Student, qr_base64: str) -> str:
     # Write to debug outbox file
     try:
         with open(DEBUG_OUTBOX_PATH, "a", encoding="utf-8") as f:
-            f.write(f"Timestamp: {Student.created_at}\n")
+            f.write(f"Timestamp: {student.created_at}\n")
             f.write(f"Recipient: {student.phone_number} ({student.full_name})\n")
             f.write(message)
             f.write("\n\n")
