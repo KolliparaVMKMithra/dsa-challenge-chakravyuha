@@ -35,23 +35,84 @@ app.include_router(admin.router)
 # Sample problems data to seed the database
 SEED_PROBLEMS = [
     # Session 1: Arrays (Beginner)
-    {"topic": "Arrays", "title": "Largest Number At Least Twice of Others (Traversal - Maximum Element)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/largest-number-at-least-twice-of-others/"},
+    # Traversal / Max Element
+    {"topic": "Arrays", "title": "Third Maximum Number (Traversal - Max Element)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/third-maximum-number/"},
+    {"topic": "Arrays", "title": "Largest Number At Least Twice of Others (Traversal - Max Element)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/largest-number-at-least-twice-of-others/"},
+    # Two Pointers
     {"topic": "Arrays", "title": "Move Zeroes (Two Pointers)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/move-zeroes/"},
+    {"topic": "Arrays", "title": "Squares of a Sorted Array (Two Pointers)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/squares-of-a-sorted-array/"},
+    # Sliding Window
     {"topic": "Arrays", "title": "Maximum Average Subarray I (Sliding Window - Max Sum Subarray of Size K)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/maximum-average-subarray-i/"},
+    {"topic": "Arrays", "title": "Defuse the Bomb (Sliding Window)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/defuse-the-bomb/"},
+    # Prefix Sum
     {"topic": "Arrays", "title": "Range Sum Query - Immutable (Prefix Sum)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/range-sum-query-immutable/"},
+    {"topic": "Arrays", "title": "Find Pivot Index (Prefix Sum)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/find-pivot-index/"},
 
     # Session 2: Strings (Beginner)
+    # Traversal / Vowel Counting
     {"topic": "Strings", "title": "Count the Number of Vowel Strings in Range (Traversal)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/count-the-number-of-vowel-strings-in-range/"},
+    {"topic": "Strings", "title": "Determine if String Halves Are Alike (Traversal)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/determine-if-string-halves-are-alike/"},
+    # Two Pointers
     {"topic": "Strings", "title": "Reverse String (Two Pointers)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/reverse-string/"},
-    {"topic": "Strings", "title": "Valid Anagram (Hashing - Character Frequency)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/valid-anagram/"},
+    {"topic": "Strings", "title": "Valid Palindrome (Two Pointers)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/valid-palindrome/"},
+    # Hashing / Char Frequency
+    {"topic": "Strings", "title": "Valid Anagram (Hashing)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/valid-anagram/"},
+    {"topic": "Strings", "title": "First Unique Character in a String (Hashing)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/first-unique-character-in-a-string/"},
+    # Sliding Window
     {"topic": "Strings", "title": "Longest Substring Without Repeating Characters (Sliding Window)", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
 
     # Session 3: Linked List (Beginner)
+    # Traversal
+    {"topic": "Linked List", "title": "Convert Binary Number in a Linked List to Integer (Traversal)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/convert-binary-number-in-a-linked-list-to-integer/"},
     {"topic": "Linked List", "title": "Remove Linked List Elements (Traversal)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/remove-linked-list-elements/"},
+    # Reverse Linked List
     {"topic": "Linked List", "title": "Reverse Linked List (Pattern: Reverse)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/reverse-linked-list/"},
+    {"topic": "Linked List", "title": "Palindrome Linked List (Pattern: Reverse)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/palindrome-linked-list/"},
+    # Slow & Fast Pointer
     {"topic": "Linked List", "title": "Middle of the Linked List (Slow & Fast Pointer)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/middle-of-the-linked-list/"},
     {"topic": "Linked List", "title": "Linked List Cycle (Slow & Fast Pointer - Cycle Detection)", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/linked-list-cycle/"},
-    {"topic": "Linked List", "title": "Remove Nth Node From End of List (Dummy Node)", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/remove-nth-node-from-end-of-list/"}
+    # Dummy Node
+    {"topic": "Linked List", "title": "Remove Nth Node From End of List (Dummy Node)", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/remove-nth-node-from-end-of-list/"},
+
+    # Stacks & Queues (6 problems)
+    {"topic": "Stacks/Queues", "title": "Valid Parentheses", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/valid-parentheses/"},
+    {"topic": "Stacks/Queues", "title": "Implement Queue using Stacks", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/implement-queue-using-stacks/"},
+    {"topic": "Stacks/Queues", "title": "Min Stack", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/min-stack/"},
+    {"topic": "Stacks/Queues", "title": "Evaluate Reverse Polish Notation", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/evaluate-reverse-polish-notation/"},
+    {"topic": "Stacks/Queues", "title": "Daily Temperatures", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/daily-temperatures/"},
+    {"topic": "Stacks/Queues", "title": "Largest Rectangle in Histogram", "difficulty": "Hard", "leetcode_link": "https://leetcode.com/problems/largest-rectangle-in-histogram/"},
+
+    # Trees (6 problems)
+    {"topic": "Trees", "title": "Invert Binary Tree", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/invert-binary-tree/"},
+    {"topic": "Trees", "title": "Maximum Depth of Binary Tree", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/maximum-depth-of-binary-tree/"},
+    {"topic": "Trees", "title": "Same Tree", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/same-tree/"},
+    {"topic": "Trees", "title": "Binary Tree Level Order Traversal", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/binary-tree-level-order-traversal/"},
+    {"topic": "Trees", "title": "Validate Binary Search Tree", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/validate-binary-search-tree/"},
+    {"topic": "Trees", "title": "Binary Tree Maximum Path Sum", "difficulty": "Hard", "leetcode_link": "https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+
+    # Graphs (6 problems)
+    {"topic": "Graphs", "title": "Find Center of Star Graph", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/find-center-of-star-graph/"},
+    {"topic": "Graphs", "title": "Island Perimeter", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/island-perimeter/"},
+    {"topic": "Graphs", "title": "Find if Path Exists in Graph", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/find-if-path-exists-in-graph/"},
+    {"topic": "Graphs", "title": "Number of Islands", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/number-of-islands/"},
+    {"topic": "Graphs", "title": "Clone Graph", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/clone-graph/"},
+    {"topic": "Graphs", "title": "Alien Dictionary", "difficulty": "Hard", "leetcode_link": "https://leetcode.com/problems/alien-dictionary/"},
+
+    # Dynamic Programming (6 problems)
+    {"topic": "DP", "title": "Climbing Stairs", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/climbing-stairs/"},
+    {"topic": "DP", "title": "Min Cost Climbing Stairs", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/min-cost-climbing-stairs/"},
+    {"topic": "DP", "title": "Divisor Game", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/divisor-game/"},
+    {"topic": "DP", "title": "House Robber", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/house-robber/"},
+    {"topic": "DP", "title": "Longest Increasing Subsequence", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/longest-increasing-subsequence/"},
+    {"topic": "DP", "title": "Edit Distance", "difficulty": "Hard", "leetcode_link": "https://leetcode.com/problems/edit-distance/"},
+
+    # Greedy (6 problems)
+    {"topic": "Greedy", "title": "Assign Cookies", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/assign-cookies/"},
+    {"topic": "Greedy", "title": "Lemonade Change", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/lemonade-change/"},
+    {"topic": "Greedy", "title": "Array Partition", "difficulty": "Easy", "leetcode_link": "https://leetcode.com/problems/array-partition/"},
+    {"topic": "Greedy", "title": "Jump Game", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/jump-game/"},
+    {"topic": "Greedy", "title": "Gas Station", "difficulty": "Medium", "leetcode_link": "https://leetcode.com/problems/gas-station/"},
+    {"topic": "Greedy", "title": "Candy", "difficulty": "Hard", "leetcode_link": "https://leetcode.com/problems/candy/"}
 ]
 
 @app.on_event("startup")
