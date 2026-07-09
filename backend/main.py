@@ -182,33 +182,10 @@ def startup_db_init():
         db.commit()
         logger.info(f"Seeded {len(SEED_PROBLEMS)} problems successfully.")
             
-        # 3. Seed CodeChef Contest
-        existing_contest = db.query(CodeChefContest).first()
-        if not existing_contest:
-            logger.info("Seeding default Wednesday CodeChef contest...")
-            # Set deadline to next Wednesday at 8 PM UTC
-            today = datetime.datetime.utcnow()
-            days_ahead = 2 - today.weekday()
-            if days_ahead <= 0:  # Target Wednesday already passed or is today
-                days_ahead += 7
-            next_wednesday = today + datetime.timedelta(days=days_ahead)
-            deadline = datetime.datetime(
-                year=next_wednesday.year,
-                month=next_wednesday.month,
-                day=next_wednesday.day,
-                hour=20,
-                minute=0,
-                second=0
-            )
-            
-            contest = CodeChefContest(
-                week_number=1,
-                contest_link="https://www.codechef.com/START999",
-                deadline=deadline
-            )
-            db.add(contest)
-            db.commit()
-            logger.info("Default CodeChef contest seeded successfully.")
+        # 3. Clean up default CodeChef contest (Admin will add manually via super-admin page)
+        logger.info("Syncing CodeChef contests...")
+        db.query(CodeChefContest).filter(CodeChefContest.contest_link == "https://www.codechef.com/START999").delete()
+        db.commit()
             
     except Exception as e:
         logger.error(f"Error seeding database: {e}")
