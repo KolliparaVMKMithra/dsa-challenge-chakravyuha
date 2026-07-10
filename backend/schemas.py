@@ -88,9 +88,15 @@ class SubmissionCreate(BaseModel):
     @field_validator("submission_link")
     @classmethod
     def validate_link(cls, v: str) -> str:
-        if not (v.startswith("http://") or v.startswith("https://")):
-            raise ValueError("Submission link must be a valid URL (start with http:// or https://)")
-        return v
+        # Enforce strict LeetCode submission URL format:
+        # Example: https://leetcode.com/problems/number-of-provinces/submissions/2052683388
+        pattern = r"^https?://(www\.)?leetcode\.com/problems/[a-zA-Z0-9-]+/submissions/\d+/?(?:\?.*)?$"
+        if not re.match(pattern, v.strip()):
+            raise ValueError(
+                "Invalid LeetCode submission link. Must be in the format: "
+                "https://leetcode.com/problems/problem-name/submissions/submission-id"
+            )
+        return v.strip()
 
 class SubmissionResponse(BaseModel):
     id: int
