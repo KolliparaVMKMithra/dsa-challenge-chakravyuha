@@ -229,10 +229,11 @@ def get_students_directory(
     query = db.query(Student).filter(Student.is_admin == False)
     
     if search:
+        search_lower = search.lower()
         query = query.filter(
-            (Student.full_name.ilike(f"%{search}%")) |
-            (Student.roll_number.ilike(f"%{search}%")) |
-            (Student.college_email.ilike(f"%{search}%"))
+            (func.lower(Student.full_name).like(f"%{search_lower}%")) |
+            (func.lower(Student.roll_number).like(f"%{search_lower}%")) |
+            (func.lower(Student.college_email).like(f"%{search_lower}%"))
         )
     if branch:
         query = query.filter(Student.branch == branch)
@@ -281,10 +282,11 @@ def export_students_directory(
     """Exports the student directory progress report as a styled Excel sheet using openpyxl."""
     query = db.query(Student).filter(Student.is_admin == False)
     if search:
+        search_lower = search.lower()
         query = query.filter(
-            (Student.full_name.ilike(f"%{search}%")) |
-            (Student.roll_number.ilike(f"%{search}%")) |
-            (Student.college_email.ilike(f"%{search}%"))
+            (func.lower(Student.full_name).like(f"%{search_lower}%")) |
+            (func.lower(Student.roll_number).like(f"%{search_lower}%")) |
+            (func.lower(Student.college_email).like(f"%{search_lower}%"))
         )
     if branch:
         query = query.filter(Student.branch == branch)

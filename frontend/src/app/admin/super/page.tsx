@@ -1814,6 +1814,7 @@ export default function SuperAdminPage() {
                         <th className="py-3 px-4">Branch/Year</th>
                         <th className="py-3 px-4 text-center">Problems Solved</th>
                         <th className="py-3 px-4 text-center">Daily Streak</th>
+                        <th className="py-3 px-4 text-center">Last Active Solve</th>
                         <th className="py-3 px-4 text-center">Actions</th>
                       </tr>
                     </thead>
@@ -1843,6 +1844,11 @@ export default function SuperAdminPage() {
                             <span className="inline-flex items-center gap-1">
                               {row.streak} 🔥
                             </span>
+                          </td>
+                          <td className="py-3 px-4 text-center text-zinc-400 font-mono">
+                            {row.last_submission_time 
+                              ? new Date(row.last_submission_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) 
+                              : 'N/A'}
                           </td>
                           <td className="py-3 px-4 text-center">
                             <button
