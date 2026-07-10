@@ -141,6 +141,7 @@ export default function SuperAdminPage() {
   // Roster States
   const [students, setStudents] = useState<StudentSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInputValue, setSearchInputValue] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<StudentDetail | null>(null);
@@ -930,19 +931,32 @@ export default function SuperAdminPage() {
         <div className="space-y-6">
           {/* Filters Bar */}
           <div className="rounded-lg border border-[#8c7030]/15 bg-zinc-950/40 p-4 glass-panel flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:max-w-2xl">
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:max-w-3xl">
               {/* Search */}
-              <div className="relative w-full">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Search className="h-4 w-4 text-zinc-500" />
+              <div className="flex w-full items-center gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="h-4 w-4 text-zinc-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchInputValue}
+                    onChange={(e) => setSearchInputValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setSearchQuery(searchInputValue);
+                      }
+                    }}
+                    placeholder="Search by name, roll number, or email..."
+                    className="block w-full rounded border border-zinc-900 bg-zinc-900 pl-9 pr-3 py-2 text-xs text-white focus:border-[#d4af37] focus:outline-none"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, roll number, or email..."
-                  className="block w-full rounded border border-zinc-900 bg-zinc-900 pl-9 pr-3 py-2 text-xs text-white focus:border-[#d4af37] focus:outline-none"
-                />
+                <button
+                  onClick={() => setSearchQuery(searchInputValue)}
+                  className="rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black transition-colors"
+                >
+                  Search
+                </button>
               </div>
               
               {/* Branch filter */}

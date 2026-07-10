@@ -427,7 +427,7 @@ def get_student_detail(student_id: str, current_admin: Student = Depends(get_cur
                 "topic": s[3],
                 "difficulty": s[4],
                 "link": s[1],
-                "date": s[0]
+                "date": f"{s[0].isoformat()}Z" if (s[0] and s[0] >= datetime.datetime(2026, 7, 10, 15, 0, 0)) else None
             } for s in submissions
         ],
         "attendance": [

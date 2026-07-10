@@ -297,8 +297,14 @@ def get_leaderboard(db: Session = Depends(get_db)):
          Student.full_name.asc()
      ).all()
 
+    CUTOFF_TIME = datetime.datetime(2026, 7, 10, 15, 0, 0)
     leaderboard = []
     for rank, r in enumerate(leaderboard_query, start=1):
+        last_sub_time = r[7]
+        formatted_time = None
+        if last_sub_time and last_sub_time >= CUTOFF_TIME:
+            formatted_time = f"{last_sub_time.isoformat()}Z"
+            
         leaderboard.append({
             "rank": rank,
             "id": r[0],
@@ -308,7 +314,7 @@ def get_leaderboard(db: Session = Depends(get_db)):
             "year": r[4],
             "streak": r[5],
             "solved_count": r[6],
-            "last_submission_time": r[7].isoformat() if r[7] else None
+            "last_submission_time": formatted_time
         })
     return leaderboard
 
@@ -328,6 +334,7 @@ def get_public_student_detail(student_id: str, current_user: Student = Depends(g
      .filter(Submission.student_id == student_id, Submission.solved == True)\
      .order_by(Submission.completed_at.desc()).all()
      
+    CUTOFF_TIME = datetime.datetime(2026, 7, 10, 15, 0, 0)
     return {
         "student": {
             "id": student.id,
@@ -342,7 +349,7 @@ def get_public_student_detail(student_id: str, current_user: Student = Depends(g
                 "title": s[1],
                 "topic": s[2],
                 "difficulty": s[3],
-                "date": s[0]
+                "date": f"{s[0].isoformat()}Z" if (s[0] and s[0] >= CUTOFF_TIME) else None
             } for s in submissions
         ]
     }
