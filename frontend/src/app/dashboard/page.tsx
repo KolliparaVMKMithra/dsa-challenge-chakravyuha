@@ -42,6 +42,23 @@ export default function Dashboard() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
+  // Leaderboard pagination and detail states
+  const [leaderboardPage, setLeaderboardPage] = useState(1);
+  const [selectedStudentDetail, setSelectedStudentDetail] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const handleLeaderboardStudentClick = async (studentId: string) => {
+    setDetailLoading(true);
+    try {
+      const data = await apiRequest(`/api/dsa/students/${studentId}/detail`);
+      setSelectedStudentDetail(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const fetchLeaderboard = async () => {
     setLeaderboardLoading(true);
     try {
@@ -464,53 +481,147 @@ export default function Dashboard() {
                 <div className="text-center py-12 text-zinc-550 text-xs">
                   No warriors on the leaderboard yet. Solve problems to enlist!
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
-                        <th className="py-3 px-4 text-center w-16">Rank</th>
-                        <th className="py-3 px-4">Warrior Name</th>
-                        <th className="py-3 px-4">Roll Number</th>
-                        <th className="py-3 px-4 text-center">Problems Solved</th>
-                        <th className="py-3 px-4 text-center">Daily Streak</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-900/50 text-xs">
-                      {leaderboard.map((row) => {
-                        const isMe = row.roll_number === student.roll_number;
-                        return (
-                          <tr 
-                            key={row.id} 
-                            className={`transition-colors hover:bg-zinc-900/20 ${isMe ? 'bg-[#d4af37]/5 border-y border-[#d4af37]/25' : ''}`}
-                          >
-                            <td className="py-3 px-4 text-center font-bold">
-                              {row.rank === 1 ? (
-                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d4af37] text-black font-extrabold text-[10px]" title="First Rank">1</span>
-                              ) : row.rank === 2 ? (
-                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-zinc-400 text-black font-extrabold text-[10px]" title="Second Rank">2</span>
-                              ) : row.rank === 3 ? (
-                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-700 text-white font-extrabold text-[10px]" title="Third Rank">3</span>
-                              ) : (
-                                <span className="text-zinc-400 font-mono">#{row.rank}</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 font-semibold text-zinc-200">
-                              {row.full_name} {isMe && <span className="ml-1 text-[9px] bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30 px-1.5 py-0.5 rounded-full font-bold uppercase">You</span>}
-                            </td>
-                            <td className="py-3 px-4 font-mono text-zinc-400">{row.roll_number}</td>
-                            <td className="py-3 px-4 text-center font-bold text-zinc-200">{row.solved_count}</td>
-                            <td className="py-3 px-4 text-center font-bold text-orange-400">
-                              <span className="inline-flex items-center gap-1">
-                                {row.streak}
-                                <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
-                              </span>
-                            </td>
+              ) : (() => {
+                const itemsPerPage = 50;
+                const totalPages = Math.ceil(leaderboard.length / itemsPerPage);
+                const paginatedLeaderboard = leaderboard.slice((leaderboardPage - 1) * itemsPerPage, leaderboardPage * itemsPerPage);
+                
+                return (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+                            <th className="py-3 px-4 text-center w-16">Rank</th>
+                            <th className="py-3 px-4">Warrior Name</th>
+                            <th className="py-3 px-4">Roll Number</th>
+                            <th className="py-3 px-4 text-center">Problems Solved</th>
+                            <th className="py-3 px-4 text-center">Daily Streak</th>
+                            <th className="py-3 px-4 text-center">Last Active Solve</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-900/50 text-xs">
+                          {paginatedLeaderboard.map((row) => {
+                            const isMe = row.roll_number === student.roll_number;
+                            return (
+                              <tr 
+                                key={row.id} 
+                                className={`transition-colors hover:bg-zinc-900/20 cursor-pointer ${isMe ? 'bg-[#d4af37]/5 border-y border-[#d4af37]/25' : ''}`}
+                                onClick={() => handleLeaderboardStudentClick(row.id)}
+                              >
+                                <td className="py-3 px-4 text-center font-bold">
+                                  {row.rank === 1 ? (
+                                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d4af37] text-black font-extrabold text-[10px]" title="First Rank">1</span>
+                                  ) : row.rank === 2 ? (
+                                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-zinc-400 text-black font-extrabold text-[10px]" title="Second Rank">2</span>
+                                  ) : row.rank === 3 ? (
+                                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-700 text-white font-extrabold text-[10px]" title="Third Rank">3</span>
+                                  ) : (
+                                    <span className="text-zinc-400 font-mono">#{row.rank}</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 font-semibold text-zinc-200">
+                                  {row.full_name} {isMe && <span className="ml-1 text-[9px] bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/30 px-1.5 py-0.5 rounded-full font-bold uppercase">You</span>}
+                                </td>
+                                <td className="py-3 px-4 font-mono text-zinc-400">{row.roll_number}</td>
+                                <td className="py-3 px-4 text-center font-bold text-zinc-200">{row.solved_count}</td>
+                                <td className="py-3 px-4 text-center font-bold text-orange-400">
+                                  <span className="inline-flex items-center gap-1">
+                                    {row.streak}
+                                    <Flame className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center text-zinc-400 font-mono">
+                                  {row.last_submission_time 
+                                    ? new Date(row.last_submission_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) 
+                                    : 'N/A'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between border-t border-zinc-900 pt-4 text-xs">
+                        <button
+                          disabled={leaderboardPage === 1}
+                          onClick={() => setLeaderboardPage(p => Math.max(p - 1, 1))}
+                          className="rounded border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-semibold text-zinc-400 transition-colors hover:text-white disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-zinc-400 font-medium">
+                          Page {leaderboardPage} of {totalPages}
+                        </span>
+                        <button
+                          disabled={leaderboardPage === totalPages}
+                          onClick={() => setLeaderboardPage(p => Math.min(p + 1, totalPages))}
+                          className="rounded border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-semibold text-zinc-400 transition-colors hover:text-white disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Student Detail Modal */}
+              {selectedStudentDetail && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+                  <div className="w-full max-w-lg rounded-lg border border-[#8c7030]/40 bg-zinc-950 p-6 shadow-xl glass-panel space-y-4 relative">
+                    <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+                      <div>
+                        <h3 className="text-md font-bold text-white font-serif tracking-wide">
+                          {selectedStudentDetail.student.name}'s Profile
+                        </h3>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+                          {selectedStudentDetail.student.roll_number} | {selectedStudentDetail.student.branch} - Yr {selectedStudentDetail.student.year}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedStudentDetail(null)}
+                        className="rounded p-1 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    <div className="flex items-center gap-6 py-2">
+                      <div className="bg-zinc-900/60 border border-zinc-800 rounded px-4 py-2 text-center flex-1">
+                        <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Streak</span>
+                        <span className="text-md font-bold text-orange-400">{selectedStudentDetail.student.streak} 🔥</span>
+                      </div>
+                      <div className="bg-zinc-900/60 border border-zinc-800 rounded px-4 py-2 text-center flex-1">
+                        <span className="block text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">Solved</span>
+                        <span className="text-md font-bold text-[#d4af37]">{selectedStudentDetail.submissions.length} Problems</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#c5a059]">Solved Problems Timeline</h4>
+                      {selectedStudentDetail.submissions.length === 0 ? (
+                        <p className="text-xs text-zinc-550 italic">No problems solved yet.</p>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto pr-1 space-y-2 scrollbar-thin">
+                          {selectedStudentDetail.submissions.map((sub: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between border-b border-zinc-900/50 pb-2 text-xs">
+                              <div>
+                                <div className="font-semibold text-zinc-200">{sub.title}</div>
+                                <div className="text-[10px] text-zinc-500">{sub.topic} | {sub.difficulty}</div>
+                              </div>
+                              <div className="text-[10px] text-zinc-400 font-mono">
+                                {new Date(sub.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

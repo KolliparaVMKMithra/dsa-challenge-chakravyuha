@@ -704,14 +704,23 @@ def list_scan_admins(current_admin: Student = Depends(get_current_super_admin), 
 
 @router.post("/scan-admins", response_model=ScanAdminResponse)
 def create_scan_admin(admin_data: ScanAdminCreate, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
-    """Creates a new Scan Admin."""
-    dup_email = db.query(Student).filter(Student.college_email == admin_data.college_email).first()
-    if dup_email:
-        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+    """Creates a new Scan Admin or promotes/updates an existing user."""
+    existing = db.query(Student).filter(
+        (Student.college_email == admin_data.college_email) |
+        (Student.roll_number == admin_data.roll_number)
+    ).first()
 
-    dup_roll = db.query(Student).filter(Student.roll_number == admin_data.roll_number).first()
-    if dup_roll:
-        raise HTTPException(status_code=400, detail="An account with this roll number already exists.")
+    if existing:
+        # Promote or update existing user
+        existing.is_admin = True
+        existing.admin_role = "attendance"
+        existing.full_name = admin_data.full_name
+        existing.phone_number = admin_data.phone_number
+        if admin_data.password:
+            existing.password_hash = get_password_hash(admin_data.password)
+        db.commit()
+        db.refresh(existing)
+        return existing
 
     import uuid
     secret_suffix = uuid.uuid4().hex[:8].upper()
@@ -754,14 +763,23 @@ def list_super_admins(current_admin: Student = Depends(get_current_super_admin),
 
 @router.post("/super-admins", response_model=ScanAdminResponse)
 def create_super_admin(admin_data: ScanAdminCreate, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
-    """Creates a new Super Admin."""
-    dup_email = db.query(Student).filter(Student.college_email == admin_data.college_email).first()
-    if dup_email:
-        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+    """Creates a new Super Admin or promotes/updates an existing user."""
+    existing = db.query(Student).filter(
+        (Student.college_email == admin_data.college_email) |
+        (Student.roll_number == admin_data.roll_number)
+    ).first()
 
-    dup_roll = db.query(Student).filter(Student.roll_number == admin_data.roll_number).first()
-    if dup_roll:
-        raise HTTPException(status_code=400, detail="An account with this roll number already exists.")
+    if existing:
+        # Promote or update existing user
+        existing.is_admin = True
+        existing.admin_role = "super"
+        existing.full_name = admin_data.full_name
+        existing.phone_number = admin_data.phone_number
+        if admin_data.password:
+            existing.password_hash = get_password_hash(admin_data.password)
+        db.commit()
+        db.refresh(existing)
+        return existing
 
     import uuid
     secret_suffix = uuid.uuid4().hex[:8].upper()

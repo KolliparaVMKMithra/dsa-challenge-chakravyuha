@@ -123,13 +123,18 @@ body.light .bg-zinc-900\/30 {
   background-color: rgba(234, 231, 223, 0.4) !important;
 }
 
-body.light .text-zinc-400,
-body.light .text-zinc-500 {
-  color: #57534e !important;
+body.light .text-zinc-100,
+body.light .text-zinc-200,
+body.light .text-zinc-300,
+body.light .text-zinc-450 {
+  color: #1c1917 !important;
 }
 
-body.light .text-zinc-300 {
-  color: #292524 !important;
+body.light .text-zinc-400,
+body.light .text-zinc-500,
+body.light .text-zinc-550,
+body.light .text-zinc-650 {
+  color: #3b3730 !important;
 }
 
 body.light .text-white {

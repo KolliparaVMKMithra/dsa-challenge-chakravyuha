@@ -128,6 +128,10 @@ export default function SuperAdminPage() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
+  // Pagination states
+  const [directoryPage, setDirectoryPage] = useState(1);
+  const [leaderboardPage, setLeaderboardPage] = useState(1);
+
   // Broadcaster Search & Selection States
   const [broadcasterStudents, setBroadcasterStudents] = useState<any[]>([]);
   const [broadcasterSearch, setBroadcasterSearch] = useState('');
@@ -316,6 +320,10 @@ export default function SuperAdminPage() {
       fetchBroadcasterStudents();
     }
   }, [activeTab, isAdmin, searchQuery, selectedBranch, selectedYear]);
+
+  useEffect(() => {
+    setDirectoryPage(1);
+  }, [searchQuery, selectedBranch, selectedYear]);
 
   // --- API CALLS ---
 
@@ -982,65 +990,96 @@ export default function SuperAdminPage() {
               <div className="text-center py-12 text-xs text-zinc-500">
                 No student profiles found matching the filters.
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider">
-                      <th className="py-3 px-3">Roll Number</th>
-                      <th className="py-3 px-3">Warrior Name</th>
-                      <th className="py-3 px-3">Branch/Year</th>
-                      <th className="py-3 px-3">Contact</th>
-                      <th className="py-3 px-3 text-center">Streak</th>
-                      <th className="py-3 px-3 text-center">Attendance</th>
-                      <th className="py-3 px-3 text-right">DSA Progress</th>
-                      <th className="py-3 px-3 text-center w-20">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
-                    {students.map((student, idx) => (
-                      <tr 
-                        key={idx} 
-                        className="hover:bg-zinc-900/30 transition-colors cursor-pointer"
-                        onClick={() => handleStudentClick(student.id)}
-                      >
-                        <td className="py-3.5 px-3 font-semibold text-white hover:text-[#d4af37]">
-                          {student.roll_number}
-                        </td>
-                        <td className="py-3.5 px-3 font-semibold">{student.name}</td>
-                        <td className="py-3.5 px-3">{student.branch} - Yr {student.year}</td>
-                        <td className="py-3.5 px-3 text-zinc-500">
-                          {student.email}
-                          <span className="block text-[10px]">{student.phone}</span>
-                        </td>
-                        <td className="py-3.5 px-3 text-center font-bold text-orange-400">
-                          {student.streak} 🔥
-                        </td>
-                        <td className="py-3.5 px-3 text-center">
-                          <span className="font-semibold text-zinc-200">{student.attendance_count} Present</span>
-                        </td>
-                        <td className="py-3.5 px-3 text-right">
-                          <span className="font-bold text-[#d4af37]">{student.percentage}%</span>
-                          <span className="block text-[10px] text-zinc-500 font-normal">({student.solved}/{student.total_problems} solved)</span>
-                        </td>
-                        <td className="py-3.5 px-3 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteStudent(student.id, student.name);
-                            }}
-                            className="rounded p-1.5 text-zinc-550 hover:bg-rose-950/20 hover:text-rose-450 transition-colors"
-                            title="Delete Student Warrior"
+            ) : (() => {
+              const itemsPerPage = 50;
+              const totalPages = Math.ceil(students.length / itemsPerPage);
+              const paginatedStudents = students.slice((directoryPage - 1) * itemsPerPage, directoryPage * itemsPerPage);
+
+              return (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider">
+                          <th className="py-3 px-3">Roll Number</th>
+                          <th className="py-3 px-3">Warrior Name</th>
+                          <th className="py-3 px-3">Branch/Year</th>
+                          <th className="py-3 px-3">Contact</th>
+                          <th className="py-3 px-3 text-center">Streak</th>
+                          <th className="py-3 px-3 text-center">Attendance</th>
+                          <th className="py-3 px-3 text-right">DSA Progress</th>
+                          <th className="py-3 px-3 text-center w-20">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
+                        {paginatedStudents.map((student, idx) => (
+                          <tr 
+                            key={idx} 
+                            className="hover:bg-zinc-900/30 transition-colors cursor-pointer"
+                            onClick={() => handleStudentClick(student.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                            <td className="py-3.5 px-3 font-semibold text-white hover:text-[#d4af37]">
+                              {student.roll_number}
+                            </td>
+                            <td className="py-3.5 px-3 font-semibold">{student.name}</td>
+                            <td className="py-3.5 px-3">{student.branch} - Yr {student.year}</td>
+                            <td className="py-3.5 px-3 text-zinc-500">
+                              {student.email}
+                              <span className="block text-[10px]">{student.phone}</span>
+                            </td>
+                            <td className="py-3.5 px-3 text-center font-bold text-orange-400">
+                              {student.streak} 🔥
+                            </td>
+                            <td className="py-3.5 px-3 text-center">
+                              <span className="font-semibold text-zinc-200">{student.attendance_count} Present</span>
+                            </td>
+                            <td className="py-3.5 px-3 text-right">
+                              <span className="font-bold text-[#d4af37]">{student.percentage}%</span>
+                              <span className="block text-[10px] text-zinc-500 font-normal">({student.solved}/{student.total_problems} solved)</span>
+                            </td>
+                            <td className="py-3.5 px-3 text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteStudent(student.id, student.name);
+                                }}
+                                className="rounded p-1.5 text-zinc-550 hover:bg-rose-950/20 hover:text-rose-450 transition-colors"
+                                title="Delete Student Warrior"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination Navigation */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-zinc-900 pt-4 text-xs">
+                      <button
+                        disabled={directoryPage === 1}
+                        onClick={() => setDirectoryPage(p => Math.max(p - 1, 1))}
+                        className="rounded border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-semibold text-zinc-450 hover:text-white disabled:opacity-50 transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-zinc-400 font-medium">
+                        Page {directoryPage} of {totalPages}
+                      </span>
+                      <button
+                        disabled={directoryPage === totalPages}
+                        onClick={() => setDirectoryPage(p => Math.min(p + 1, totalPages))}
+                        className="rounded border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-semibold text-zinc-450 hover:text-white disabled:opacity-50 transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1756,67 +1795,96 @@ export default function SuperAdminPage() {
             </div>
           ) : leaderboard.length === 0 ? (
             <div className="text-center py-12 text-zinc-550 text-xs">
-              No students enrolled on the leaderboard.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
-                    <th className="py-3 px-4 text-center w-16">Rank</th>
-                    <th className="py-3 px-4">Warrior Name</th>
-                    <th className="py-3 px-4">Roll Number</th>
-                    <th className="py-3 px-4">Branch/Year</th>
-                    <th className="py-3 px-4 text-center">Problems Solved</th>
-                    <th className="py-3 px-4 text-center">Daily Streak</th>
-                    <th className="py-3 px-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-900/50 text-zinc-350">
-                  {leaderboard.map((row) => (
-                    <tr 
-                      key={row.id} 
-                      className="transition-colors hover:bg-zinc-900/10 cursor-pointer"
-                      onClick={() => handleStudentClick(row.id)}
-                    >
-                      <td className="py-3 px-4 text-center font-bold">
-                        {row.rank === 1 ? (
-                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d4af37] text-black font-extrabold text-[10px]">1</span>
-                        ) : row.rank === 2 ? (
-                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-zinc-400 text-black font-extrabold text-[10px]">2</span>
-                        ) : row.rank === 3 ? (
-                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-700 text-white font-extrabold text-[10px]">3</span>
-                        ) : (
-                          <span className="text-zinc-500 font-mono">#{row.rank}</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-white hover:text-[#d4af37]">{row.full_name}</td>
-                      <td className="py-3 px-4 font-mono text-zinc-400">{row.roll_number}</td>
-                      <td className="py-3 px-4">{row.branch} - Yr {row.year}</td>
-                      <td className="py-3 px-4 text-center font-bold text-[#d4af37]">{row.solved_count} solved</td>
-                      <td className="py-3 px-4 text-center font-bold text-orange-400">
-                        <span className="inline-flex items-center gap-1">
-                          {row.streak} 🔥
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteStudent(row.id, row.full_name);
-                          }}
-                          className="rounded p-1 text-zinc-550 hover:text-rose-450 hover:bg-rose-950/20"
-                          title="Delete Student Warrior"
+              No           ) : (() => {
+            const itemsPerPage = 50;
+            const totalPages = Math.ceil(leaderboard.length / itemsPerPage);
+            const paginatedLeaderboard = leaderboard.slice((leaderboardPage - 1) * itemsPerPage, leaderboardPage * itemsPerPage);
+
+            return (
+              <div className="space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+                        <th className="py-3 px-4 text-center w-16">Rank</th>
+                        <th className="py-3 px-4">Warrior Name</th>
+                        <th className="py-3 px-4">Roll Number</th>
+                        <th className="py-3 px-4">Branch/Year</th>
+                        <th className="py-3 px-4 text-center">Problems Solved</th>
+                        <th className="py-3 px-4 text-center">Daily Streak</th>
+                        <th className="py-3 px-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/50 text-zinc-350">
+                      {paginatedLeaderboard.map((row) => (
+                        <tr 
+                          key={row.id} 
+                          className="transition-colors hover:bg-zinc-900/10 cursor-pointer"
+                          onClick={() => handleStudentClick(row.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          <td className="py-3 px-4 text-center font-bold">
+                            {row.rank === 1 ? (
+                              <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-[#d4af37] text-black font-extrabold text-[10px]">1</span>
+                            ) : row.rank === 2 ? (
+                              <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-zinc-400 text-black font-extrabold text-[10px]">2</span>
+                            ) : row.rank === 3 ? (
+                              <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-700 text-white font-extrabold text-[10px]">3</span>
+                            ) : (
+                              <span className="text-zinc-500 font-mono">#{row.rank}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-white hover:text-[#d4af37]">{row.full_name}</td>
+                          <td className="py-3 px-4 font-mono text-zinc-400">{row.roll_number}</td>
+                          <td className="py-3 px-4">{row.branch} - Yr {row.year}</td>
+                          <td className="py-3 px-4 text-center font-bold text-[#d4af37]">{row.solved_count} solved</td>
+                          <td className="py-3 px-4 text-center font-bold text-orange-400">
+                            <span className="inline-flex items-center gap-1">
+                              {row.streak} 🔥
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteStudent(row.id, row.full_name);
+                              }}
+                              className="rounded p-1 text-zinc-555 hover:text-rose-450 hover:bg-rose-950/20 transition-colors"
+                              title="Delete Student Warrior"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-zinc-900 pt-4 text-xs">
+                    <button
+                      disabled={leaderboardPage === 1}
+                      onClick={() => setLeaderboardPage(p => Math.max(p - 1, 1))}
+                      className="rounded border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-semibold text-zinc-450 hover:text-white disabled:opacity-50 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-zinc-400 font-medium">
+                      Page {leaderboardPage} of {totalPages}
+                    </span>
+                    <button
+                      disabled={leaderboardPage === totalPages}
+                      onClick={() => setLeaderboardPage(p => Math.min(p + 1, totalPages))}
+                      className="rounded border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-semibold text-zinc-450 hover:text-white disabled:opacity-50 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

@@ -285,11 +285,17 @@ def get_leaderboard(db: Session = Depends(get_db)):
         Student.branch,
         Student.year,
         Student.streak_count,
-        func.count(Submission.id).label("solved_count")
+        func.count(Submission.id).label("solved_count"),
+        func.max(Submission.completed_at).label("last_submission_time")
     ).join(Submission, Student.id == Submission.student_id, isouter=True)\
      .filter(Student.is_admin == False)\
      .group_by(Student.id)\
-     .order_by(func.count(Submission.id).desc(), Student.streak_count.desc(), Student.full_name.asc()).all()
+     .order_by(
+         func.count(Submission.id).desc(), 
+         Student.streak_count.desc(), 
+         func.max(Submission.completed_at).asc(),
+         Student.full_name.asc()
+     ).all()
 
     leaderboard = []
     for rank, r in enumerate(leaderboard_query, start=1):
@@ -301,6 +307,42 @@ def get_leaderboard(db: Session = Depends(get_db)):
             "branch": r[3],
             "year": r[4],
             "streak": r[5],
-            "solved_count": r[6]
+            "solved_count": r[6],
+            "last_submission_time": r[7].isoformat() if r[7] else None
         })
     return leaderboard
+
+@router.get("/students/{student_id}/detail")
+def get_public_student_detail(student_id: str, current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fetches public progress details and submissions for a specific student (accessible by other students)."""
+    student = db.query(Student).filter(Student.id == student_id, Student.is_admin == False).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    submissions = db.query(
+        Submission.completed_at,
+        Problem.title,
+        Problem.topic,
+        Problem.difficulty
+    ).join(Problem, Submission.problem_id == Problem.id)\
+     .filter(Submission.student_id == student_id, Submission.solved == True)\
+     .order_by(Submission.completed_at.desc()).all()
+     
+    return {
+        "student": {
+            "id": student.id,
+            "name": student.full_name,
+            "roll_number": student.roll_number,
+            "branch": student.branch,
+            "year": student.year,
+            "streak": student.streak_count,
+        },
+        "submissions": [
+            {
+                "title": s[1],
+                "topic": s[2],
+                "difficulty": s[3],
+                "date": s[0]
+            } for s in submissions
+        ]
+    }
