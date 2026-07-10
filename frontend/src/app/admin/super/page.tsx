@@ -1795,7 +1795,9 @@ export default function SuperAdminPage() {
             </div>
           ) : leaderboard.length === 0 ? (
             <div className="text-center py-12 text-zinc-550 text-xs">
-              No           ) : (() => {
+              No students enrolled on the leaderboard.
+            </div>
+          ) : (() => {
             const itemsPerPage = 50;
             const totalPages = Math.ceil(leaderboard.length / itemsPerPage);
             const paginatedLeaderboard = leaderboard.slice((leaderboardPage - 1) * itemsPerPage, leaderboardPage * itemsPerPage);
