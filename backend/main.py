@@ -172,15 +172,34 @@ def startup_db_init():
         db.commit()
         logger.info("Super Admins seeded successfully.")
             
-        # 2. Seed Problems (Clear and Re-seed custom beginner-level DSA sheet)
+        # 2. Seed Problems (Sync dynamically using leetcode_link to preserve student submissions)
         logger.info("Syncing DSA sheet problems...")
-        db.query(Problem).delete()
+        existing_problems = db.query(Problem).all()
+        existing_by_link = {p.leetcode_link: p for p in existing_problems}
+        seed_links = set()
+        
+        for p_data in SEED_PROBLEMS:
+            link = p_data["leetcode_link"]
+            seed_links.add(link)
+            if link in existing_by_link:
+                # Update problem in place to preserve id and avoid cascade-deleting submissions
+                db_prob = existing_by_link[link]
+                db_prob.title = p_data["title"]
+                db_prob.difficulty = p_data["difficulty"]
+                db_prob.topic = p_data["topic"]
+                db_prob.is_active = True
+            else:
+                # Insert new problem
+                db_prob = Problem(**p_data)
+                db.add(db_prob)
+                
+        # De-activate any problems that are not in the seed list (don't delete, to save history)
+        for link, db_prob in existing_by_link.items():
+            if link not in seed_links:
+                db_prob.is_active = False
+                
         db.commit()
-        for p in SEED_PROBLEMS:
-            db_prob = Problem(**p)
-            db.add(db_prob)
-        db.commit()
-        logger.info(f"Seeded {len(SEED_PROBLEMS)} problems successfully.")
+        logger.info("DSA sheet problems synced successfully.")
             
         # 3. Clean up default CodeChef contest (Admin will add manually via super-admin page)
         logger.info("Syncing CodeChef contests...")
