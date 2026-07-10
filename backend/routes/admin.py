@@ -308,7 +308,7 @@ def export_students_directory(
     ws["A1"].fill = PatternFill(start_color="8C7030", end_color="8C7030", fill_type="solid")
     ws.row_dimensions[1].height = 40
     
-    headers = ["Roll Number", "Full Name", "Email", "Phone", "Branch", "Year", "Streak", "Solved", "Total", "Solve %"]
+    headers = ["Roll Number", "Full Name", "Email", "Phone", "Branch", "Year", "Streak", "Forenoon Attendance", "Afternoon Attendance", "Solved", "Total", "Solve %"]
     ws.append([]) # Blank row 2
     ws.append(headers) # Row 3
     
@@ -334,6 +334,16 @@ def export_students_directory(
             Submission.solved == True
         ).scalar() or 0
         
+        forenoon_count = db.query(func.count(Attendance.id)).filter(
+            Attendance.student_id == s.id,
+            Attendance.session == "forenoon"
+        ).scalar() or 0
+        
+        afternoon_count = db.query(func.count(Attendance.id)).filter(
+            Attendance.student_id == s.id,
+            Attendance.session == "afternoon"
+        ).scalar() or 0
+        
         pct = round(solved_count / total_problems * 100, 1) if total_problems > 0 else 0
         
         row_data = [
@@ -344,6 +354,8 @@ def export_students_directory(
             s.branch,
             s.year,
             s.streak_count,
+            forenoon_count,
+            afternoon_count,
             solved_count,
             total_problems,
             f"{pct}%"
@@ -352,11 +364,11 @@ def export_students_directory(
         
     for row in range(4, ws.max_row + 1):
         row_fill = PatternFill(start_color="F9F9F9" if row % 2 == 0 else "FFFFFF", fill_type="solid")
-        for col in range(1, 11):
+        for col in range(1, 13):
             cell = ws.cell(row=row, column=col)
             cell.fill = row_fill
             cell.border = thin_border
-            if col in [1, 5, 6, 7, 8, 9, 10]:
+            if col in [1, 5, 6, 7, 8, 9, 10, 11, 12]:
                 cell.alignment = Alignment(horizontal="center")
                 
     for col in ws.columns:
