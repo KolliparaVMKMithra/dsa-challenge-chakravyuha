@@ -69,6 +69,18 @@ def submit_solution(
             detail="Problem not found or inactive"
         )
     
+    # Strictly validate that the submission link matches the slug of the current problem
+    import re
+    slug_match = re.search(r"/problems/([a-zA-Z0-9-]+)", problem.leetcode_link)
+    if slug_match:
+        slug = slug_match.group(1)
+        expected_pattern = rf"^https?://(www\.)?leetcode\.com/problems/{slug}/submissions/\d+/?(?:\?.*)?$"
+        if not re.match(expected_pattern, sub_data.submission_link.strip()):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Incorrect submission link. The submitted link must belong to the problem '{problem.title}' (URL slug: {slug})."
+            )
+    
     # Check if submission already exists
     existing_sub = db.query(Submission).filter(
         Submission.student_id == current_user.id,
