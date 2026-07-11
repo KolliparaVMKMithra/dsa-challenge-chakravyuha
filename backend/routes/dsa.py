@@ -459,8 +459,16 @@ def get_certificate(request: Request, current_user: Student = Depends(get_curren
         draw.rectangle([cx - 15, cy - 15, cx + 15, cy + 15], fill=bg_color, outline=gold_primary, width=3)
         draw.rectangle([cx - 6, cy - 6, cx + 6, cy + 6], fill=gold_primary)
 
+    # Path relative to dsa.py
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    backend_dir = os.path.dirname(current_dir)
+    project_root = os.path.dirname(backend_dir)
+
     # Logo
-    logo_path = "club_logo.jpg"
+    logo_path = os.path.join(project_root, "club_logo.jpg")
+    if not os.path.exists(logo_path):
+        logo_path = os.path.join(backend_dir, "club_logo.jpg")
+        
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
@@ -481,11 +489,24 @@ def get_certificate(request: Request, current_user: Student = Depends(get_curren
         except Exception:
             pass
 
-    # Find fonts
-    font_georgia_bold = find_font(["georgiab.ttf", "DejaVuSerif-Bold.ttf", "LiberationSerif-Bold.ttf", "FreeSerifBold.ttf"], None)
-    font_georgia_italic = find_font(["georgiai.ttf", "DejaVuSerif-Italic.ttf", "LiberationSerif-Italic.ttf", "FreeSerifItalic.ttf"], None)
-    font_arial = find_font(["arial.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf", "FreeSans.ttf"], None)
-    font_arial_bold = find_font(["arialbd.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "FreeSansBold.ttf"], None)
+    # Find fonts relative to the codebase first, fallback to system search
+    font_dir = os.path.join(backend_dir, "fonts")
+    
+    font_georgia_bold = os.path.join(font_dir, "georgiab.ttf")
+    if not os.path.exists(font_georgia_bold):
+        font_georgia_bold = find_font(["georgiab.ttf", "DejaVuSerif-Bold.ttf", "LiberationSerif-Bold.ttf", "FreeSerifBold.ttf"], None)
+        
+    font_georgia_italic = os.path.join(font_dir, "georgiai.ttf")
+    if not os.path.exists(font_georgia_italic):
+        font_georgia_italic = find_font(["georgiai.ttf", "DejaVuSerif-Italic.ttf", "LiberationSerif-Italic.ttf", "FreeSerifItalic.ttf"], None)
+        
+    font_arial = os.path.join(font_dir, "arial.ttf")
+    if not os.path.exists(font_arial):
+        font_arial = find_font(["arial.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf", "FreeSans.ttf"], None)
+        
+    font_arial_bold = os.path.join(font_dir, "arialbd.ttf")
+    if not os.path.exists(font_arial_bold):
+        font_arial_bold = find_font(["arialbd.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "FreeSansBold.ttf"], None)
 
     def get_font(path, size):
         if path is None:
