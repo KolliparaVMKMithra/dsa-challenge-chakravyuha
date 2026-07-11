@@ -897,11 +897,11 @@ def export_feedback(current_admin: Student = Depends(get_current_super_admin), d
     
     headers = [
         "Roll Number", "Full Name", "Email", "Branch", "Year",
-        "Q1: DSA Difficulty", "Q2: Clarity", "Q3: Time Spent", "Q4: Solving Mode",
-        "Q5: AI Prompting Used", "Q6: AI Effectiveness", "Q7: Helpful Prompt Types",
-        "Q8: Prompting Challenges", "Q9: Concept Understanding", "Q10: Platform Rating",
-        "Q11: Attendance Scanning", "Q12: CodeChef Interest", "Q13: Future Topics",
-        "Q14: Advanced Prompting Request", "Q15: General Feedback", "Submitted At"
+        "Q1: Overall Event Rating", "Q2: Liked Event Structure", "Q3: Met Expectations", "Q4: Learned Anything New",
+        "Q5: Improved Coding Confidence", "Q6: DSA Concept Understanding", "Q7: Practical Application Helpfulness",
+        "Q8: Most Understood DSA Concepts", "Q9: AI Prompting Helpfulness", "Q10: Platform Experience Rating",
+        "Q11: Problem Statement Clarity", "Q12: Future Attendance Likelihood", "Q13: Favorite Event Aspects",
+        "Q14: Recommend to Peers", "Q15: Coordinator Suggestions", "Submitted At"
     ]
     ws.append([]) # blank row 2
     ws.append(headers) # Row 3

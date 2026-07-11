@@ -1958,10 +1958,10 @@ export default function SuperAdminPage() {
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-[#d4af37]" />
-                Warrior Insights & Prompting Feedback ({feedbacks.length} Responses)
+                Warrior Insights & Event Feedback ({feedbacks.length} Responses)
               </h3>
               <p className="text-[10px] text-zinc-500">
-                Track how students evaluate daily DSA challenge difficulty, generative AI tools, and prompting strategies.
+                Track how students evaluate overall event satisfaction, DSA concepts learning, and platform usability.
               </p>
             </div>
             
@@ -2013,19 +2013,23 @@ export default function SuperAdminPage() {
 
                       <div className="flex flex-wrap items-center gap-4 text-[10px] uppercase font-bold tracking-wider text-zinc-400">
                         <div className="flex items-center gap-1">
-                          <span>Difficulty:</span>
-                          <span className="text-amber-400">{fb.q1_dsa_difficulty}/5 ⭐</span>
+                          <span>Overall Event:</span>
+                          <span className="text-[#d4af37] font-bold">{fb.q1_dsa_difficulty || 0}/5 ⭐</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>DSA Learning:</span>
+                          <span className="text-[#d4af37] font-bold">{fb.q6_prompting_effectiveness || 0}/5 ⭐</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span>AI Help:</span>
-                          <span className="text-sky-400">{fb.q6_prompting_effectiveness}/5 ⭐</span>
+                          <span className="text-[#d4af37] font-bold">{fb.q9_concept_understanding || 0}/5 ⭐</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span>Platform:</span>
-                          <span className="text-emerald-450">{fb.q10_platform_rating}/5 ⭐</span>
+                          <span className="text-[#d4af37] font-bold">{fb.q10_platform_rating || 0}/5 ⭐</span>
                         </div>
                         <div className="text-[10px] text-zinc-500 font-mono font-normal">
-                          {new Date(fb.submitted_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                          {fb.submitted_at ? new Date(fb.submitted_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -2035,15 +2039,15 @@ export default function SuperAdminPage() {
                       <div className="border-t border-zinc-900 p-6 bg-zinc-950/60 text-xs space-y-6 animate-slide-down">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           
-                          {/* DSA section */}
+                          {/* Event Experience section */}
                           <div className="space-y-4">
                             <h4 className="font-bold text-[#c5a059] uppercase tracking-wide text-[10px] border-b border-zinc-900 pb-1.5 flex items-center gap-1.5">
                               <Terminal className="h-4 w-4" />
-                              DSA Challenge Feedback
+                              Section 1: Event Experience & Satisfaction
                             </h4>
                             
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">1. DSA Difficulty Rating:</p>
+                              <p className="text-zinc-500 font-medium">1. Overall Event Rating:</p>
                               <div className="text-white font-semibold flex items-center gap-1">
                                 {fb.q1_dsa_difficulty}/5 
                                 <div className="flex gap-0.5">
@@ -2060,35 +2064,35 @@ export default function SuperAdminPage() {
                             </div>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">2. Problem Statement Clarity:</p>
+                              <p className="text-zinc-500 font-medium">2. Liked Event Structure & Execution:</p>
                               <p className="text-white font-semibold">{fb.q2_dsa_clarity}</p>
                             </div>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">3. Time Spent Solving:</p>
+                              <p className="text-zinc-500 font-medium">3. Met Expectations:</p>
                               <p className="text-white font-semibold">{fb.q3_time_spent}</p>
                             </div>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">4. Solving Mode:</p>
+                              <p className="text-zinc-500 font-medium">4. Learned Anything New:</p>
                               <p className="text-white font-semibold">{fb.q4_solving_mode}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">5. Improved Coding Confidence:</p>
+                              <p className="text-white font-semibold">{fb.q5_prompting_used}</p>
                             </div>
                           </div>
 
-                          {/* AI Prompting section */}
+                          {/* DSA Concepts & AI section */}
                           <div className="space-y-4">
                             <h4 className="font-bold text-[#c5a059] uppercase tracking-wide text-[10px] border-b border-zinc-900 pb-1.5 flex items-center gap-1.5">
                               <Terminal className="h-4 w-4" />
-                              Generative AI & Prompting
+                              Section 2: DSA Concepts & AI Assistance
                             </h4>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">5. GenAI Tool Usage:</p>
-                              <p className="text-white font-semibold">{fb.q5_prompting_used}</p>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">6. AI Prompting Effectiveness:</p>
+                              <p className="text-zinc-500 font-medium">6. DSA Concept Understanding Rating:</p>
                               <div className="text-white font-semibold flex items-center gap-1">
                                 {fb.q6_prompting_effectiveness}/5 
                                 <div className="flex gap-0.5">
@@ -2105,12 +2109,12 @@ export default function SuperAdminPage() {
                             </div>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">7. Most Helpful Prompt Types:</p>
+                              <p className="text-zinc-500 font-medium">7. Helpful in Practical DSA Applications:</p>
                               <p className="text-white font-semibold">{fb.q7_prompt_type}</p>
                             </div>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">9. Post-Solve Concept Understanding:</p>
+                              <p className="text-zinc-500 font-medium">9. AI Prompting Helpfulness:</p>
                               <div className="text-white font-semibold flex items-center gap-1">
                                 {fb.q9_concept_understanding}/5 
                                 <div className="flex gap-0.5">
@@ -2129,23 +2133,23 @@ export default function SuperAdminPage() {
 
                         </div>
 
-                        {/* Text Fields & General feedback */}
+                        {/* Open Ended & Future Section */}
                         <div className="space-y-4 pt-4 border-t border-zinc-900">
                           <h4 className="font-bold text-[#c5a059] uppercase tracking-wide text-[10px] border-b border-zinc-900 pb-1.5 flex items-center gap-1.5">
                             <Terminal className="h-4 w-4" />
-                            Open Responses & Future Directions
+                            Section 3: Open Responses & Future Outreach
                           </h4>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">8. Biggest AI Prompting Challenge:</p>
+                              <p className="text-zinc-500 font-medium">8. Most Understood DSA Concepts Today:</p>
                               <div className="bg-zinc-900/60 border border-zinc-900 rounded p-3 text-zinc-300 select-all font-mono leading-relaxed">
                                 {fb.q8_prompt_challenge}
                               </div>
                             </div>
 
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">13. Requested Future DSA Topics:</p>
+                              <p className="text-zinc-500 font-medium">13. Favorite Event Aspects:</p>
                               <div className="bg-zinc-900/60 border border-zinc-900 rounded p-3 text-zinc-300 select-all font-mono leading-relaxed">
                                 {fb.q13_future_topics}
                               </div>
@@ -2154,7 +2158,7 @@ export default function SuperAdminPage() {
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                              <p className="text-zinc-500 font-medium">15. General Suggestions for Coordinators:</p>
+                              <p className="text-zinc-500 font-medium">15. General Suggestions to Coordinators:</p>
                               <div className="bg-zinc-900/60 border border-zinc-900 rounded p-3 text-zinc-300 select-all font-mono leading-relaxed">
                                 {fb.q15_general_feedback}
                               </div>
@@ -2162,7 +2166,7 @@ export default function SuperAdminPage() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <p className="text-zinc-500 font-medium">10. Platform Rating:</p>
+                                <p className="text-zinc-500 font-medium">10. Platform Experience Rating:</p>
                                 <div className="text-white font-semibold flex items-center gap-1">
                                   {fb.q10_platform_rating}/5 
                                   <div className="flex gap-0.5">
@@ -2179,7 +2183,7 @@ export default function SuperAdminPage() {
                               </div>
 
                               <div className="space-y-2">
-                                <p className="text-zinc-500 font-medium">12. CodeChef Contest Interest:</p>
+                                <p className="text-zinc-500 font-medium">12. Future Events Attendance Likelihood:</p>
                                 <div className="text-white font-semibold flex items-center gap-1">
                                   {fb.q12_codechef_interest}/5 
                                   <div className="flex gap-0.5">
@@ -2196,12 +2200,12 @@ export default function SuperAdminPage() {
                               </div>
 
                               <div className="space-y-2">
-                                <p className="text-zinc-500 font-medium">11. QR Scan Experience:</p>
+                                <p className="text-zinc-500 font-medium">11. Problem Statement Clarity:</p>
                                 <p className="text-white font-semibold">{fb.q11_attendance_experience}</p>
                               </div>
 
                               <div className="space-y-2">
-                                <p className="text-zinc-500 font-medium">14. Advanced Prompting Interest:</p>
+                                <p className="text-zinc-500 font-medium">14. Recommend to Peers:</p>
                                 <p className="text-white font-semibold">{fb.q14_prompting_improvement}</p>
                               </div>
                             </div>

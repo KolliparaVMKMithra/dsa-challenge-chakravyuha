@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import { apiRequest, getAuthToken, getUserType } from '@/utils/api';
-import { Star, Send, ShieldAlert, Award, ClipboardCheck, Terminal, AlertCircle } from 'lucide-react';
+import { Star, Send, Award, ClipboardCheck, Terminal, AlertCircle } from 'lucide-react';
 
 interface QuestionOption {
   value: string;
@@ -199,7 +199,7 @@ export default function FeedbackPage() {
             <Award className="mx-auto h-12 w-12 text-[#d4af37] mb-4 animate-bounce" />
             <h2 className="text-lg font-serif font-bold text-white mb-2 uppercase tracking-wide">Feedback Logged!</h2>
             <p className="text-xs text-zinc-400 mb-6">
-              Thank you, warrior! You have already submitted your feedback for today's challenge. Your insights have been securely saved to the scrolls.
+              Thank you, warrior! You have already submitted your feedback for today's challenge. Your insights have been securely saved to the database.
             </p>
             <button
               onClick={() => router.push('/dashboard')}
@@ -223,10 +223,10 @@ export default function FeedbackPage() {
         <div className="rounded-lg border border-[#8c7030]/25 bg-gradient-to-r from-[#8c7030]/10 to-zinc-950/80 p-6 mb-8 glass-panel shadow-md">
           <div className="flex items-center gap-3.5 mb-2">
             <ClipboardCheck className="h-6 w-6 text-[#d4af37]" />
-            <h1 className="text-xl font-serif font-bold text-white uppercase tracking-wide">Daily Challenge Feedback</h1>
+            <h1 className="text-xl font-serif font-bold text-white uppercase tracking-wide">Daily Challenge & Event Feedback</h1>
           </div>
           <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-            Warrior, your insights are invaluable. Please answer these 15 questions regarding today's DSA challenge and your AI prompting experience. Your response will guide the path of future challenges.
+            Warrior, your insights help us build better events! Please take a few moments to answer these 15 questions regarding today's DSA challenge, AI prompting assistance, and event coordination.
           </p>
           {profile && (
             <div className="flex flex-wrap gap-4 border-t border-zinc-900 pt-4 text-xs font-semibold text-zinc-500">
@@ -267,17 +267,17 @@ export default function FeedbackPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* Section 1: DSA Challenge */}
+            {/* Section 1: Event Experience */}
             <div className="rounded-lg border border-zinc-900 bg-zinc-950/45 p-6 space-y-6">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] border-b border-zinc-900 pb-2 flex items-center gap-2">
                 <Terminal className="h-4.5 w-4.5" />
-                Section 1: Daily DSA Challenge Details
+                Section 1: Event Experience & Satisfaction
               </h3>
 
               {/* Q1 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  1. How would you rate the difficulty of today's DSA challenge?
+                  1. How would you rate today's overall event?
                 </label>
                 {renderStars(q1, setQ1)}
               </div>
@@ -285,64 +285,63 @@ export default function FeedbackPage() {
               {/* Q2 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  2. Was the problem statement clear and easy to understand?
+                  2. Did you like the event structure and execution?
                 </label>
                 {renderRadio(q2, setQ2, [
-                  { value: 'Yes', label: 'Yes, very clear' },
+                  { value: 'Yes, loved it', label: 'Yes, loved it' },
                   { value: 'Neutral', label: 'Neutral / Average' },
-                  { value: 'No', label: 'No, it was confusing' }
+                  { value: 'No, disliked it', label: 'No, disliked it' }
                 ])}
               </div>
 
               {/* Q3 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  3. How much time did you spend solving today's challenge?
+                  3. Did today's challenge meet your expectations?
                 </label>
                 {renderRadio(q3, setQ3, [
-                  { value: 'Under 30 mins', label: 'Less than 30 minutes' },
-                  { value: '30-60 mins', label: '30 to 60 minutes' },
-                  { value: '1-2 hours', label: '1 to 2 hours' },
-                  { value: 'Over 2 hours', label: 'More than 2 hours' }
+                  { value: 'Yes, fully', label: 'Yes, fully' },
+                  { value: 'Partially', label: 'Partially' },
+                  { value: 'No, not at all', label: 'No, not at all' }
                 ])}
               </div>
 
               {/* Q4 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  4. Did you solve the problem individually or collaborate with others?
+                  4. Did you learn anything new from today's challenge?
                 </label>
                 {renderRadio(q4, setQ4, [
-                  { value: 'Individually', label: 'Solved Individually' },
-                  { value: 'Collaborated', label: 'Collaborated with peer(s)' },
-                  { value: 'Did not solve', label: 'Did not manage to solve' }
+                  { value: 'Yes, a lot', label: 'Yes, a lot' },
+                  { value: 'Yes, a little', label: 'Yes, a little' },
+                  { value: 'No, not really', label: 'No, not really' }
                 ])}
               </div>
-            </div>
-
-            {/* Section 2: AI Prompting */}
-            <div className="rounded-lg border border-zinc-900 bg-zinc-950/45 p-6 space-y-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] border-b border-zinc-900 pb-2 flex items-center gap-2">
-                <Terminal className="h-4.5 w-4.5" />
-                Section 2: Generative AI & Prompting Insights
-              </h3>
 
               {/* Q5 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  5. Did you use any generative AI tools (ChatGPT, Gemini, Claude, etc.) to help you solve the problem?
+                  5. Did this event help you improve your coding confidence?
                 </label>
                 {renderRadio(q5, setQ5, [
-                  { value: 'Significant help', label: 'Yes, for complete coding help' },
-                  { value: 'Minor help', label: 'Yes, for hints / syntax check' },
-                  { value: 'No help', label: 'No, solved completely on my own' }
+                  { value: 'Yes, significantly', label: 'Yes, significantly' },
+                  { value: 'Somewhat', label: 'Somewhat / Moderately' },
+                  { value: 'No', label: 'No, not at all' }
                 ])}
               </div>
+            </div>
+
+            {/* Section 2: DSA Concepts & Learning */}
+            <div className="rounded-lg border border-zinc-900 bg-zinc-950/45 p-6 space-y-6">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] border-b border-zinc-900 pb-2 flex items-center gap-2">
+                <Terminal className="h-4.5 w-4.5" />
+                Section 2: DSA Understanding & AI Assistance
+              </h3>
 
               {/* Q6 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  6. How effective was AI prompting in helping you understand/solve the DSA problem?
+                  6. How would you rate your understanding of today's DSA concepts?
                 </label>
                 {renderStars(q6, setQ6)}
               </div>
@@ -350,26 +349,25 @@ export default function FeedbackPage() {
               {/* Q7 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  7. What kind of prompts were most helpful?
+                  7. How helpful was the event in understanding practical applications of DSA?
                 </label>
                 {renderRadio(q7, setQ7, [
-                  { value: 'Explaining code logic', label: 'Explaining code logic' },
-                  { value: 'Finding syntax errors', label: 'Syntax checks / debugging' },
-                  { value: 'Optimizing time/space complexity', label: 'Performance optimization' },
-                  { value: 'Generating hints', label: 'Getting logic hints/clues' }
+                  { value: 'Very helpful', label: 'Very helpful' },
+                  { value: 'Somewhat helpful', label: 'Somewhat helpful' },
+                  { value: 'Not helpful', label: 'Not helpful' }
                 ])}
               </div>
 
               {/* Q8 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  8. What was the biggest challenge you faced when prompting the AI model?
+                  8. What did you learn or understand most about DSA today?
                 </label>
                 <textarea
                   required
                   value={q8}
                   onChange={(e) => setQ8(e.target.value)}
-                  placeholder="Explain any issues like code hallucinations, wrong edge-cases, or difficulty phrasing the prompt..."
+                  placeholder="Explain what concepts, techniques, or logic became clearer to you today..."
                   rows={3}
                   className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3.5 py-3 text-xs text-white focus:border-[#d4af37] focus:outline-none resize-none mt-2 placeholder-zinc-700"
                 />
@@ -378,23 +376,23 @@ export default function FeedbackPage() {
               {/* Q9 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  9. How well do you feel you understand the underlying DSA concept now?
+                  9. How helpful was the AI prompting in solving today's DSA problem?
                 </label>
                 {renderStars(q9, setQ9)}
               </div>
             </div>
 
-            {/* Section 3: Platform & Coordination */}
+            {/* Section 3: Platform & Future Outreach */}
             <div className="rounded-lg border border-zinc-900 bg-zinc-950/45 p-6 space-y-6">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] border-b border-zinc-900 pb-2 flex items-center gap-2">
                 <Terminal className="h-4.5 w-4.5" />
-                Section 3: Platform and Future Expectations
+                Section 3: Platform Experience & Future Events
               </h3>
 
               {/* Q10 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  10. How would you rate the overall platform experience (submitting solutions, directory, leaderboard)?
+                  10. How would you rate the overall platform experience (submitting solutions, leaderboard)?
                 </label>
                 {renderStars(q10, setQ10)}
               </div>
@@ -402,19 +400,19 @@ export default function FeedbackPage() {
               {/* Q11 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  11. Was the QR attendance scanning smooth and fast?
+                  11. Did you find the problem statement clear and well-guided?
                 </label>
                 {renderRadio(q11, setQ11, [
-                  { value: 'Yes', label: 'Yes, very smooth' },
-                  { value: 'No', label: 'No, there were delays' },
-                  { value: 'N/A', label: 'Not applicable (Did not attend scan)' }
+                  { value: 'Yes, very clear', label: 'Yes, very clear' },
+                  { value: 'Average', label: 'Average / Neutral' },
+                  { value: 'No, confusing', label: 'No, confusing' }
                 ])}
               </div>
 
               {/* Q12 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  12. How would you rate your interest in the weekly CodeChef contests?
+                  12. How likely are you to attend future Chakravyuha events?
                 </label>
                 {renderStars(q12, setQ12)}
               </div>
@@ -422,13 +420,13 @@ export default function FeedbackPage() {
               {/* Q13 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  13. What DSA topics would you like to see in future sessions?
+                  13. What did you like the most about today's event?
                 </label>
                 <textarea
                   required
                   value={q13}
                   onChange={(e) => setQ13(e.target.value)}
-                  placeholder="e.g. Dynamic Programming, Graphs, Advanced Trees, Segment Trees..."
+                  placeholder="Tell us about your favorite parts of the session, the environment, support, or challenge..."
                   rows={3}
                   className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3.5 py-3 text-xs text-white focus:border-[#d4af37] focus:outline-none resize-none mt-2 placeholder-zinc-700"
                 />
@@ -437,25 +435,25 @@ export default function FeedbackPage() {
               {/* Q14 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  14. Would you like more sessions on advanced AI prompting techniques?
+                  14. Would you recommend this event format to your peers?
                 </label>
                 {renderRadio(q14, setQ14, [
-                  { value: 'Definitely', label: 'Yes, definitely interested' },
-                  { value: 'Maybe', label: 'Maybe / Depends' },
-                  { value: 'No', label: 'No, not needed' }
+                  { value: 'Definitely', label: 'Definitely' },
+                  { value: 'Maybe', label: 'Maybe' },
+                  { value: 'No', label: 'No' }
                 ])}
               </div>
 
               {/* Q15 */}
               <div>
                 <label className="block text-xs font-medium text-zinc-300">
-                  15. Any other suggestions or general feedback for the Chakravyuha club coordinators?
+                  15. Any other suggestions or general feedback to improve future events?
                 </label>
                 <textarea
                   required
                   value={q15}
                   onChange={(e) => setQ15(e.target.value)}
-                  placeholder="Share any other thoughts, suggestions, or comments here..."
+                  placeholder="Share any other thoughts, criticisms, or suggestions for the coordinators..."
                   rows={3}
                   className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3.5 py-3 text-xs text-white focus:border-[#d4af37] focus:outline-none resize-none mt-2 placeholder-zinc-700"
                 />
