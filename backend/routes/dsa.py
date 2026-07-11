@@ -539,8 +539,18 @@ def get_certificate(request: Request, current_user: Student = Depends(get_curren
     draw.text((width // 2, 850), "YUKTI - DSA & Prompt Engineering Challenge", fill=gold_primary, font=f_event_name, anchor="mm")
     draw.text((width // 2, 930), "held on 11/07/2026.", fill=(200, 200, 200), font=f_date, anchor="mm")
     
-    # QR Code
-    verify_url = f"{request.base_url}verify/{current_user.id}"
+    # Determine the frontend base url dynamically
+    host = request.headers.get("host", "")
+    referer = request.headers.get("referer", "")
+    
+    # Default to production frontend url (as seen in browser screenshots: chakravyuha-avv.tech)
+    frontend_base = "https://chakravyuha-avv.tech/"
+    
+    # If request is from localhost/127.0.0.1, use local frontend url (localhost:3000)
+    if "localhost" in host or "127.0.0.1" in host or "localhost" in referer or "127.0.0.1" in referer:
+        frontend_base = "http://localhost:3000/"
+        
+    verify_url = f"{frontend_base}verify/{current_user.id}"
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
