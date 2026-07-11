@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header';
 import { apiRequest, getAuthToken, getUserType } from '@/utils/api';
 import { Star, Send, Award, ClipboardCheck, Terminal, AlertCircle } from 'lucide-react';
 
@@ -179,7 +178,6 @@ export default function FeedbackPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-black text-white">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-2 border-[#d4af37] border-t-transparent mx-auto mb-4" />
@@ -193,7 +191,6 @@ export default function FeedbackPage() {
   if (feedbackStatus?.submitted) {
     return (
       <div className="flex min-h-screen flex-col bg-black text-white">
-        <Header />
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-8 text-center shadow-lg glass-panel text-zinc-300">
             <Award className="mx-auto h-12 w-12 text-[#d4af37] mb-4 animate-bounce" />
@@ -215,8 +212,6 @@ export default function FeedbackPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-black text-white">
-      <Header />
-      
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
         
         {/* Banner Card */}

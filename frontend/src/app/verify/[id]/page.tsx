@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Header from '@/components/Header';
 import { apiRequest } from '@/utils/api';
 import { CheckCircle2, XCircle, Award, ShieldCheck, Calendar, GraduationCap, Building2 } from 'lucide-react';
 
@@ -33,8 +32,6 @@ export default function VerificationPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-black text-white">
-      <Header />
-      
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-xl">
           
