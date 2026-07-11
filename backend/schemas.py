@@ -179,3 +179,28 @@ class ScanAdminResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class FeedbackCreate(BaseModel):
+    q1_dsa_difficulty: int = Field(..., ge=1, le=5)
+    q2_dsa_clarity: str = Field(..., min_length=1)
+    q3_time_spent: str = Field(..., min_length=1)
+    q4_solving_mode: str = Field(..., min_length=1)
+    q5_prompting_used: str = Field(..., min_length=1)
+    q6_prompting_effectiveness: int = Field(..., ge=1, le=5)
+    q7_prompt_type: str = Field(..., min_length=1)
+    q8_prompt_challenge: str = Field(..., min_length=1)
+    q9_concept_understanding: int = Field(..., ge=1, le=5)
+    q10_platform_rating: int = Field(..., ge=1, le=5)
+    q11_attendance_experience: str = Field(..., min_length=1)
+    q12_codechef_interest: int = Field(..., ge=1, le=5)
+    q13_future_topics: str = Field(..., min_length=1)
+    q14_prompting_improvement: str = Field(..., min_length=1)
+    q15_general_feedback: str = Field(..., min_length=1)
+
+class FeedbackResponse(FeedbackCreate):
+    id: int
+    student_id: str
+    submitted_at: datetime.datetime
+
+    class Config:
+        from_attributes = True

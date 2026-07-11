@@ -11,7 +11,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback
 from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
@@ -842,3 +842,138 @@ def delete_student(student_id: str, current_admin: Student = Depends(get_current
     db.delete(student)
     db.commit()
     return {"detail": "Student and all their associated records deleted successfully."}
+
+# ----------------- FEEDBACK MANAGEMENT -----------------
+
+@router.get("/feedback")
+def get_all_feedback(current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Lists all student feedback submissions (Super Admin only)."""
+    feedbacks = db.query(Feedback).join(Student, Feedback.student_id == Student.id).order_by(Feedback.submitted_at.desc()).all()
+    result = []
+    for f in feedbacks:
+        result.append({
+            "id": f.id,
+            "student_id": f.student_id,
+            "student_name": f.student.full_name,
+            "student_roll": f.student.roll_number,
+            "student_email": f.student.college_email,
+            "student_branch": f.student.branch,
+            "student_year": f.student.year,
+            "q1_dsa_difficulty": f.q1_dsa_difficulty,
+            "q2_dsa_clarity": f.q2_dsa_clarity,
+            "q3_time_spent": f.q3_time_spent,
+            "q4_solving_mode": f.q4_solving_mode,
+            "q5_prompting_used": f.q5_prompting_used,
+            "q6_prompting_effectiveness": f.q6_prompting_effectiveness,
+            "q7_prompt_type": f.q7_prompt_type,
+            "q8_prompt_challenge": f.q8_prompt_challenge,
+            "q9_concept_understanding": f.q9_concept_understanding,
+            "q10_platform_rating": f.q10_platform_rating,
+            "q11_attendance_experience": f.q11_attendance_experience,
+            "q12_codechef_interest": f.q12_codechef_interest,
+            "q13_future_topics": f.q13_future_topics,
+            "q14_prompting_improvement": f.q14_prompting_improvement,
+            "q15_general_feedback": f.q15_general_feedback,
+            "submitted_at": f.submitted_at.isoformat() + "Z"
+        })
+    return result
+
+@router.get("/feedback/export")
+def export_feedback(current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Exports all student feedback submissions to an Excel sheet (Super Admin only)."""
+    feedbacks = db.query(Feedback).join(Student, Feedback.student_id == Student.id).order_by(Student.roll_number).all()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Student Feedback"
+    
+    # Title Banner
+    ws.merge_cells("A1:U1")
+    ws["A1"] = "Chakravyuha DSA Challenge & Prompting - Student Feedback Report"
+    ws["A1"].font = Font(name="Calibri", size=16, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="8C7030", end_color="8C7030", fill_type="solid")
+    ws.row_dimensions[1].height = 40
+    
+    headers = [
+        "Roll Number", "Full Name", "Email", "Branch", "Year",
+        "Q1: DSA Difficulty", "Q2: Clarity", "Q3: Time Spent", "Q4: Solving Mode",
+        "Q5: AI Prompting Used", "Q6: AI Effectiveness", "Q7: Helpful Prompt Types",
+        "Q8: Prompting Challenges", "Q9: Concept Understanding", "Q10: Platform Rating",
+        "Q11: Attendance Scanning", "Q12: CodeChef Interest", "Q13: Future Topics",
+        "Q14: Advanced Prompting Request", "Q15: General Feedback", "Submitted At"
+    ]
+    ws.append([]) # blank row 2
+    ws.append(headers) # Row 3
+    
+    header_fill = PatternFill(start_color="2A2A2A", end_color="2A2A2A", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style='thin', color='DDDDDD'),
+        right=Side(style='thin', color='DDDDDD'),
+        top=Side(style='thin', color='DDDDDD'),
+        bottom=Side(style='thin', color='DDDDDD')
+    )
+    
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+        
+    for f in feedbacks:
+        row_data = [
+            f.student.roll_number,
+            f.student.full_name,
+            f.student.college_email,
+            f.student.branch,
+            f.student.year,
+            f.q1_dsa_difficulty,
+            f.q2_dsa_clarity,
+            f.q3_time_spent,
+            f.q4_solving_mode,
+            f.q5_prompting_used,
+            f.q6_prompting_effectiveness,
+            f.q7_prompt_type,
+            f.q8_prompt_challenge,
+            f.q9_concept_understanding,
+            f.q10_platform_rating,
+            f.q11_attendance_experience,
+            f.q12_codechef_interest,
+            f.q13_future_topics,
+            f.q14_prompting_improvement,
+            f.q15_general_feedback,
+            f.submitted_at.strftime("%d-%m-%Y %I:%M %p")
+        ]
+        ws.append(row_data)
+        
+    for row in range(4, ws.max_row + 1):
+        row_fill = PatternFill(start_color="F9F9F9" if row % 2 == 0 else "FFFFFF", fill_type="solid")
+        for col in range(1, 22):
+            cell = ws.cell(row=row, column=col)
+            cell.fill = row_fill
+            cell.border = thin_border
+            if col in [1, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17, 19, 21]:
+                cell.alignment = Alignment(horizontal="center")
+                
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+        
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=student_feedback_report.xlsx"}
+    )

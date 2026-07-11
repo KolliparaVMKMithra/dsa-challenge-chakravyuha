@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BarChart3, Users, FolderKanban, Megaphone, Search, Filter, Download, Plus, Pencil, Trash2, Calendar, RefreshCw, Send, Check, X, ShieldAlert, ArrowUpRight, Clock, Award, CheckCircle, Lock, User, AlertCircle } from 'lucide-react';
+import { ShieldCheck, BarChart3, Users, FolderKanban, Megaphone, Search, Filter, Download, Plus, Pencil, Trash2, Calendar, RefreshCw, Send, Check, X, ShieldAlert, ArrowUpRight, Clock, Award, CheckCircle, Lock, User, AlertCircle, MessageSquare } from 'lucide-react';
 import { apiRequest, getAuthToken, getUserType, clearAuth, setAuthToken } from '@/utils/api';
 
 interface StudentSummary {
@@ -94,7 +94,10 @@ export default function SuperAdminPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'directory' | 'problems' | 'broadcast' | 'scan_admins'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'directory' | 'problems' | 'broadcast' | 'scan_admins' | 'super_admins' | 'leaderboard' | 'feedback'>('analytics');
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbacksLoading, setFeedbacksLoading] = useState(false);
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<number | null>(null);
   
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -319,6 +322,8 @@ export default function SuperAdminPage() {
       fetchLeaderboard();
     } else if (activeTab === 'broadcast') {
       fetchBroadcasterStudents();
+    } else if (activeTab === 'feedback') {
+      fetchFeedbacks();
     }
   }, [activeTab, isAdmin, searchQuery, selectedBranch, selectedYear]);
 
@@ -354,10 +359,36 @@ export default function SuperAdminPage() {
     try {
       const data = await apiRequest('/api/admin/students');
       setBroadcasterStudents(data);
-    } catch (e) {
-      console.error(e);
     } finally {
       setBroadcasterLoading(false);
+    }
+  };
+
+  const fetchFeedbacks = async () => {
+    setFeedbacksLoading(true);
+    try {
+      const data = await apiRequest('/api/admin/feedback');
+      setFeedbacks(data);
+    } catch (err) {
+      console.error('Failed to fetch feedbacks:', err);
+    } finally {
+      setFeedbacksLoading(false);
+    }
+  };
+
+  const handleExportFeedback = async () => {
+    try {
+      const blob = await apiRequest('/api/admin/feedback/export');
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `student_feedback_report.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export feedback.');
     }
   };
 
@@ -759,6 +790,15 @@ export default function SuperAdminPage() {
         >
           <Megaphone className="h-4 w-4" />
           Broadcaster
+        </button>
+        <button
+          onClick={() => setActiveTab('feedback')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold uppercase tracking-wider rounded transition-colors whitespace-nowrap ${
+            activeTab === 'feedback' ? 'bg-[#d4af37] text-black' : 'text-zinc-400 hover:text-white'
+          }`}
+        >
+          <MessageSquare className="h-4 w-4" />
+          Feedback
         </button>
       </div>
 
@@ -1907,6 +1947,238 @@ export default function SuperAdminPage() {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* 8. FEEDBACK TAB */}
+      {activeTab === 'feedback' && (
+        <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel animate-fade-in space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-900 pb-4">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-[#d4af37]" />
+                Warrior Insights & Prompting Feedback ({feedbacks.length} Responses)
+              </h3>
+              <p className="text-[10px] text-zinc-500">
+                Track how students evaluate daily DSA challenge difficulty, generative AI tools, and prompting strategies.
+              </p>
+            </div>
+            
+            <button
+              onClick={handleExportFeedback}
+              className="flex items-center justify-center gap-2 rounded border border-[#d4af37] bg-[#d4af37] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black transition-colors hover:bg-[#f6e05e]"
+            >
+              <Download className="h-4 w-4" />
+              Export Feedback Excel
+            </button>
+          </div>
+
+          {feedbacksLoading ? (
+            <div className="text-center py-12">
+              <RefreshCw className="mx-auto h-8 w-8 text-[#d4af37] animate-spin mb-2" />
+              <span className="text-xs text-zinc-550 uppercase tracking-wider">Loading Feedback Responses...</span>
+            </div>
+          ) : feedbacks.length === 0 ? (
+            <div className="text-center py-12 text-zinc-550 text-xs">
+              No student feedbacks submitted yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {feedbacks.map((fb) => {
+                const isExpanded = expandedFeedbackId === fb.id;
+                return (
+                  <div 
+                    key={fb.id} 
+                    className={`rounded-lg border transition-all ${
+                      isExpanded ? 'border-[#d4af37]/65 bg-zinc-900/40' : 'border-zinc-900 bg-zinc-950/40 hover:border-zinc-800'
+                    }`}
+                  >
+                    {/* Summary Header */}
+                    <div 
+                      onClick={() => setExpandedFeedbackId(isExpanded ? null : fb.id)}
+                      className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-sm font-semibold text-white">{fb.student_name}</span>
+                          <span className="text-xs text-[#d4af37] font-mono font-bold bg-[#d4af37]/5 px-2 py-0.5 rounded border border-[#d4af37]/15">
+                            {fb.student_roll}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-zinc-500">
+                          {fb.student_email} • {fb.student_branch} - Yr {fb.student_year}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 text-[10px] uppercase font-bold tracking-wider text-zinc-400">
+                        <div className="flex items-center gap-1">
+                          <span>Difficulty:</span>
+                          <span className="text-amber-400">{fb.q1_dsa_difficulty}/5 ⭐</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>AI Help:</span>
+                          <span className="text-sky-400">{fb.q6_prompting_effectiveness}/5 ⭐</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>Platform:</span>
+                          <span className="text-emerald-450">{fb.q10_platform_rating}/5 ⭐</span>
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-mono font-normal">
+                          {new Date(fb.submitted_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Accordion Content */}
+                    {isExpanded && (
+                      <div className="border-t border-zinc-900 p-6 bg-zinc-950/60 text-xs space-y-6 animate-slide-down">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          
+                          {/* DSA section */}
+                          <div className="space-y-4">
+                            <h4 className="font-bold text-[#c5a059] uppercase tracking-wide text-[10px] border-b border-zinc-900 pb-1.5 flex items-center gap-1.5">
+                              <Terminal className="h-4 w-4" />
+                              DSA Challenge Feedback
+                            </h4>
+                            
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">1. DSA Difficulty Rating:</p>
+                              <div className="text-white font-semibold flex items-center gap-1">
+                                {fb.q1_dsa_difficulty}/5 
+                                <div className="flex gap-0.5">
+                                  {[...Array(fb.q1_dsa_difficulty)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">2. Problem Statement Clarity:</p>
+                              <p className="text-white font-semibold">{fb.q2_dsa_clarity}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">3. Time Spent Solving:</p>
+                              <p className="text-white font-semibold">{fb.q3_time_spent}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">4. Solving Mode:</p>
+                              <p className="text-white font-semibold">{fb.q4_solving_mode}</p>
+                            </div>
+                          </div>
+
+                          {/* AI Prompting section */}
+                          <div className="space-y-4">
+                            <h4 className="font-bold text-[#c5a059] uppercase tracking-wide text-[10px] border-b border-zinc-900 pb-1.5 flex items-center gap-1.5">
+                              <Terminal className="h-4 w-4" />
+                              Generative AI & Prompting
+                            </h4>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">5. GenAI Tool Usage:</p>
+                              <p className="text-white font-semibold">{fb.q5_prompting_used}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">6. AI Prompting Effectiveness:</p>
+                              <div className="text-white font-semibold flex items-center gap-1">
+                                {fb.q6_prompting_effectiveness}/5 
+                                <div className="flex gap-0.5">
+                                  {[...Array(fb.q6_prompting_effectiveness)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">7. Most Helpful Prompt Types:</p>
+                              <p className="text-white font-semibold">{fb.q7_prompt_type}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">9. Post-Solve Concept Understanding:</p>
+                              <div className="text-white font-semibold flex items-center gap-1">
+                                {fb.q9_concept_understanding}/5 
+                                <div className="flex gap-0.5">
+                                  {[...Array(fb.q9_concept_understanding)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+
+                        {/* Text Fields & General feedback */}
+                        <div className="space-y-4 pt-4 border-t border-zinc-900">
+                          <h4 className="font-bold text-[#c5a059] uppercase tracking-wide text-[10px] border-b border-zinc-900 pb-1.5 flex items-center gap-1.5">
+                            <Terminal className="h-4 w-4" />
+                            Open Responses & Future Directions
+                          </h4>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">8. Biggest AI Prompting Challenge:</p>
+                              <div className="bg-zinc-900/60 border border-zinc-900 rounded p-3 text-zinc-300 select-all font-mono leading-relaxed">
+                                {fb.q8_prompt_challenge}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">13. Requested Future DSA Topics:</p>
+                              <div className="bg-zinc-900/60 border border-zinc-900 rounded p-3 text-zinc-300 select-all font-mono leading-relaxed">
+                                {fb.q13_future_topics}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <p className="text-zinc-500 font-medium">15. General Suggestions for Coordinators:</p>
+                              <div className="bg-zinc-900/60 border border-zinc-900 rounded p-3 text-zinc-300 select-all font-mono leading-relaxed">
+                                {fb.q15_general_feedback}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <p className="text-zinc-500 font-medium">10. Platform Rating:</p>
+                                <div className="text-white font-semibold flex items-center gap-1">
+                                  {fb.q10_platform_rating}/5 
+                                  <div className="flex gap-0.5">
+                                    {[...Array(fb.q10_platform_rating)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <p className="text-zinc-500 font-medium">12. CodeChef Contest Interest:</p>
+                                <div className="text-white font-semibold flex items-center gap-1">
+                                  {fb.q12_codechef_interest}/5 
+                                  <div className="flex gap-0.5">
+                                    {[...Array(fb.q12_codechef_interest)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <p className="text-zinc-500 font-medium">11. QR Scan Experience:</p>
+                                <p className="text-white font-semibold">{fb.q11_attendance_experience}</p>
+                              </div>
+
+                              <div className="space-y-2">
+                                <p className="text-zinc-500 font-medium">14. Advanced Prompting Interest:</p>
+                                <p className="text-white font-semibold">{fb.q14_prompting_improvement}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

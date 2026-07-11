@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base
-from backend.models import Student, Problem, CodeChefContest
+from backend.models import Student, Problem, CodeChefContest, Feedback
 from backend.auth import get_password_hash
 from backend.routes import auth, dsa, admin
 

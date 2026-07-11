@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation
-from backend.schemas import SubmissionCreate, SubmissionResponse, CodeChefParticipationResponse
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback
+from backend.schemas import SubmissionCreate, SubmissionResponse, CodeChefParticipationResponse, FeedbackCreate
 from backend.auth import get_current_active_student, get_current_user
 
 router = APIRouter(prefix="/api/dsa", tags=["dsa"])
@@ -353,3 +353,32 @@ def get_public_student_detail(student_id: str, current_user: Student = Depends(g
             } for s in submissions
         ]
     }
+
+@router.post("/feedback")
+def submit_feedback(fb_data: FeedbackCreate, current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Allows logged-in students to submit their 15-question feedback."""
+    if current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only students can submit feedback.")
+        
+    # Check if already submitted
+    existing = db.query(Feedback).filter(Feedback.student_id == current_user.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="You have already submitted your feedback.")
+        
+    db_feedback = Feedback(
+        student_id=current_user.id,
+        **fb_data.model_dump()
+    )
+    db.add(db_feedback)
+    db.commit()
+    db.refresh(db_feedback)
+    return {"success": True, "detail": "Feedback submitted successfully."}
+
+@router.get("/feedback/status")
+def get_feedback_status(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Checks if the logged-in student has already submitted feedback."""
+    if current_user.is_admin:
+        return {"submitted": False, "is_admin": True}
+        
+    existing = db.query(Feedback).filter(Feedback.student_id == current_user.id).first()
+    return {"submitted": existing is not None, "is_admin": False}

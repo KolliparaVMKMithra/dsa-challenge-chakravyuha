@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Trophy, QrCode, ClipboardList, User, LogOut, ShieldAlert, Sun, Moon } from 'lucide-react';
+import { Menu, X, Trophy, QrCode, ClipboardList, User, LogOut, ShieldAlert, Sun, Moon, MessageSquare } from 'lucide-react';
 import { getAuthToken, getUserType, getUserName, clearAuth } from '@/utils/api';
 
 export default function Header() {
@@ -69,6 +69,7 @@ export default function Header() {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: Trophy, show: isLoggedIn && userType === 'student' },
     { href: '/dsa', label: 'DSA Sheet', icon: ClipboardList, show: isLoggedIn && userType === 'student' },
+    { href: '/feedback', label: 'Feedback', icon: MessageSquare, show: isLoggedIn && userType === 'student' },
     { href: '/admin/scan', label: 'QR Scanner', icon: QrCode, show: isLoggedIn && userType === 'attendance_admin' },
     { href: '/admin/super', label: 'Super Admin', icon: ShieldAlert, show: isLoggedIn && userType === 'super_admin' },
   ];

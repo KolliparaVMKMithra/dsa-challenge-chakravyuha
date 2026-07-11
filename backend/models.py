@@ -96,3 +96,30 @@ class CodeChefParticipation(Base):
 
     student = relationship("Student", back_populates="codechef_participations")
     contest = relationship("CodeChefContest", back_populates="participations")
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, unique=True)
+    
+    # 15 questions
+    q1_dsa_difficulty = Column(Integer, nullable=False)
+    q2_dsa_clarity = Column(String(100), nullable=False)
+    q3_time_spent = Column(String(100), nullable=False)
+    q4_solving_mode = Column(String(100), nullable=False)
+    q5_prompting_used = Column(String(100), nullable=False)
+    q6_prompting_effectiveness = Column(Integer, nullable=False)
+    q7_prompt_type = Column(String(100), nullable=False)
+    q8_prompt_challenge = Column(String(1000), nullable=False)
+    q9_concept_understanding = Column(Integer, nullable=False)
+    q10_platform_rating = Column(Integer, nullable=False)
+    q11_attendance_experience = Column(String(100), nullable=False)
+    q12_codechef_interest = Column(Integer, nullable=False)
+    q13_future_topics = Column(String(1000), nullable=False)
+    q14_prompting_improvement = Column(String(100), nullable=False)
+    q15_general_feedback = Column(String(1000), nullable=False)
+
+    submitted_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    student = relationship("Student")
