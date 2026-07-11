@@ -1,5 +1,10 @@
+import os
+import io
+import qrcode
 import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import StreamingResponse
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
@@ -382,3 +387,194 @@ def get_feedback_status(current_user: Student = Depends(get_current_user), db: S
         
     existing = db.query(Feedback).filter(Feedback.student_id == current_user.id).first()
     return {"submitted": existing is not None, "is_admin": False}
+
+# ----------------- CERTIFICATE & VERIFICATION -----------------
+
+def find_font(font_names, default_fallback):
+    for name in font_names:
+        for folder in [
+            "C:\\Windows\\Fonts",
+            "/usr/share/fonts/truetype/dejavu",
+            "/usr/share/fonts/truetype/freefont",
+            "/usr/share/fonts/truetype/liberation",
+            "/usr/share/fonts"
+        ]:
+            path = os.path.join(folder, name)
+            if os.path.exists(path):
+                return path
+            # Case insensitive check
+            path_lower = os.path.join(folder, name.lower())
+            if os.path.exists(path_lower):
+                return path_lower
+            
+            # Recursive check one level down (e.g. liberation/LiberationSans-Regular.ttf)
+            if os.path.exists(folder):
+                for root, dirs, files in os.walk(folder):
+                    for file in files:
+                        if file.lower() == name.lower():
+                            return os.path.join(root, file)
+    return default_fallback
+
+@router.get("/certificate")
+def get_certificate(request: Request, current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Generates and streams the student's personalized completion certificate."""
+    if current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admins cannot download student certificates.")
+        
+    # Check eligibility (must have solved >= 1 problem)
+    solved_count = db.query(Submission).filter(
+        Submission.student_id == current_user.id,
+        Submission.solved == True
+    ).count()
+    
+    if solved_count < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="You must submit at least one solved problem to download the certificate."
+        )
+        
+    # Generate the certificate
+    # A4 landscape ratio: 2000 x 1414
+    width, height = 2000, 1414
+    bg_color = (8, 8, 10)  # #08080a
+    img = Image.new('RGB', (width, height), bg_color)
+    draw = ImageDraw.Draw(img)
+    
+    gold_primary = (212, 175, 55)   # #d4af37
+    gold_secondary = (140, 112, 48)  # #8c7030
+    
+    # Outer border (thin)
+    draw.rectangle([30, 30, width - 30, height - 30], outline=gold_secondary, width=3)
+    # Inner border (thick)
+    draw.rectangle([45, 45, width - 45, height - 45], outline=gold_primary, width=8)
+    # Inline border (thin)
+    draw.rectangle([60, 60, width - 60, height - 60], outline=gold_secondary, width=2)
+    
+    # Corners
+    corners = [
+        (60, 60), (width - 60, 60),
+        (60, height - 60), (width - 60, height - 60)
+    ]
+    for cx, cy in corners:
+        draw.rectangle([cx - 15, cy - 15, cx + 15, cy + 15], fill=bg_color, outline=gold_primary, width=3)
+        draw.rectangle([cx - 6, cy - 6, cx + 6, cy + 6], fill=gold_primary)
+
+    # Logo
+    logo_path = "club_logo.jpg"
+    if os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo_size = 180
+            logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
+            
+            mask = Image.new('L', (logo_size, logo_size), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.ellipse((0, 0, logo_size, logo_size), fill=255)
+            
+            circular_logo = ImageOps.fit(logo, (logo_size, logo_size), centering=(0.5, 0.5))
+            circular_logo.putalpha(mask)
+            
+            lx = (width - logo_size) // 2
+            ly = 90
+            img.paste(circular_logo, (lx, ly), circular_logo)
+            draw.ellipse([lx - 4, ly - 4, lx + logo_size + 4, ly + logo_size + 4], outline=gold_primary, width=4)
+        except Exception:
+            pass
+
+    # Find fonts
+    font_georgia_bold = find_font(["georgiab.ttf", "DejaVuSerif-Bold.ttf", "LiberationSerif-Bold.ttf", "FreeSerifBold.ttf"], None)
+    font_georgia_italic = find_font(["georgiai.ttf", "DejaVuSerif-Italic.ttf", "LiberationSerif-Italic.ttf", "FreeSerifItalic.ttf"], None)
+    font_arial = find_font(["arial.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf", "FreeSans.ttf"], None)
+    font_arial_bold = find_font(["arialbd.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "FreeSansBold.ttf"], None)
+
+    def get_font(path, size):
+        if path is None:
+            return ImageFont.load_default()
+        try:
+            return ImageFont.truetype(path, size)
+        except IOError:
+            return ImageFont.load_default()
+
+    f_club_title = get_font(font_georgia_bold, 44)
+    f_club_subtitle = get_font(font_arial_bold, 18)
+    f_cert_title = get_font(font_georgia_bold, 65)
+    f_cert_to = get_font(font_georgia_italic, 26)
+    f_student_name = get_font(font_georgia_bold, 54)
+    f_student_roll = get_font(font_arial, 22)
+    f_cert_desc = get_font(font_georgia_italic, 26)
+    f_event_name = get_font(font_georgia_bold, 38)
+    f_date = get_font(font_georgia_italic, 26)
+    f_footer_label = get_font(font_arial, 16)
+
+    # Texts
+    draw.text((width // 2, 300), "CHAKRAVYUHA CLUB", fill=gold_primary, font=f_club_title, anchor="mm")
+    draw.text((width // 2, 340), "AMRITA VISHWA VIDYAPEETHAM", fill=(180, 180, 180), font=f_club_subtitle, anchor="mm")
+    draw.line([width // 2 - 120, 375, width // 2 + 120, 375], fill=gold_secondary, width=2)
+    draw.text((width // 2, 460), "CERTIFICATE OF COMPLETION", fill=(255, 255, 255), font=f_cert_title, anchor="mm")
+    draw.text((width // 2, 540), "This is to certify that", fill=(200, 200, 200), font=f_cert_to, anchor="mm")
+    draw.text((width // 2, 630), current_user.full_name.upper(), fill=gold_primary, font=f_student_name, anchor="mm")
+    draw.text((width // 2, 690), f"Roll Number: {current_user.roll_number}", fill=(180, 180, 180), font=f_student_roll, anchor="mm")
+    draw.text((width // 2, 770), "has successfully completed the challenges and projects of", fill=(200, 200, 200), font=f_cert_desc, anchor="mm")
+    draw.text((width // 2, 850), "YUKTI - DSA & Prompt Engineering Challenge", fill=gold_primary, font=f_event_name, anchor="mm")
+    draw.text((width // 2, 930), "held on 11/07/2026.", fill=(200, 200, 200), font=f_date, anchor="mm")
+    
+    # QR Code
+    verify_url = f"{request.base_url}verify/{current_user.id}"
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=4,
+        border=1,
+    )
+    qr.add_data(verify_url)
+    qr.make(fit=True)
+    
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+    qr_size = 180
+    qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.NEAREST)
+    
+    qr_x = (width - qr_size) // 2
+    qr_y = 1040
+    img.paste(qr_img, (qr_x, qr_y))
+    
+    draw.rectangle([qr_x - 3, qr_y - 3, qr_x + qr_size + 3, qr_y + qr_size + 3], outline=gold_primary, width=3)
+    draw.text((width // 2, 1260), "SCAN TO VERIFY CERTIFICATE", fill=gold_primary, font=f_footer_label, anchor="mm")
+    draw.text((width // 2, 1290), "Secured Digital Completion Registry", fill=(130, 130, 130), font=get_font(font_arial, 14), anchor="mm")
+    
+    # Stream the output
+    stream = io.BytesIO()
+    img.save(stream, "PNG")
+    stream.seek(0)
+    
+    filename = f"Certificate_{current_user.roll_number}.png"
+    return StreamingResponse(
+        stream,
+        media_type="image/png",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@router.get("/verify/{student_id}")
+def verify_student_certificate(student_id: str, db: Session = Depends(get_db)):
+    """Returns verification details of the student's certificate if eligible."""
+    student = db.query(Student).filter(Student.id == student_id, Student.is_admin == False).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Invalid certificate or student not found.")
+        
+    solved_count = db.query(Submission).filter(
+        Submission.student_id == student.id,
+        Submission.solved == True
+    ).count()
+    
+    if solved_count < 1:
+        raise HTTPException(status_code=400, detail="Student has not met completion requirements.")
+        
+    return {
+        "verified": True,
+        "student_name": student.full_name,
+        "student_roll": student.roll_number,
+        "student_branch": student.branch,
+        "student_year": student.year,
+        "event_name": "YUKTI - DSA & Prompt Engineering Challenge",
+        "date": "11/07/2026",
+        "organization": "Chakravyuha Club, Amrita Vishwa Vidyapeetham"
+    }

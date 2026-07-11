@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, QrCode, Calendar, Sparkles, CheckCircle2, Flame, RefreshCw, Download, ArrowRight, UserCheck } from 'lucide-react';
+import { Trophy, QrCode, Calendar, Sparkles, CheckCircle2, Flame, RefreshCw, Download, ArrowRight, UserCheck, Award } from 'lucide-react';
 import { apiRequest, getAuthToken, clearAuth } from '@/utils/api';
 
 interface StudentInfo {
@@ -41,6 +41,26 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'stats' | 'leaderboard'>('stats');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [certificateDownloading, setCertificateDownloading] = useState(false);
+
+  const handleDownloadCertificate = async () => {
+    setCertificateDownloading(true);
+    try {
+      const blob = await apiRequest('/api/dsa/certificate');
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Yukti_Completion_Certificate.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message || 'Failed to download certificate.');
+    } finally {
+      setCertificateDownloading(false);
+    }
+  };
 
   // Leaderboard pagination and detail states
   const [leaderboardPage, setLeaderboardPage] = useState(1);
@@ -256,6 +276,31 @@ export default function Dashboard() {
               Download QR code
             </button>
           </div>
+
+          {/* YUKTI Certificate Card */}
+          {stats && stats.solved_count >= 1 && (
+            <div className="rounded-lg border border-[#d4af37]/40 bg-zinc-950/80 p-6 shadow-lg glass-panel flex flex-col items-center text-center relative overflow-hidden gold-border-glow">
+              <div className="absolute -right-6 -top-6 bg-[#d4af37]/10 text-[#d4af37] p-8 rounded-full">
+                <Award className="h-6 w-6" />
+              </div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-2 flex items-center gap-1.5 mt-2">
+                <Award className="h-4 w-4" />
+                Yukti Certificate
+              </h3>
+              <p className="text-[10px] text-zinc-400 max-w-xs mb-5">
+                Congratulations, warrior! Since you have solved at least one daily DSA challenge, you can now download your official YUKTI completion certificate with a validation QR code.
+              </p>
+              
+              <button
+                onClick={handleDownloadCertificate}
+                disabled={certificateDownloading}
+                className="flex w-full items-center justify-center gap-2 rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] py-2.5 text-xs font-bold uppercase tracking-wider text-black transition-all disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                {certificateDownloading ? 'Generating...' : 'Download Certificate'}
+              </button>
+            </div>
+          )}
 
         </div>
 
