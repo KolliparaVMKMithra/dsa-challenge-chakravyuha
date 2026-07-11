@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, BarChart3, Users, FolderKanban, Megaphone, Search, Filter, Download, Plus, Pencil, Trash2, Calendar, RefreshCw, Send, Check, X, ShieldAlert, ArrowUpRight, Clock, Award, CheckCircle, Lock, User, AlertCircle, MessageSquare } from 'lucide-react';
+import { ShieldCheck, BarChart3, Users, FolderKanban, Megaphone, Search, Filter, Download, Plus, Pencil, Trash2, Calendar, RefreshCw, Send, Check, X, ShieldAlert, ArrowUpRight, Clock, Award, CheckCircle, Lock, User, AlertCircle, MessageSquare, Star, Terminal } from 'lucide-react';
 import { apiRequest, getAuthToken, getUserType, clearAuth, setAuthToken } from '@/utils/api';
 
 interface StudentSummary {
