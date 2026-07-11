@@ -165,8 +165,8 @@ class ScanAdminCreate(BaseModel):
     @field_validator("roll_number")
     @classmethod
     def validate_roll_number(cls, v: str) -> str:
-        if not re.match(r"^AV[A-Za-z0-9.]+$", v):
-            raise ValueError("Roll number must start with 'AV' and contain only letters, digits, and periods (e.g. AV.SC.U4CSE23233)")
+        if not re.match(r"^[A-Za-z0-9._-]+$", v):
+            raise ValueError("Roll number / Username must contain only letters, digits, periods, underscores, or hyphens (e.g. medha)")
         return v
 
 class ScanAdminResponse(BaseModel):

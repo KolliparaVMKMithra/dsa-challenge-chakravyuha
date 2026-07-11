@@ -1592,13 +1592,13 @@ export default function SuperAdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Roll Number</label>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Roll Number / Username</label>
                     <input
                       type="text"
                       required
                       value={newAdminForm.roll_number}
                       onChange={(e) => setNewAdminForm({ ...newAdminForm, roll_number: e.target.value })}
-                      placeholder="e.g. AV.SC.U4CSE23299"
+                      placeholder="e.g. medha or AV.SC.U4CSE23299"
                       className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none font-mono"
                     />
                   </div>
@@ -1741,13 +1741,13 @@ export default function SuperAdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Roll Number</label>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Roll Number / Username</label>
                     <input
                       type="text"
                       required
                       value={newSuperAdminForm.roll_number}
                       onChange={(e) => setNewSuperAdminForm({ ...newSuperAdminForm, roll_number: e.target.value })}
-                      placeholder="e.g. AV.SC.U4CSE23001"
+                      placeholder="e.g. medha or AV.SC.U4CSE23001"
                       className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none font-mono"
                     />
                   </div>
