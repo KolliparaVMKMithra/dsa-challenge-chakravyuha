@@ -63,9 +63,13 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     throw new Error(errorData.detail || `Request failed with status ${response.status}`);
   }
 
-  // Handle file streams (like Excel download)
+  // Handle file streams (like Excel download or images)
   const contentType = response.headers.get('Content-Type');
-  if (contentType && contentType.includes('application/vnd.openxmlformats-officedocument')) {
+  if (contentType && (
+    contentType.includes('application/vnd.openxmlformats-officedocument') ||
+    contentType.includes('image/') ||
+    contentType.includes('application/octet-stream')
+  )) {
     return response.blob();
   }
 
