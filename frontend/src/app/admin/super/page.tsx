@@ -368,9 +368,10 @@ export default function SuperAdminPage() {
     setFeedbacksLoading(true);
     try {
       const data = await apiRequest('/api/admin/feedback');
-      setFeedbacks(data);
+      setFeedbacks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch feedbacks:', err);
+      setFeedbacks([]);
     } finally {
       setFeedbacksLoading(false);
     }
@@ -2046,7 +2047,14 @@ export default function SuperAdminPage() {
                               <div className="text-white font-semibold flex items-center gap-1">
                                 {fb.q1_dsa_difficulty}/5 
                                 <div className="flex gap-0.5">
-                                  {[...Array(fb.q1_dsa_difficulty)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star 
+                                      key={star} 
+                                      className={`h-3.5 w-3.5 ${
+                                        star <= (fb.q1_dsa_difficulty || 0) ? 'fill-[#d4af37] text-[#d4af37]' : 'text-zinc-800'
+                                      }`} 
+                                    />
+                                  ))}
                                 </div>
                               </div>
                             </div>
@@ -2084,7 +2092,14 @@ export default function SuperAdminPage() {
                               <div className="text-white font-semibold flex items-center gap-1">
                                 {fb.q6_prompting_effectiveness}/5 
                                 <div className="flex gap-0.5">
-                                  {[...Array(fb.q6_prompting_effectiveness)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star 
+                                      key={star} 
+                                      className={`h-3.5 w-3.5 ${
+                                        star <= (fb.q6_prompting_effectiveness || 0) ? 'fill-[#d4af37] text-[#d4af37]' : 'text-zinc-800'
+                                      }`} 
+                                    />
+                                  ))}
                                 </div>
                               </div>
                             </div>
@@ -2099,7 +2114,14 @@ export default function SuperAdminPage() {
                               <div className="text-white font-semibold flex items-center gap-1">
                                 {fb.q9_concept_understanding}/5 
                                 <div className="flex gap-0.5">
-                                  {[...Array(fb.q9_concept_understanding)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star 
+                                      key={star} 
+                                      className={`h-3.5 w-3.5 ${
+                                        star <= (fb.q9_concept_understanding || 0) ? 'fill-[#d4af37] text-[#d4af37]' : 'text-zinc-800'
+                                      }`} 
+                                    />
+                                  ))}
                                 </div>
                               </div>
                             </div>
@@ -2144,7 +2166,14 @@ export default function SuperAdminPage() {
                                 <div className="text-white font-semibold flex items-center gap-1">
                                   {fb.q10_platform_rating}/5 
                                   <div className="flex gap-0.5">
-                                    {[...Array(fb.q10_platform_rating)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star 
+                                        key={star} 
+                                        className={`h-3.5 w-3.5 ${
+                                          star <= (fb.q10_platform_rating || 0) ? 'fill-[#d4af37] text-[#d4af37]' : 'text-zinc-800'
+                                        }`} 
+                                      />
+                                    ))}
                                   </div>
                                 </div>
                               </div>
@@ -2154,7 +2183,14 @@ export default function SuperAdminPage() {
                                 <div className="text-white font-semibold flex items-center gap-1">
                                   {fb.q12_codechef_interest}/5 
                                   <div className="flex gap-0.5">
-                                    {[...Array(fb.q12_codechef_interest)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-[#d4af37] text-[#d4af37]" />)}
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star 
+                                        key={star} 
+                                        className={`h-3.5 w-3.5 ${
+                                          star <= (fb.q12_codechef_interest || 0) ? 'fill-[#d4af37] text-[#d4af37]' : 'text-zinc-800'
+                                        }`} 
+                                      />
+                                    ))}
                                   </div>
                                 </div>
                               </div>
