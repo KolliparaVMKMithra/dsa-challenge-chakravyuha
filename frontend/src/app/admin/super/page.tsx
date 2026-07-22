@@ -2556,8 +2556,8 @@ export default function SuperAdminPage() {
                                     <td className="py-3.5 px-4">
                                       {std.college_email}
                                     </td>
-                                    <td className="py-3.5 px-4">
-                                      <span className="px-2.5 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 font-medium">
+                                    <td className="py-3.5 px-4 whitespace-nowrap">
+                                      <span className="px-2.5 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 font-medium whitespace-nowrap">
                                         {std.branch} - Yr {std.year}
                                       </span>
                                     </td>
@@ -2575,7 +2575,7 @@ export default function SuperAdminPage() {
                                     </td>
                                     <td className="py-3.5 px-4 text-center">
                                       <button
-                                        onClick={() => handleLeaderboardStudentClick(std.student_id)}
+                                        onClick={() => handleStudentClick(std.student_id)}
                                         className="px-2.5 py-1 rounded border border-[#8c7030]/30 bg-zinc-900 hover:bg-[#8c7030]/20 text-[#d4af37] font-bold text-[9px] uppercase tracking-wider transition"
                                       >
                                         Inspect Profile
