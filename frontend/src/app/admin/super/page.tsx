@@ -147,6 +147,14 @@ export default function SuperAdminPage() {
   const [directoryPage, setDirectoryPage] = useState(1);
   const [leaderboardPage, setLeaderboardPage] = useState(1);
 
+  // Event Detail Filter and Pagination States
+  const [eventSearchQuery, setEventSearchQuery] = useState('');
+  const [eventBranchFilter, setEventBranchFilter] = useState('');
+  const [eventYearFilter, setEventYearFilter] = useState('');
+  const [eventSortBy, setEventSortBy] = useState('solved');
+  const [eventListPage, setEventListPage] = useState(1);
+  const [eventItemsPerPage, setEventItemsPerPage] = useState(25);
+
   // Broadcaster Search & Selection States
   const [broadcasterStudents, setBroadcasterStudents] = useState<any[]>([]);
   const [broadcasterSearch, setBroadcasterSearch] = useState('');
@@ -380,6 +388,51 @@ export default function SuperAdminPage() {
     } finally {
       setLeaderboardLoading(false);
     }
+  };
+
+  const getFilteredEventRegistrations = () => {
+    if (!eventRegistrations || !eventRegistrations.students) return [];
+    
+    let list = [...eventRegistrations.students];
+    
+    // Search filter
+    if (eventSearchQuery.trim()) {
+      const q = eventSearchQuery.toLowerCase();
+      list = list.filter(s => 
+        s.full_name.toLowerCase().includes(q) ||
+        s.college_email.toLowerCase().includes(q) ||
+        (s.roll_number && s.roll_number.toLowerCase().includes(q))
+      );
+    }
+    
+    // Branch filter
+    if (eventBranchFilter) {
+      list = list.filter(s => s.branch === eventBranchFilter);
+    }
+    
+    // Year filter
+    if (eventYearFilter) {
+      list = list.filter(s => s.year.toString() === eventYearFilter);
+    }
+    
+    // Sorting
+    list.sort((a, b) => {
+      if (eventSortBy === 'solved') {
+        return b.problems_solved - a.problems_solved;
+      }
+      if (eventSortBy === 'streak') {
+        return b.streak_count - a.streak_count;
+      }
+      if (eventSortBy === 'attendance') {
+        return b.attendance_count - a.attendance_count;
+      }
+      if (eventSortBy === 'name') {
+        return a.full_name.localeCompare(b.full_name);
+      }
+      return 0;
+    });
+    
+    return list;
   };
 
   useEffect(() => {
@@ -2324,189 +2377,400 @@ export default function SuperAdminPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Left Column: Events List (8 cols) */}
-            <div className="lg:col-span-8 space-y-6">
-              <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
-                  <Calendar className="h-4.5 w-4.5 text-[#d4af37]" />
-                  Chakravyuha Events Manager
-                </h3>
-
-                {eventsLoading && events.length === 0 ? (
-                  <div className="text-center py-10">
-                    <RefreshCw className="mx-auto h-6 w-6 text-[#d4af37] animate-spin" />
+          {selectedEventId && eventRegistrations ? (
+            <div className="space-y-6 animate-fade-in text-left">
+              
+              {/* Detailed Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-950/70 border border-zinc-900 p-6 rounded-2xl shadow-md">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => {
+                      setSelectedEventId(null);
+                      setEventRegistrations(null);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white font-bold text-[10px] uppercase tracking-wider transition"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Back
+                  </button>
+                  <div>
+                    <h3 className="text-base font-bold text-white font-serif tracking-wide flex items-center gap-2">
+                      {eventRegistrations.event_name}
+                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded border bg-emerald-950/30 text-emerald-400 border-emerald-500/20">
+                        Active
+                      </span>
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 mt-1">Detailed registration roster and solver metrics.</p>
                   </div>
-                ) : events.length === 0 ? (
-                  <div className="text-center py-12 text-zinc-500">
-                    No events registered. Create one using the form on the right.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {events.map((evt, idx) => (
-                      <div 
-                        key={idx}
-                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
-                          selectedEventId === evt.id ? 'border-[#d4af37] bg-zinc-900/30' : 'border-zinc-900 bg-zinc-950/40 hover:border-zinc-800'
-                        }`}
-                        onClick={() => fetchEventRegistrations(evt.id)}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-1">
-                            <h4 className="text-sm font-bold text-white tracking-wide">{evt.name}</h4>
-                            <p className="text-[11px] text-zinc-400 font-light leading-relaxed">{evt.description}</p>
-                          </div>
-                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border flex-shrink-0 ${
-                            evt.status === 'upcoming' ? 'bg-zinc-900 text-zinc-400 border-zinc-700/30' : 'bg-emerald-950/30 text-emerald-400 border-emerald-500/20'
-                          }`}>
-                            {evt.status}
-                          </span>
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-zinc-900/60 flex items-center justify-between text-[10px] text-zinc-500" onClick={(e) => e.stopPropagation()}>
-                          <span>Created on: {new Date(evt.created_at).toLocaleDateString()}</span>
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => fetchEventRegistrations(evt.id)}
-                              className="text-[#d4af37] hover:underline font-bold uppercase tracking-wider text-[9px]"
-                            >
-                              View Registrations
-                            </button>
-                            <a
-                              href={`/api/admin/events/${evt.id}/export`}
-                              className="text-emerald-400 hover:underline font-bold uppercase tracking-wider text-[9px] flex items-center gap-0.5"
-                            >
-                              <Download className="h-3 w-3" /> Report Excel
-                            </a>
-                            {!evt.name.toUpperCase().includes('YUKTI') && (
-                              <button
-                                onClick={() => handleDeleteEvent(evt.id, evt.name)}
-                                className="text-rose-500 hover:text-rose-400 transition-colors"
-                                title="Remove Event"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                </div>
+                
+                <a
+                  href={`/api/admin/events/${selectedEventId}/export`}
+                  className="flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
+                >
+                  <Download className="h-4 w-4" /> Download Excel Report
+                </a>
               </div>
 
-              {/* Event Registrations Roster Details */}
-              {selectedEventId && eventRegistrations && (
-                <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
-                  <div className="flex items-center justify-between border-b border-zinc-900 pb-3 mb-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059]">
-                      Registrations for: {eventRegistrations.event_name} ({eventRegistrations.registrations_count})
-                    </h3>
-                    <a
-                      href={`/api/admin/events/${selectedEventId}/export`}
-                      className="flex items-center gap-1 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Export Excel
-                    </a>
-                  </div>
+              {/* Stats Grid */}
+              {(() => {
+                const totalRegs = eventRegistrations?.students?.length || 0;
+                const avgSolved = totalRegs > 0 
+                  ? (eventRegistrations.students.reduce((acc: number, curr: any) => acc + (curr.problems_solved || 0), 0) / totalRegs).toFixed(1)
+                  : 0;
+                const avgStreak = totalRegs > 0
+                  ? (eventRegistrations.students.reduce((acc: number, curr: any) => acc + (curr.streak_count || 0), 0) / totalRegs).toFixed(1)
+                  : 0;
+                const totalAttendanceLogs = eventRegistrations?.students?.reduce((acc: number, curr: any) => acc + (curr.attendance_count || 0), 0) || 0;
 
-                  {regsLoading ? (
+                const filteredRegs = getFilteredEventRegistrations();
+                const totalFilteredCount = filteredRegs.length;
+                const totalPages = Math.ceil(totalFilteredCount / eventItemsPerPage);
+                const paginatedRegs = filteredRegs.slice((eventListPage - 1) * eventItemsPerPage, eventListPage * eventItemsPerPage);
+
+                return (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                        <span className="block text-xl font-black text-white">{totalRegs}</span>
+                        <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Registered Students</span>
+                      </div>
+                      
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                        <span className="block text-xl font-black text-[#d4af37]">{avgSolved}</span>
+                        <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Avg Problems Solved</span>
+                      </div>
+
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                        <span className="block text-xl font-black text-orange-400">{avgStreak} 🔥</span>
+                        <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Avg Daily Streak</span>
+                      </div>
+
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                        <span className="block text-xl font-black text-blue-400">{totalAttendanceLogs}</span>
+                        <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Attendance Checks</span>
+                      </div>
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-950/40 border border-zinc-900 p-4 rounded-xl">
+                      <div className="flex-grow flex flex-wrap items-center gap-3">
+                        <div className="relative w-full sm:w-64">
+                          <Search className="absolute left-3 top-2 h-4 w-4 text-zinc-500 flex items-center" />
+                          <input
+                            type="text"
+                            placeholder="Search name, email, roll number..."
+                            value={eventSearchQuery}
+                            onChange={(e) => { setEventSearchQuery(e.target.value); setEventListPage(1); }}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg pl-9 pr-3 py-1.5 text-white focus:border-[#d4af37] focus:outline-none"
+                          />
+                        </div>
+
+                        <select
+                          value={eventBranchFilter}
+                          onChange={(e) => { setEventBranchFilter(e.target.value); setEventListPage(1); }}
+                          className="bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-white focus:border-[#d4af37] focus:outline-none"
+                        >
+                          <option value="">All Branches</option>
+                          <option value="CSE">CSE</option>
+                          <option value="CCE">CCE</option>
+                          <option value="AIE">AIE</option>
+                          <option value="ECE">ECE</option>
+                          <option value="MECH">MECH</option>
+                        </select>
+
+                        <select
+                          value={eventYearFilter}
+                          onChange={(e) => { setEventYearFilter(e.target.value); setEventListPage(1); }}
+                          className="bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-white focus:border-[#d4af37] focus:outline-none"
+                        >
+                          <option value="">All Years</option>
+                          <option value="1">1st Year</option>
+                          <option value="2">2nd Year</option>
+                          <option value="3">3rd Year</option>
+                          <option value="4">4th Year</option>
+                        </select>
+
+                        <select
+                          value={eventSortBy}
+                          onChange={(e) => { setEventSortBy(e.target.value); setEventListPage(1); }}
+                          className="bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-white focus:border-[#d4af37] focus:outline-none"
+                        >
+                          <option value="solved">Sort: Solved count (Desc)</option>
+                          <option value="streak">Sort: Streak count (Desc)</option>
+                          <option value="attendance">Sort: Attendance logs (Desc)</option>
+                          <option value="name">Sort: Student Name (A-Z)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-zinc-500 whitespace-nowrap">Show:</span>
+                        <select
+                          value={eventItemsPerPage}
+                          onChange={(e) => { setEventItemsPerPage(parseInt(e.target.value, 10)); setEventListPage(1); }}
+                          className="bg-zinc-900 border border-zinc-900 rounded-lg px-2 py-1.5 text-white focus:border-[#d4af37] focus:outline-none"
+                        >
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Roster Table */}
+                    <div className="rounded-2xl border border-zinc-900 bg-zinc-950/60 p-6 shadow-xl backdrop-blur-sm">
+                      {regsLoading ? (
+                        <div className="text-center py-20">
+                          <RefreshCw className="mx-auto h-8 w-8 text-[#d4af37] animate-spin" />
+                          <p className="text-xs text-zinc-500 mt-2 font-medium">Fetching registrant details...</p>
+                        </div>
+                      ) : paginatedRegs.length === 0 ? (
+                        <div className="text-center py-20 space-y-2">
+                          <Users className="mx-auto h-12 w-12 text-zinc-700" />
+                          <p className="text-zinc-500 font-medium">No matching registrations found.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-zinc-900 text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+                                  <th className="py-3 px-4">Student Name</th>
+                                  <th className="py-3 px-4">Roll Number</th>
+                                  <th className="py-3 px-4">Email</th>
+                                  <th className="py-3 px-4">Branch / Year</th>
+                                  <th className="py-3 px-4 text-center">Problems Solved</th>
+                                  <th className="py-3 px-4 text-center">Streak</th>
+                                  <th className="py-3 px-4 text-center">Attendance logs</th>
+                                  <th className="py-3 px-4 text-center">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-zinc-900/50 text-xs text-zinc-300">
+                                {paginatedRegs.map((std: any) => (
+                                  <tr key={std.student_id} className="hover:bg-zinc-900/20 transition-colors">
+                                    <td className="py-3.5 px-4 font-semibold text-white">
+                                      {std.full_name}
+                                    </td>
+                                    <td className="py-3.5 px-4 font-mono">
+                                      {std.roll_number}
+                                    </td>
+                                    <td className="py-3.5 px-4">
+                                      {std.college_email}
+                                    </td>
+                                    <td className="py-3.5 px-4">
+                                      <span className="px-2.5 py-0.5 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 font-medium">
+                                        {std.branch} - Yr {std.year}
+                                      </span>
+                                    </td>
+                                    <td className="py-3.5 px-4 text-center font-bold text-white">
+                                      <div className="flex items-center justify-center gap-1.5 text-[#d4af37]">
+                                        <Trophy className="h-3.5 w-3.5" />
+                                        {std.problems_solved}
+                                      </div>
+                                    </td>
+                                    <td className="py-3.5 px-4 text-center font-bold text-orange-400">
+                                      {std.streak_count > 0 ? `${std.streak_count} 🔥` : '-'}
+                                    </td>
+                                    <td className="py-3.5 px-4 text-center font-semibold text-blue-400">
+                                      {std.attendance_count} logs
+                                    </td>
+                                    <td className="py-3.5 px-4 text-center">
+                                      <button
+                                        onClick={() => handleLeaderboardStudentClick(std.student_id)}
+                                        className="px-2.5 py-1 rounded border border-[#8c7030]/30 bg-zinc-900 hover:bg-[#8c7030]/20 text-[#d4af37] font-bold text-[9px] uppercase tracking-wider transition"
+                                      >
+                                        Inspect Profile
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Pagination Controls */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-between border-t border-zinc-900 pt-4 text-zinc-500 text-[10px]">
+                              <span>
+                                Showing {((eventListPage - 1) * eventItemsPerPage) + 1} to {Math.min(eventListPage * eventItemsPerPage, totalFilteredCount)} of {totalFilteredCount} registrations
+                              </span>
+                              
+                              <div className="flex items-center gap-2">
+                                <button
+                                  disabled={eventListPage === 1}
+                                  onClick={() => setEventListPage(prev => Math.max(prev - 1, 1))}
+                                  className="px-2.5 py-1 rounded border border-zinc-800 hover:bg-zinc-900 hover:text-white transition disabled:opacity-30 disabled:hover:bg-transparent"
+                                >
+                                  Prev
+                                </button>
+                                
+                                <div className="flex items-center gap-1">
+                                  {Array.from({ length: totalPages }).map((_, pIdx) => {
+                                    const pNum = pIdx + 1;
+                                    const isCurrent = pNum === eventListPage;
+                                    return (
+                                      <button
+                                        key={pNum}
+                                        onClick={() => setEventListPage(pNum)}
+                                        className={`h-6 w-6 rounded text-center transition ${isCurrent ? 'bg-[#d4af37] text-black font-extrabold' : 'border border-zinc-900 hover:bg-zinc-900'}`}
+                                      >
+                                        {pNum}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                <button
+                                  disabled={eventListPage === totalPages}
+                                  onClick={() => setEventListPage(prev => Math.min(prev + 1, totalPages))}
+                                  className="px-2.5 py-1 rounded border border-zinc-800 hover:bg-zinc-900 hover:text-white transition disabled:opacity-30 disabled:hover:bg-transparent"
+                                >
+                                  Next
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              
+              {/* Left Column: Events List (8 cols) */}
+              <div className="lg:col-span-8 space-y-6">
+                <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
+                    <Calendar className="h-4.5 w-4.5 text-[#d4af37]" />
+                    Chakravyuha Events Manager
+                  </h3>
+
+                  {eventsLoading && events.length === 0 ? (
                     <div className="text-center py-10">
                       <RefreshCw className="mx-auto h-6 w-6 text-[#d4af37] animate-spin" />
                     </div>
-                  ) : eventRegistrations.students.length === 0 ? (
-                    <p className="text-xs text-zinc-500 italic text-center py-6">No students registered yet for this event.</p>
+                  ) : events.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-500">
+                      No events registered. Create one using the form on the right.
+                    </div>
                   ) : (
-                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider">
-                            <th className="py-2.5 px-3">Name</th>
-                            <th className="py-2.5 px-3">Roll Number</th>
-                            <th className="py-2.5 px-3">Email</th>
-                            <th className="py-2.5 px-3">Branch / Year</th>
-                            <th className="py-2.5 px-3 text-center">Phone</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
-                          {eventRegistrations.students.map((std: any, sIdx: number) => (
-                            <tr key={sIdx} className="hover:bg-zinc-900/10">
-                              <td className="py-2.5 px-3 font-semibold text-white">{std.full_name}</td>
-                              <td className="py-2.5 px-3 font-mono">{std.roll_number}</td>
-                              <td className="py-2.5 px-3">{std.college_email}</td>
-                              <td className="py-2.5 px-3">{std.branch} - Yr {std.year}</td>
-                              <td className="py-2.5 px-3 text-center text-zinc-400">{std.phone_number}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="space-y-4">
+                      {events.map((evt, idx) => (
+                        <div 
+                          key={idx}
+                          className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                            selectedEventId === evt.id ? 'border-[#d4af37] bg-zinc-900/30' : 'border-zinc-900 bg-zinc-950/40 hover:border-zinc-800'
+                          }`}
+                          onClick={() => fetchEventRegistrations(evt.id)}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-bold text-white tracking-wide">{evt.name}</h4>
+                              <p className="text-[11px] text-zinc-400 font-light leading-relaxed">{evt.description}</p>
+                            </div>
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border flex-shrink-0 ${
+                              evt.status === 'upcoming' ? 'bg-zinc-900 text-zinc-400 border-zinc-700/30' : 'bg-emerald-950/30 text-emerald-400 border-emerald-500/20'
+                            }`}>
+                              {evt.status}
+                            </span>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-zinc-900/60 flex items-center justify-between text-[10px] text-zinc-500" onClick={(e) => e.stopPropagation()}>
+                            <span>Created on: {new Date(evt.created_at).toLocaleDateString()}</span>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => fetchEventRegistrations(evt.id)}
+                                className="text-[#d4af37] hover:underline font-bold uppercase tracking-wider text-[9px]"
+                              >
+                                View Registrations
+                              </button>
+                              <a
+                                href={`/api/admin/events/${evt.id}/export`}
+                                className="text-emerald-400 hover:underline font-bold uppercase tracking-wider text-[9px] flex items-center gap-0.5"
+                              >
+                                <Download className="h-3 w-3" /> Report Excel
+                              </a>
+                              {!evt.name.toUpperCase().includes('YUKTI') && (
+                                <button
+                                  onClick={() => handleDeleteEvent(evt.id, evt.name)}
+                                  className="text-rose-500 hover:text-rose-400 transition-colors"
+                                  title="Remove Event"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            {/* Right Column: Create Event Form (4 cols) */}
-            <div className="lg:col-span-4 space-y-6">
-              <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
-                  <Plus className="h-4.5 w-4.5 text-[#d4af37]" />
-                  Create New Event
-                </h3>
-
-                <form onSubmit={handleCreateEvent} className="space-y-4 text-xs">
-                  <div>
-                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Event Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newEvent.name}
-                      onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-                      placeholder="e.g. Prompt Engineering Challenge 2.0"
-                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Event Description *</label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={newEvent.description}
-                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                      placeholder="Describe the format, timeline, and topics covered..."
-                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none resize-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Status</label>
-                    <select
-                      value={newEvent.status}
-                      onChange={(e) => setNewEvent({ ...newEvent, status: e.target.value })}
-                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
-                    >
-                      <option value="active">Active (Ongoing)</option>
-                      <option value="upcoming">Upcoming (Coming Soon)</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={actionLoading}
-                      className="w-full rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] py-2 text-center text-black font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-                    >
-                      {actionLoading ? 'Creating...' : 'Create Event'}
-                    </button>
-                  </div>
-                </form>
               </div>
-            </div>
 
-          </div>
+              {/* Right Column: Create Event Form (4 cols) */}
+              <div className="lg:col-span-4 space-y-6">
+                <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
+                    <Plus className="h-4.5 w-4.5 text-[#d4af37]" />
+                    Create New Event
+                  </h3>
+
+                  <form onSubmit={handleCreateEvent} className="space-y-4 text-xs">
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Event Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newEvent.name}
+                        onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                        placeholder="e.g. Prompt Engineering Challenge 2.0"
+                        className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Event Description *</label>
+                      <textarea
+                        required
+                        rows={4}
+                        value={newEvent.description}
+                        onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                        placeholder="Describe the format, timeline, and topics covered..."
+                        className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Status</label>
+                      <select
+                        value={newEvent.status}
+                        onChange={(e) => setNewEvent({ ...newEvent, status: e.target.value })}
+                        className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                      >
+                        <option value="active">Active (Ongoing)</option>
+                        <option value="upcoming">Upcoming (Coming Soon)</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={actionLoading}
+                        className="w-full rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] py-2 text-center text-black font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                      >
+                        {actionLoading ? 'Creating...' : 'Create Event'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
       )}
 

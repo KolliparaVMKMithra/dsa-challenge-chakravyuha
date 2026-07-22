@@ -1018,23 +1018,39 @@ def delete_event(event_id: int, current_admin: Student = Depends(get_current_sup
 
 @router.get("/events/{event_id}/registrations")
 def get_event_registrations(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
-    """Lists all students registered for a specific event."""
+    """Lists all students registered for a specific event with problem and attendance stats."""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found.")
         
     regs = db.query(EventRegistration).filter(EventRegistration.event_id == event_id).all()
     
+    # Pre-fetch solved counts and attendance counts to avoid N+1 database queries
+    solved_counts = dict(
+        db.query(Submission.student_id, func.count(Submission.id))
+        .filter(Submission.solved == True)
+        .group_by(Submission.student_id).all()
+    )
+    
+    attendance_counts = dict(
+        db.query(Attendance.student_id, func.count(Attendance.id))
+        .group_by(Attendance.student_id).all()
+    )
+    
     result = []
     for r in regs:
+        student_id = r.student.id
         result.append({
-            "student_id": r.student.id,
+            "student_id": student_id,
             "full_name": r.student.full_name,
             "college_email": r.student.college_email,
             "roll_number": r.student.roll_number or "N/A (Personal Registration)",
             "phone_number": r.student.phone_number,
             "branch": r.student.branch,
             "year": r.student.year,
+            "streak_count": r.student.streak_count,
+            "problems_solved": solved_counts.get(student_id, 0),
+            "attendance_count": attendance_counts.get(student_id, 0),
             "registered_at": r.registered_at.isoformat() + "Z"
         })
     return {
