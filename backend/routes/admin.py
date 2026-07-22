@@ -720,8 +720,8 @@ def list_scan_admins(current_admin: Student = Depends(get_current_super_admin), 
 def create_scan_admin(admin_data: ScanAdminCreate, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
     """Creates a new Scan Admin or promotes/updates an existing user."""
     existing = db.query(Student).filter(
-        (Student.college_email == admin_data.college_email) |
-        (Student.roll_number == admin_data.roll_number)
+        (func.lower(Student.college_email) == func.lower(admin_data.college_email)) |
+        (func.lower(Student.roll_number) == func.lower(admin_data.roll_number))
     ).first()
 
     if existing:
@@ -779,8 +779,8 @@ def list_super_admins(current_admin: Student = Depends(get_current_super_admin),
 def create_super_admin(admin_data: ScanAdminCreate, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
     """Creates a new Super Admin or promotes/updates an existing user."""
     existing = db.query(Student).filter(
-        (Student.college_email == admin_data.college_email) |
-        (Student.roll_number == admin_data.roll_number)
+        (func.lower(Student.college_email) == func.lower(admin_data.college_email)) |
+        (func.lower(Student.roll_number) == func.lower(admin_data.roll_number))
     ).first()
 
     if existing:

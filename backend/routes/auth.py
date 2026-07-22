@@ -5,6 +5,7 @@ import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import qrcode
 from backend.database import get_db
 from backend.models import Student
@@ -100,14 +101,14 @@ def trigger_power_automate_signup_webhook(student: Student):
 @router.post("/signup", response_model=Token)
 def signup(student_data: StudentSignUp, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Check if email or roll number already exists
-    existing_email = db.query(Student).filter(Student.college_email == student_data.college_email).first()
+    existing_email = db.query(Student).filter(func.lower(Student.college_email) == func.lower(student_data.college_email)).first()
     if existing_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="College email already registered"
         )
     
-    existing_roll = db.query(Student).filter(Student.roll_number == student_data.roll_number).first()
+    existing_roll = db.query(Student).filter(func.lower(Student.roll_number) == func.lower(student_data.roll_number)).first()
     if existing_roll:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -155,8 +156,8 @@ def signup(student_data: StudentSignUp, background_tasks: BackgroundTasks, db: S
 def login(login_data: StudentLogin, db: Session = Depends(get_db)):
     # Check email or roll number
     student = db.query(Student).filter(
-        (Student.college_email == login_data.username) | 
-        (Student.roll_number == login_data.username)
+        (func.lower(Student.college_email) == func.lower(login_data.username)) | 
+        (func.lower(Student.roll_number) == func.lower(login_data.username))
     ).first()
     
     if not student or not verify_password(login_data.password, student.password_hash):
