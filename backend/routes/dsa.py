@@ -697,3 +697,47 @@ def get_profile(current_user: Student = Depends(get_current_user), db: Session =
         "registered_events": registered_events,
         "streak": current_user.streak_count
     }
+
+from pydantic import BaseModel
+from typing import Optional
+
+class ProfileUpdate(BaseModel):
+    full_name: str
+    college_email: str
+    roll_number: Optional[str] = None
+    phone_number: str
+    branch: str
+    year: int
+
+@router.put("/profile")
+def update_profile(data: ProfileUpdate, current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.is_admin:
+        raise HTTPException(status_code=400, detail="Admin profiles cannot be updated through this endpoint.")
+        
+    # Check if email is already in use by another student
+    if data.college_email != current_user.college_email:
+        existing = db.query(Student).filter(Student.college_email == data.college_email, Student.id != current_user.id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="College or personal email already in use.")
+            
+    # Check if roll number is already in use by another student
+    if data.roll_number and data.roll_number.strip() != "":
+        roll_num = data.roll_number.strip().upper()
+        # Validate format
+        if not roll_num.startswith('AV'):
+             raise HTTPException(status_code=400, detail="Roll number must start with 'AV'")
+        existing_roll = db.query(Student).filter(Student.roll_number == roll_num, Student.id != current_user.id).first()
+        if existing_roll:
+            raise HTTPException(status_code=400, detail="Roll number already in use by another student.")
+        current_user.roll_number = roll_num
+    else:
+        current_user.roll_number = None
+
+    current_user.full_name = data.full_name
+    current_user.college_email = data.college_email
+    current_user.phone_number = data.phone_number
+    current_user.branch = data.branch
+    current_user.year = data.year
+    
+    db.commit()
+    return {"detail": "Profile updated successfully."}

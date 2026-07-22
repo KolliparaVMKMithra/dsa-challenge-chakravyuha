@@ -131,6 +131,32 @@ def startup_db_init():
                 logger.info("Successfully dropped NOT NULL constraint on students.roll_number.")
         except Exception as e:
             logger.warning(f"Failed to drop NOT NULL constraint on roll_number (this is normal if already dropped): {e}")
+            
+    if engine.name == 'sqlite':
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(engine)
+            columns = inspector.get_columns('students')
+            roll_col = next((c for c in columns if c['name'] == 'roll_number'), None)
+            if roll_col and not roll_col.get('nullable', True):
+                logger.info("sqlite: roll_number is NOT NULL. Performing SQLite schema migration to allow NULL values...")
+                with engine.begin() as conn:
+                    conn.execute(text("PRAGMA foreign_keys=OFF;"))
+                    conn.execute(text("ALTER TABLE students RENAME TO students_old;"))
+                    
+                    # Create new table using metadata
+                    Base.metadata.tables['students'].create(bind=conn)
+                    
+                    # Copy old records
+                    columns_names = [c['name'] for c in columns]
+                    columns_str = ", ".join(columns_names)
+                    conn.execute(text(f"INSERT INTO students ({columns_str}) SELECT {columns_str} FROM students_old;"))
+                    
+                    conn.execute(text("DROP TABLE students_old;"))
+                    conn.execute(text("PRAGMA foreign_keys=ON;"))
+                logger.info("sqlite: Successfully migrated students table to allow NULL roll_number.")
+        except Exception as e:
+            logger.warning(f"Failed to migrate SQLite schema for roll_number: {e}")
     
     from backend.database import SessionLocal
     db = SessionLocal()
@@ -219,6 +245,24 @@ def startup_db_init():
 
         # 4. Seed default events
         logger.info("Syncing default events...")
+        
+        # Deduplicate any duplicate YUKTI and SIH events
+        yukti_dups = db.query(Event).filter(Event.name.like("%YUKTI%")).all()
+        if len(yukti_dups) > 1:
+            logger.info(f"Deduplicating YUKTI: keeping ID {yukti_dups[0].id}, deleting others...")
+            for dup in yukti_dups[1:]:
+                db.query(EventRegistration).filter(EventRegistration.event_id == dup.id).delete()
+                db.delete(dup)
+            db.commit()
+
+        sih_dups = db.query(Event).filter(Event.name.like("%Smart India Hackathon%")).all()
+        if len(sih_dups) > 1:
+            logger.info(f"Deduplicating SIH: keeping ID {sih_dups[0].id}, deleting others...")
+            for dup in sih_dups[1:]:
+                db.query(EventRegistration).filter(EventRegistration.event_id == dup.id).delete()
+                db.delete(dup)
+            db.commit()
+
         yukti_event = db.query(Event).filter(Event.name.like("%YUKTI%")).first()
         if not yukti_event:
             yukti_event = Event(
@@ -233,7 +277,7 @@ def startup_db_init():
             yukti_event.status = "active"
             db.commit()
 
-        sih_event = db.query(Event).filter(Event.name.like("%SIH%")).first()
+        sih_event = db.query(Event).filter(Event.name.like("%Smart India Hackathon%")).first()
         if not sih_event:
             sih_event = Event(
                 name="Smart India Hackathon 2026 Internal Hackathon",

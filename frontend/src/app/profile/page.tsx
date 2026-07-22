@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Award, Phone, BookOpen, Calendar, Trophy, ShieldAlert, Sparkles, Loader2 } from 'lucide-react';
+import { User, Mail, Award, Phone, BookOpen, Calendar, Trophy, ShieldAlert, Sparkles, Loader2, Pencil, X } from 'lucide-react';
 import { apiRequest, getAuthToken } from '@/utils/api';
 
 interface ProfileData {
@@ -29,26 +29,105 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Edit states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    roll_number: '',
+    phone: '',
+    branch: 'CSE',
+    year: 1,
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await apiRequest('/api/dsa/profile');
+      setProfile(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load profile details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
       router.push('/');
       return;
     }
-
-    const fetchProfile = async () => {
-      try {
-        const data = await apiRequest('/api/dsa/profile');
-        setProfile(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load profile details.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfile();
   }, [router]);
+
+  const handleOpenEdit = () => {
+    if (!profile) return;
+    setEditForm({
+      name: profile.name,
+      email: profile.email,
+      roll_number: profile.roll_number || '',
+      phone: profile.phone,
+      branch: profile.branch,
+      year: profile.year,
+    });
+    setEditError(null);
+    setEditSuccess(null);
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError(null);
+    setEditSuccess(null);
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editForm.email)) {
+      setEditError('Invalid email address.');
+      setEditLoading(false);
+      return;
+    }
+
+    // Validate roll number
+    if (editForm.roll_number.trim() !== '') {
+      const roll = editForm.roll_number.trim().toUpperCase();
+      if (!roll.startsWith('AV')) {
+        setEditError('Roll number must start with "AV"');
+        setEditLoading(false);
+        return;
+      }
+    }
+
+    try {
+      await apiRequest('/api/dsa/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          full_name: editForm.name,
+          college_email: editForm.email,
+          roll_number: editForm.roll_number.trim() !== '' ? editForm.roll_number.trim() : null,
+          phone_number: editForm.phone,
+          branch: editForm.branch,
+          year: editForm.year,
+        }),
+      });
+
+      setEditSuccess('Credentials updated successfully!');
+      
+      // Reload profile data
+      await fetchProfile();
+
+      // Close modal after 1.5 seconds
+      setTimeout(() => setShowEditModal(false), 1500);
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update credentials.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -125,9 +204,19 @@ export default function Profile() {
           
           {/* Left: General Stats / Profile Info (5 Cols) */}
           <div className="md:col-span-5 rounded-2xl border border-zinc-900 bg-zinc-950/60 p-6 shadow-xl backdrop-blur-sm space-y-6">
-            <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#c5a059] border-b border-zinc-900 pb-3 flex items-center gap-2">
-              <User className="h-4 w-4 text-[#d4af37]" /> Profile Credentials
-            </h3>
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+              <h3 className="text-sm font-extrabold uppercase tracking-widest text-[#c5a059] flex items-center gap-2">
+                <User className="h-4 w-4 text-[#d4af37]" /> Profile Credentials
+              </h3>
+              {!profile.is_admin && (
+                <button
+                  onClick={handleOpenEdit}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded border border-[#8c7030]/30 bg-zinc-900 hover:bg-[#8c7030]/20 text-[#d4af37] font-bold text-[10px] uppercase tracking-wider transition"
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </button>
+              )}
+            </div>
             
             <div className="space-y-4">
               <div className="space-y-1">
@@ -238,6 +327,129 @@ export default function Profile() {
         </div>
 
       </div>
+      {/* Edit modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md border border-[#8c7030]/30 bg-zinc-950 p-6 rounded-2xl shadow-2xl glass-panel relative animate-fade-in text-xs text-left">
+            <button 
+              onClick={() => setShowEditModal(false)}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#c5a059] mb-4 pb-2 border-b border-zinc-900 flex items-center gap-1.5">
+              <Pencil className="h-4 w-4" /> Edit Profile Credentials
+            </h3>
+
+            {editError && (
+              <div className="mb-4 p-3 rounded border border-rose-950 bg-rose-950/20 text-rose-300 font-semibold">
+                {editError}
+              </div>
+            )}
+            {editSuccess && (
+              <div className="mb-4 p-3 rounded border border-emerald-950 bg-emerald-950/20 text-emerald-300 font-semibold">
+                {editSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">College or Personal Email</label>
+                <input
+                  type="email"
+                  required
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Roll Number (Starts with AV)</label>
+                <input
+                  type="text"
+                  value={editForm.roll_number}
+                  onChange={(e) => setEditForm({ ...editForm, roll_number: e.target.value })}
+                  placeholder="e.g. AV.SC.U4CSE23000"
+                  className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Branch</label>
+                  <select
+                    value={editForm.branch}
+                    onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })}
+                    className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                  >
+                    <option value="CSE">CSE</option>
+                    <option value="CCE">CCE</option>
+                    <option value="AIE">AIE</option>
+                    <option value="ECE">ECE</option>
+                    <option value="MECH">MECH</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Year</label>
+                  <select
+                    value={editForm.year}
+                    onChange={(e) => setEditForm({ ...editForm, year: parseInt(e.target.value, 10) })}
+                    className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                  >
+                    <option value={1}>1st Year</option>
+                    <option value={2}>2nd Year</option>
+                    <option value={3}>3rd Year</option>
+                    <option value={4}>4th Year</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 rounded border border-zinc-800 hover:bg-zinc-900 py-2.5 text-center text-zinc-400 font-bold uppercase tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="flex-1 rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] py-2.5 text-center text-black font-bold uppercase tracking-wider disabled:opacity-50"
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
