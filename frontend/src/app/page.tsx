@@ -209,12 +209,13 @@ export default function Home() {
         <video 
           autoPlay 
           loop 
+          muted
           playsInline 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover opacity-100"
         >
           <source src="/intro_reveal.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/80"></div>
       </div>
 
       {/* Background radial glows */}
