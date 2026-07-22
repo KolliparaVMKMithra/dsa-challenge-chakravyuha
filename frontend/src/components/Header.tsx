@@ -67,14 +67,17 @@ export default function Header() {
   };
 
   const navLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: Trophy, show: isLoggedIn && userType === 'student' },
-    { href: '/dsa', label: 'DSA Sheet', icon: ClipboardList, show: isLoggedIn && userType === 'student' },
-    { href: '/feedback', label: 'Feedback', icon: MessageSquare, show: isLoggedIn && userType === 'student' },
+    { href: '/dashboard', label: 'Dashboard', icon: Trophy, show: isLoggedIn && (userType === 'student' || userType === 'super_admin') },
+    { href: '/events', label: 'Events', icon: ClipboardList, show: isLoggedIn && (userType === 'student' || userType === 'super_admin') },
+    { href: '/profile', label: 'My Profile', icon: User, show: isLoggedIn && (userType === 'student' || userType === 'super_admin') },
     { href: '/admin/scan', label: 'QR Scanner', icon: QrCode, show: isLoggedIn && userType === 'attendance_admin' },
     { href: '/admin/super', label: 'Super Admin', icon: ShieldAlert, show: isLoggedIn && userType === 'super_admin' },
   ];
 
-  // Do not render header/nav bar if we are on admin pages and not logged in as the correct admin type
+  // Do not render header/nav bar if on home, signup, unauthorized or unauthorized admin routes
+  if (pathname === '/' || pathname === '/signup' || pathname === '/unauthorized') {
+    return null;
+  }
   if (pathname === '/admin/scan' && userType !== 'attendance_admin') {
     return null;
   }

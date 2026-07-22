@@ -94,10 +94,22 @@ export default function SuperAdminPage() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'directory' | 'problems' | 'broadcast' | 'scan_admins' | 'super_admins' | 'leaderboard' | 'feedback'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'directory' | 'problems' | 'broadcast' | 'scan_admins' | 'super_admins' | 'leaderboard' | 'feedback' | 'events'>('analytics');
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [feedbacksLoading, setFeedbacksLoading] = useState(false);
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<number | null>(null);
+
+  // Event Management states
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [eventRegistrations, setEventRegistrations] = useState<any | null>(null);
+  const [regsLoading, setRegsLoading] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    name: '',
+    description: '',
+    status: 'active'
+  });
   
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -235,6 +247,71 @@ export default function SuperAdminPage() {
     }
   };
 
+  const fetchEvents = async () => {
+    setEventsLoading(true);
+    try {
+      const data = await apiRequest('/api/admin/events');
+      setEvents(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEvent.name || !newEvent.description) return;
+    setActionLoading(true);
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await apiRequest('/api/admin/events', {
+        method: 'POST',
+        body: JSON.stringify(newEvent)
+      });
+      setActionSuccess('Event created successfully.');
+      setNewEvent({ name: '', description: '', status: 'active' });
+      fetchEvents();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to create event.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: number, eventName: string) => {
+    if (!confirm(`Are you sure you want to delete event "${eventName}"?`)) return;
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await apiRequest(`/api/admin/events/${eventId}`, {
+        method: 'DELETE'
+      });
+      setActionSuccess('Event deleted successfully.');
+      fetchEvents();
+      if (selectedEventId === eventId) {
+        setSelectedEventId(null);
+        setEventRegistrations(null);
+      }
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to delete event.');
+    }
+  };
+
+  const fetchEventRegistrations = async (eventId: number) => {
+    setRegsLoading(true);
+    setSelectedEventId(eventId);
+    try {
+      const data = await apiRequest(`/api/admin/events/${eventId}/registrations`);
+      setEventRegistrations(data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setRegsLoading(false);
+    }
+  };
+
   const handleAddSuperAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionError(null);
@@ -324,6 +401,8 @@ export default function SuperAdminPage() {
       fetchBroadcasterStudents();
     } else if (activeTab === 'feedback') {
       fetchFeedbacks();
+    } else if (activeTab === 'events') {
+      fetchEvents();
     }
   }, [activeTab, isAdmin, searchQuery, selectedBranch, selectedYear]);
 
@@ -773,6 +852,15 @@ export default function SuperAdminPage() {
         >
           <ShieldAlert className="h-4 w-4" />
           Super Admins
+        </button>
+        <button
+          onClick={() => setActiveTab('events')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold uppercase tracking-wider rounded transition-colors whitespace-nowrap ${
+            activeTab === 'events' ? 'bg-[#d4af37] text-black' : 'text-zinc-400 hover:text-white'
+          }`}
+        >
+          <Calendar className="h-4 w-4" />
+          Events
         </button>
         <button
           onClick={() => setActiveTab('leaderboard')}
@@ -2219,6 +2307,206 @@ export default function SuperAdminPage() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 9. EVENTS MANAGEMENT TAB */}
+      {activeTab === 'events' && (
+        <div className="space-y-6 animate-fade-in text-xs">
+          {actionSuccess && (
+            <div className="rounded border border-emerald-950 bg-emerald-950/20 p-3 text-emerald-300">
+              {actionSuccess}
+            </div>
+          )}
+          {actionError && (
+            <div className="rounded border border-rose-950 bg-rose-950/20 p-3 text-rose-300">
+              {actionError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Left Column: Events List (8 cols) */}
+            <div className="lg:col-span-8 space-y-6">
+              <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
+                  <Calendar className="h-4.5 w-4.5 text-[#d4af37]" />
+                  Chakravyuha Events Manager
+                </h3>
+
+                {eventsLoading && events.length === 0 ? (
+                  <div className="text-center py-10">
+                    <RefreshCw className="mx-auto h-6 w-6 text-[#d4af37] animate-spin" />
+                  </div>
+                ) : events.length === 0 ? (
+                  <div className="text-center py-12 text-zinc-500">
+                    No events registered. Create one using the form on the right.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {events.map((evt, idx) => (
+                      <div 
+                        key={idx}
+                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                          selectedEventId === evt.id ? 'border-[#d4af37] bg-zinc-900/30' : 'border-zinc-900 bg-zinc-950/40 hover:border-zinc-800'
+                        }`}
+                        onClick={() => fetchEventRegistrations(evt.id)}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-white tracking-wide">{evt.name}</h4>
+                            <p className="text-[11px] text-zinc-400 font-light leading-relaxed">{evt.description}</p>
+                          </div>
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border flex-shrink-0 ${
+                            evt.status === 'upcoming' ? 'bg-zinc-900 text-zinc-400 border-zinc-700/30' : 'bg-emerald-950/30 text-emerald-400 border-emerald-500/20'
+                          }`}>
+                            {evt.status}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-zinc-900/60 flex items-center justify-between text-[10px] text-zinc-500" onClick={(e) => e.stopPropagation()}>
+                          <span>Created on: {new Date(evt.created_at).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => fetchEventRegistrations(evt.id)}
+                              className="text-[#d4af37] hover:underline font-bold uppercase tracking-wider text-[9px]"
+                            >
+                              View Registrations
+                            </button>
+                            <a
+                              href={`/api/admin/events/${evt.id}/export`}
+                              className="text-emerald-400 hover:underline font-bold uppercase tracking-wider text-[9px] flex items-center gap-0.5"
+                            >
+                              <Download className="h-3 w-3" /> Report Excel
+                            </a>
+                            {!evt.name.toUpperCase().includes('YUKTI') && (
+                              <button
+                                onClick={() => handleDeleteEvent(evt.id, evt.name)}
+                                className="text-rose-500 hover:text-rose-400 transition-colors"
+                                title="Remove Event"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Event Registrations Roster Details */}
+              {selectedEventId && eventRegistrations && (
+                <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-3 mb-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059]">
+                      Registrations for: {eventRegistrations.event_name} ({eventRegistrations.registrations_count})
+                    </h3>
+                    <a
+                      href={`/api/admin/events/${selectedEventId}/export`}
+                      className="flex items-center gap-1 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Export Excel
+                    </a>
+                  </div>
+
+                  {regsLoading ? (
+                    <div className="text-center py-10">
+                      <RefreshCw className="mx-auto h-6 w-6 text-[#d4af37] animate-spin" />
+                    </div>
+                  ) : eventRegistrations.students.length === 0 ? (
+                    <p className="text-xs text-zinc-500 italic text-center py-6">No students registered yet for this event.</p>
+                  ) : (
+                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider">
+                            <th className="py-2.5 px-3">Name</th>
+                            <th className="py-2.5 px-3">Roll Number</th>
+                            <th className="py-2.5 px-3">Email</th>
+                            <th className="py-2.5 px-3">Branch / Year</th>
+                            <th className="py-2.5 px-3 text-center">Phone</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-900/60 text-zinc-300">
+                          {eventRegistrations.students.map((std: any, sIdx: number) => (
+                            <tr key={sIdx} className="hover:bg-zinc-900/10">
+                              <td className="py-2.5 px-3 font-semibold text-white">{std.full_name}</td>
+                              <td className="py-2.5 px-3 font-mono">{std.roll_number}</td>
+                              <td className="py-2.5 px-3">{std.college_email}</td>
+                              <td className="py-2.5 px-3">{std.branch} - Yr {std.year}</td>
+                              <td className="py-2.5 px-3 text-center text-zinc-400">{std.phone_number}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: Create Event Form (4 cols) */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-4 border-b border-zinc-900 pb-3 flex items-center gap-1.5">
+                  <Plus className="h-4.5 w-4.5 text-[#d4af37]" />
+                  Create New Event
+                </h3>
+
+                <form onSubmit={handleCreateEvent} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Event Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newEvent.name}
+                      onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                      placeholder="e.g. Prompt Engineering Challenge 2.0"
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Event Description *</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                      placeholder="Describe the format, timeline, and topics covered..."
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 uppercase font-semibold mb-1">Status</label>
+                    <select
+                      value={newEvent.status}
+                      onChange={(e) => setNewEvent({ ...newEvent, status: e.target.value })}
+                      className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
+                    >
+                      <option value="active">Active (Ongoing)</option>
+                      <option value="upcoming">Upcoming (Coming Soon)</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={actionLoading}
+                      className="w-full rounded border border-[#d4af37] bg-[#d4af37] hover:bg-[#f6e05e] py-2 text-center text-black font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                    >
+                      {actionLoading ? 'Creating...' : 'Create Event'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
 

@@ -6,14 +6,16 @@ import re
 class StudentBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
     college_email: EmailStr
-    roll_number: str
+    roll_number: Optional[str] = None
     phone_number: str = Field(..., min_length=10, max_length=15)
     branch: str = Field(..., min_length=2, max_length=50)
     year: int = Field(..., ge=1, le=5)
 
     @field_validator("roll_number")
     @classmethod
-    def validate_roll_number(cls, v: str) -> str:
+    def validate_roll_number(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v.strip() == "":
+            return None
         # Must start with AV and be alphanumeric
         if not re.match(r"^AV[A-Za-z0-9.]+$", v):
             raise ValueError("Roll number must start with 'AV' and contain only letters, digits, and periods (e.g. AV.SC.U4CSE23233)")
@@ -22,15 +24,7 @@ class StudentBase(BaseModel):
     @field_validator("college_email")
     @classmethod
     def validate_college_email(cls, v: str) -> str:
-        domain = v.split("@")[-1].lower()
-        # Reject generic public domains to ensure it's a college email
-        invalid_domains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com", "icloud.com"]
-        if domain in invalid_domains:
-            raise ValueError("Please sign up with your official college email, not a personal email (gmail, yahoo, etc.)")
-        
-        # Must end with a typical educational/institutional domain ending or a dot
-        if not (domain.endswith(".edu") or domain.endswith(".in") or domain.endswith(".org") or domain.endswith(".net") or domain.endswith(".edu.in") or domain.endswith(".ac.in")):
-            raise ValueError("Email must belong to an educational or institutional domain (e.g. .edu, .ac.in, .edu.in)")
+        # Relaxed validator to allow personal emails for the 2026 batch
         return v
 
 class StudentSignUp(StudentBase):
@@ -201,6 +195,18 @@ class FeedbackResponse(FeedbackCreate):
     id: int
     student_id: str
     submitted_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
+class EventCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    description: str = Field(..., min_length=2, max_length=1000)
+    status: str = Field("active", pattern="^(active|upcoming|completed)$")
+
+class EventResponse(EventCreate):
+    id: int
+    created_at: datetime.datetime
 
     class Config:
         from_attributes = True

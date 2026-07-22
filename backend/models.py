@@ -11,7 +11,7 @@ class Student(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     full_name = Column(String(100), nullable=False)
     college_email = Column(String(100), unique=True, index=True, nullable=False)
-    roll_number = Column(String(50), unique=True, index=True, nullable=False)
+    roll_number = Column(String(50), unique=True, index=True, nullable=True)
     phone_number = Column(String(20), nullable=False)
     branch = Column(String(50), nullable=False)
     year = Column(Integer, nullable=False)
@@ -26,6 +26,7 @@ class Student(Base):
     submissions = relationship("Submission", back_populates="student", cascade="all, delete-orphan")
     attendance_records = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
     codechef_participations = relationship("CodeChefParticipation", back_populates="student", cascade="all, delete-orphan")
+    event_registrations = relationship("EventRegistration", back_populates="student", cascade="all, delete-orphan")
 
 class Problem(Base):
     __tablename__ = "problems"
@@ -123,3 +124,28 @@ class Feedback(Base):
     submitted_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
 
     student = relationship("Student")
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(1000), nullable=False)
+    status = Column(String(50), default="active", nullable=False)  # "active", "upcoming", "completed"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    registrations = relationship("EventRegistration", back_populates="event", cascade="all, delete-orphan")
+
+class EventRegistration(Base):
+    __tablename__ = "event_registrations"
+    __table_args__ = (
+        UniqueConstraint('student_id', 'event_id', name='_student_event_uc'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    registered_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    student = relationship("Student", back_populates="event_registrations")
+    event = relationship("Event", back_populates="registrations")

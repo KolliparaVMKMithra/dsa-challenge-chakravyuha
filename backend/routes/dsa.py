@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration
 from backend.schemas import SubmissionCreate, SubmissionResponse, CodeChefParticipationResponse, FeedbackCreate
 from backend.auth import get_current_active_student, get_current_user
 
@@ -608,4 +608,92 @@ def verify_student_certificate(student_id: str, db: Session = Depends(get_db)):
         "event_name": "YUKTI - DSA & Prompt Engineering Challenge",
         "date": "11/07/2026",
         "organization": "Chakravyuha Club, Amrita Vishwa Vidyapeetham"
+    }
+
+# ----------------- EVENTS & USER PROFILE ENDPOINTS -----------------
+
+@router.get("/events")
+def list_events(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Lists all events and registration status for the logged-in student/admin."""
+    events = db.query(Event).order_by(Event.created_at.desc()).all()
+    
+    registered_event_ids = set()
+    if not current_user.is_admin:
+        regs = db.query(EventRegistration).filter(EventRegistration.student_id == current_user.id).all()
+        registered_event_ids = {r.event_id for r in regs}
+        
+    result = []
+    for e in events:
+        result.append({
+            "id": e.id,
+            "name": e.name,
+            "description": e.description,
+            "status": e.status,
+            "is_registered": e.id in registered_event_ids or current_user.is_admin
+        })
+    return result
+
+@router.post("/events/{event_id}/register")
+def register_event(event_id: int, current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Registers the student for a specific event."""
+    if current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admins cannot register for events.")
+        
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
+        
+    if event.status == "completed":
+        raise HTTPException(status_code=400, detail="Cannot register for a completed event.")
+        
+    existing = db.query(EventRegistration).filter(
+        EventRegistration.student_id == current_user.id,
+        EventRegistration.event_id == event_id
+    ).first()
+    
+    if existing:
+        return {"detail": "Already registered for this event."}
+        
+    reg = EventRegistration(
+        student_id=current_user.id,
+        event_id=event_id
+    )
+    db.add(reg)
+    db.commit()
+    return {"detail": "Registration successful."}
+
+@router.get("/profile")
+def get_profile(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Returns student details and registered events list."""
+    if current_user.is_admin:
+        return {
+            "name": current_user.full_name,
+            "email": current_user.college_email,
+            "roll_number": current_user.roll_number,
+            "is_admin": True,
+            "admin_role": current_user.admin_role,
+            "registered_events": []
+        }
+        
+    regs = db.query(EventRegistration).filter(EventRegistration.student_id == current_user.id).all()
+    registered_events = []
+    for r in regs:
+        registered_events.append({
+            "id": r.event.id,
+            "name": r.event.name,
+            "status": r.event.status,
+            "registered_at": r.registered_at.isoformat() + "Z"
+        })
+        
+    return {
+        "id": current_user.id,
+        "name": current_user.full_name,
+        "email": current_user.college_email,
+        "roll_number": current_user.roll_number,
+        "phone": current_user.phone_number,
+        "branch": current_user.branch,
+        "year": current_user.year,
+        "is_admin": False,
+        "registered_events": registered_events,
+        "streak": current_user.streak_count
     }

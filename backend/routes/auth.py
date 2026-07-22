@@ -108,15 +108,20 @@ def signup(student_data: StudentSignUp, background_tasks: BackgroundTasks, db: S
             detail="College email already registered"
         )
     
-    existing_roll = db.query(Student).filter(func.lower(Student.roll_number) == func.lower(student_data.roll_number)).first()
-    if existing_roll:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Roll number already registered"
-        )
+    if student_data.roll_number:
+        existing_roll = db.query(Student).filter(func.lower(Student.roll_number) == func.lower(student_data.roll_number)).first()
+        if existing_roll:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Roll number already registered"
+            )
     
     # Create student record
-    qr_key = f"CHAKRA-{student_data.roll_number}-{uuid.uuid4().hex[:8].upper()}"
+    if student_data.roll_number:
+        qr_key = f"CHAKRA-{student_data.roll_number.upper()}-{uuid.uuid4().hex[:8].upper()}"
+    else:
+        email_prefix = student_data.college_email.split("@")[0].upper()
+        qr_key = f"CHAKRA-{email_prefix}-{uuid.uuid4().hex[:8].upper()}"
     hashed_password = get_password_hash(student_data.password)
     
     new_student = Student(

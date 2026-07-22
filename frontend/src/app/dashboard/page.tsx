@@ -8,7 +8,7 @@ import { apiRequest, getAuthToken, clearAuth } from '@/utils/api';
 
 interface StudentInfo {
   name: string;
-  roll_number: string;
+  roll_number: string | null;
   email: string;
   phone: string;
   branch: string;
@@ -148,7 +148,7 @@ export default function Dashboard() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `chakravyuha_qr_${student.roll_number}.png`;
+      link.download = `chakravyuha_qr_${student.roll_number || 'student'}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -230,7 +230,7 @@ export default function Dashboard() {
             </div>
             
             <h2 className="text-lg font-bold text-white leading-tight">{student.name}</h2>
-            <p className="text-xs text-zinc-500 mt-1">{student.roll_number}</p>
+            <p className="text-xs text-zinc-500 mt-1">{student.roll_number || 'Personal Registration'}</p>
             
             <div className="w-full grid grid-cols-2 gap-3 mt-6 border-t border-zinc-900 pt-4 text-left">
               <div>

@@ -2,8 +2,9 @@ import datetime
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from backend.database import engine, Base
-from backend.models import Student, Problem, CodeChefContest, Feedback
+from backend.models import Student, Problem, CodeChefContest, Feedback, Event, EventRegistration
 from backend.auth import get_password_hash
 from backend.routes import auth, dsa, admin
 
@@ -121,6 +122,16 @@ def startup_db_init():
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)
     
+    # Run migration: drop NOT NULL on roll_number
+    if engine.name == 'postgresql':
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE students ALTER COLUMN roll_number DROP NOT NULL;"))
+                conn.commit()
+                logger.info("Successfully dropped NOT NULL constraint on students.roll_number.")
+        except Exception as e:
+            logger.warning(f"Failed to drop NOT NULL constraint on roll_number (this is normal if already dropped): {e}")
+    
     from backend.database import SessionLocal
     db = SessionLocal()
     try:
@@ -205,6 +216,54 @@ def startup_db_init():
         logger.info("Syncing CodeChef contests...")
         db.query(CodeChefContest).filter(CodeChefContest.contest_link == "https://www.codechef.com/START999").delete()
         db.commit()
+
+        # 4. Seed default events
+        logger.info("Syncing default events...")
+        yukti_event = db.query(Event).filter(Event.name.like("%YUKTI%")).first()
+        if not yukti_event:
+            yukti_event = Event(
+                name="YUKTI - DSA & Prompt Engineering Challenge",
+                description="The ultimate battlefield to master Data Structures & Algorithms with generative AI prompting assistance.",
+                status="active"
+            )
+            db.add(yukti_event)
+            db.commit()
+            db.refresh(yukti_event)
+        else:
+            yukti_event.status = "active"
+            db.commit()
+
+        sih_event = db.query(Event).filter(Event.name.like("%SIH%")).first()
+        if not sih_event:
+            sih_event = Event(
+                name="Smart India Hackathon 2026 Internal Hackathon",
+                description="Chakravyuha Club's internal hackathon to select and nominate teams for SIH 2026.",
+                status="upcoming"
+            )
+            db.add(sih_event)
+            db.commit()
+            db.refresh(sih_event)
+
+        # 5. Auto-register all existing students to YUKTI event
+        logger.info("Ensuring all existing students are registered for YUKTI event...")
+        all_students = db.query(Student).filter(Student.is_admin == False).all()
+        registered_student_ids = set(
+            r.student_id for r in db.query(EventRegistration).filter(EventRegistration.event_id == yukti_event.id).all()
+        )
+        
+        new_registrations = []
+        for student in all_students:
+            if student.id not in registered_student_ids:
+                new_registrations.append(
+                    EventRegistration(
+                        student_id=student.id,
+                        event_id=yukti_event.id
+                    )
+                )
+        if new_registrations:
+            db.bulk_save_objects(new_registrations)
+            db.commit()
+            logger.info(f"Registered {len(new_registrations)} existing students for YUKTI event.")
             
     except Exception as e:
         logger.error(f"Error seeding database: {e}")

@@ -11,8 +11,8 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback
-from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration
+from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -976,4 +976,153 @@ def export_feedback(current_admin: Student = Depends(get_current_super_admin), d
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=student_feedback_report.xlsx"}
+    )
+
+# ----------------- EVENTS MANAGEMENT (SUPER ADMIN) -----------------
+
+@router.get("/events", response_model=List[EventResponse])
+def list_events_admin(current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Lists all events (Super Admin only)."""
+    return db.query(Event).order_by(Event.created_at.desc()).all()
+
+@router.post("/events", response_model=EventResponse)
+def create_event(event_data: EventCreate, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Creates a new event (Super Admin only)."""
+    existing = db.query(Event).filter(func.lower(Event.name) == func.lower(event_data.name)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="An event with this name already exists.")
+        
+    event = Event(
+        name=event_data.name,
+        description=event_data.description,
+        status=event_data.status
+    )
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return event
+
+@router.delete("/events/{event_id}")
+def delete_event(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Deletes an event (Super Admin only)."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
+        
+    if "YUKTI" in event.name.upper():
+        raise HTTPException(status_code=400, detail="Core YUKTI event cannot be deleted.")
+        
+    db.delete(event)
+    db.commit()
+    return {"detail": "Event deleted successfully."}
+
+@router.get("/events/{event_id}/registrations")
+def get_event_registrations(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Lists all students registered for a specific event."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
+        
+    regs = db.query(EventRegistration).filter(EventRegistration.event_id == event_id).all()
+    
+    result = []
+    for r in regs:
+        result.append({
+            "student_id": r.student.id,
+            "full_name": r.student.full_name,
+            "college_email": r.student.college_email,
+            "roll_number": r.student.roll_number or "N/A (Personal Registration)",
+            "phone_number": r.student.phone_number,
+            "branch": r.student.branch,
+            "year": r.student.year,
+            "registered_at": r.registered_at.isoformat() + "Z"
+        })
+    return {
+        "event_name": event.name,
+        "registrations_count": len(result),
+        "students": result
+    }
+
+@router.get("/events/{event_id}/export")
+def export_event_registrations(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+    """Exports registered students for a specific event to an Excel sheet."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
+        
+    regs = db.query(EventRegistration).filter(EventRegistration.event_id == event_id).all()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Event Registrations"
+    
+    # Title Banner
+    ws.merge_cells("A1:G1")
+    ws["A1"] = f"Event Registration Report: {event.name}"
+    ws["A1"].font = Font(name="Calibri", size=14, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="1A365D", end_color="1A365D", fill_type="solid")
+    ws.row_dimensions[1].height = 40
+    
+    headers = ["Full Name", "Roll Number", "College/Personal Email", "Phone Number", "Branch", "Year", "Registration Date"]
+    ws.append([]) # Row 2 blank
+    ws.append(headers) # Row 3
+    
+    header_fill = PatternFill(start_color="2A2A2A", end_color="2A2A2A", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style='thin', color='DDDDDD'),
+        right=Side(style='thin', color='DDDDDD'),
+        top=Side(style='thin', color='DDDDDD'),
+        bottom=Side(style='thin', color='DDDDDD')
+    )
+    
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+        
+    for r in regs:
+        row_data = [
+            r.student.full_name,
+            r.student.roll_number or "N/A (Personal Registration)",
+            r.student.college_email,
+            r.student.phone_number,
+            r.student.branch,
+            r.student.year,
+            r.registered_at.strftime("%d-%m-%Y %I:%M %p")
+        ]
+        ws.append(row_data)
+        
+    for row in range(4, ws.max_row + 1):
+        row_fill = PatternFill(start_color="F9F9F9" if row % 2 == 0 else "FFFFFF", fill_type="solid")
+        for col in range(1, 8):
+            cell = ws.cell(row=row, column=col)
+            cell.fill = row_fill
+            cell.border = thin_border
+            if col in [2, 5, 6, 7]:
+                cell.alignment = Alignment(horizontal="center")
+                
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+        
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    filename = f"Registrations_{event.name.replace(' ', '_')}.xlsx"
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
