@@ -234,7 +234,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black"></div>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-8 select-none relative z-10 bg-black/60 backdrop-blur-md border border-[#8c7030]/25 p-8 md:p-12 rounded-3xl shadow-2xl shadow-black/90">
+        <div className="max-w-3xl mx-auto space-y-8 select-none relative z-10 bg-black/40 backdrop-blur-md border border-[#8c7030]/25 p-8 md:p-12 rounded-3xl shadow-2xl shadow-black/90">
           
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#d4af37]/80 bg-zinc-950 shadow-lg gold-border-glow">
             <Shield className="h-9 w-9 text-[#d4af37]" />
