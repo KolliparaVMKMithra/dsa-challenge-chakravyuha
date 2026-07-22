@@ -204,28 +204,29 @@ export default function Home() {
   return (
     <div className="flex flex-col bg-black text-white relative overflow-hidden min-h-screen">
       
-      {/* Background Video */}
-      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <video 
-          autoPlay 
-          loop 
-          muted
-          playsInline 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover opacity-100"
-        >
-          <source src="/intro_reveal.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/80"></div>
-      </div>
-
       {/* Background radial glows */}
       <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none"></div>
       <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-0 left-1/3 w-[450px] h-[450px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       {/* 1. HERO SECTION */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 py-20 z-10">
-        <div className="max-w-4xl mx-auto space-y-8 select-none">
+      <section className="relative min-h-[90vh] flex flex-col items-center justify-center text-center px-4 py-20 overflow-hidden">
+        
+        {/* Background Video */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
+          <video 
+            autoPlay 
+            loop 
+            muted
+            playsInline 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover opacity-100"
+          >
+            <source src="/intro_reveal.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black"></div>
+        </div>
+
+        <div className="max-w-4xl mx-auto space-y-8 select-none relative z-10">
           
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#d4af37]/80 bg-zinc-950 shadow-lg gold-border-glow">
             <Shield className="h-9 w-9 text-[#d4af37]" />
