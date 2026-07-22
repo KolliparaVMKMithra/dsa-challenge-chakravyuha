@@ -605,10 +605,11 @@ export default function Home() {
                         className="block w-full rounded border border-[#8c7030]/20 bg-zinc-900 py-2 px-3 text-sm text-white focus:border-[#d4af37] focus:outline-none"
                       >
                         <option value="CSE">CSE</option>
+                        <option value="CAI">CAI</option>
+                        <option value="AIDS">AIDS</option>
+                        <option value="Quantum">Quantum</option>
                         <option value="CCE">CCE</option>
-                        <option value="AIE">AIE</option>
                         <option value="ECE">ECE</option>
-                        <option value="MECH">MECH</option>
                       </select>
                     </div>
 

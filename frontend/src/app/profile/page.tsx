@@ -407,10 +407,11 @@ export default function Profile() {
                     className="block w-full rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-white focus:border-[#d4af37] focus:outline-none"
                   >
                     <option value="CSE">CSE</option>
+                    <option value="CAI">CAI</option>
+                    <option value="AIDS">AIDS</option>
+                    <option value="Quantum">Quantum</option>
                     <option value="CCE">CCE</option>
-                    <option value="AIE">AIE</option>
                     <option value="ECE">ECE</option>
-                    <option value="MECH">MECH</option>
                   </select>
                 </div>
 

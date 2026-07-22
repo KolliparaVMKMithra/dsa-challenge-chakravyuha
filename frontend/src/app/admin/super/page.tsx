@@ -1149,11 +1149,11 @@ export default function SuperAdminPage() {
               >
                 <option value="">All Branches</option>
                 <option value="CSE">CSE</option>
-                <option value="AIE">AIE</option>
+                <option value="CAI">CAI</option>
                 <option value="AIDS">AIDS</option>
+                <option value="Quantum">Quantum</option>
                 <option value="CCE">CCE</option>
                 <option value="ECE">ECE</option>
-                <option value="Quantum Computing">Quantum Computing</option>
               </select>
 
               {/* Year filter */}
@@ -2472,10 +2472,11 @@ export default function SuperAdminPage() {
                         >
                           <option value="">All Branches</option>
                           <option value="CSE">CSE</option>
+                          <option value="CAI">CAI</option>
+                          <option value="AIDS">AIDS</option>
+                          <option value="Quantum">Quantum</option>
                           <option value="CCE">CCE</option>
-                          <option value="AIE">AIE</option>
                           <option value="ECE">ECE</option>
-                          <option value="MECH">MECH</option>
                         </select>
 
                         <select
