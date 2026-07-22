@@ -234,29 +234,29 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black"></div>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-8 select-none relative z-10 bg-black/40 backdrop-blur-md border border-[#8c7030]/25 p-8 md:p-12 rounded-3xl shadow-2xl shadow-black/90">
+        <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 select-none relative z-10 bg-black/40 backdrop-blur-md border border-[#8c7030]/25 p-5 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/90 w-full">
           
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#d4af37]/80 bg-zinc-950 shadow-lg gold-border-glow">
-            <Shield className="h-9 w-9 text-[#d4af37]" />
+          <div className="mx-auto flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full border-2 border-[#d4af37]/80 bg-zinc-950 shadow-lg gold-border-glow">
+            <Shield className="h-8 w-8 sm:h-9 sm:w-9 text-[#d4af37]" />
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-wider font-serif text-gold-gradient py-2 drop-shadow-[0_4px_16px_rgba(212,175,55,0.45)]">
+            <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-wider font-serif text-gold-gradient py-1 sm:py-2 drop-shadow-[0_4px_16px_rgba(212,175,55,0.45)]">
               CHAKRAVYUHA
             </h1>
-            <p className="text-sm md:text-base font-black tracking-widest text-[#d4af37] uppercase max-w-xl mx-auto border-y border-[#8c7030]/20 py-2.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+            <p className="text-xs sm:text-sm md:text-base font-black tracking-widest text-[#d4af37] uppercase max-w-xl mx-auto border-y border-[#8c7030]/20 py-2.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               Official Coding & DSA Club of Amrita
             </p>
           </div>
 
-          <p className="text-sm md:text-base text-zinc-200 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+          <p className="text-xs sm:text-sm md:text-base text-zinc-200 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             We are the vanguard of competitive programmers, algorithmic thinkers, and software engineers. Join our ranks to conquer weekly challenges, construct production systems, and launch into national hackathons.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 relative z-20">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center pt-2 sm:pt-4 relative z-20 w-full">
             <button
               onClick={scrollToAuth}
-              className="px-8 py-3 rounded-lg border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black font-extrabold text-sm uppercase tracking-wider hover:from-[#f6e05e] hover:to-[#d4af37] transition-all shadow-xl shadow-amber-500/5"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-lg border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black font-extrabold text-xs sm:text-sm uppercase tracking-wider hover:from-[#f6e05e] hover:to-[#d4af37] transition-all shadow-xl shadow-amber-500/5"
             >
               Enter Club Portal
             </button>
@@ -264,7 +264,7 @@ export default function Home() {
               onClick={() => {
                 document.getElementById('about-section')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="px-8 py-3 rounded-lg border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 hover:text-white text-zinc-300 font-bold text-sm uppercase tracking-wider transition-all"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-lg border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 hover:text-white text-zinc-300 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all"
             >
               Learn More
             </button>
@@ -281,8 +281,8 @@ export default function Home() {
       </section>
 
       {/* 2. ABOUT THE CLUB SECTION */}
-      <section id="about-section" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+      <section id="about-section" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
           
           <div className="lg:col-span-6 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
@@ -391,8 +391,8 @@ export default function Home() {
       </section>
 
       {/* 4. MAIN REGISTRATION AND LOGIN SECTION */}
-      <section ref={authSectionRef} className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section ref={authSectionRef} className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Column: Descriptive info leading to registration */}
           <div className="lg:col-span-7 space-y-6">
@@ -400,33 +400,33 @@ export default function Home() {
               <Activity className="h-3.5 w-3.5" /> Portal Gateways
             </div>
             
-            <h2 className="text-3xl md:text-5xl font-bold font-serif text-white leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold font-serif text-white leading-tight">
               Ready to breach the formations?
             </h2>
             
-            <p className="text-sm text-zinc-400 font-light leading-relaxed max-w-xl">
+            <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed max-w-xl">
               Create an account or login to access your customized dashboard. Track your coding progress, submit solutions to YUKTI sheets, and download verification certificates for successful completions.
             </p>
 
-            <ul className="space-y-3.5 text-xs text-zinc-300">
+            <ul className="space-y-3 text-xs text-zinc-300">
               <li className="flex items-center gap-3">
-                <CheckCircle2 className="h-4.5 w-4.5 text-[#d4af37]" />
-                Unified authentication across all club events.
+                <CheckCircle2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <span>Unified authentication across all club events.</span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle2 className="h-4.5 w-4.5 text-[#d4af37]" />
-                Nullable roll numbers and personal emails supported for incoming 2026 Batch.
+                <CheckCircle2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <span>Nullable roll numbers and personal emails supported for incoming 2026 Batch.</span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle2 className="h-4.5 w-4.5 text-[#d4af37]" />
-                Dynamic dashboards showing live stats, leaderboards, and certificate registries.
+                <CheckCircle2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <span>Dynamic dashboards showing live stats, leaderboards, and certificate registries.</span>
               </li>
             </ul>
           </div>
 
           {/* Right Column: Tabbed Auth Card */}
-          <div className="lg:col-span-5 flex flex-col justify-center">
-            <div className="rounded-2xl border border-[#8c7030]/25 bg-zinc-950/85 p-8 shadow-2xl backdrop-blur-md relative glass-panel">
+          <div className="lg:col-span-5 flex flex-col justify-center w-full">
+            <div className="rounded-2xl border border-[#8c7030]/25 bg-zinc-950/85 p-5 sm:p-8 shadow-2xl backdrop-blur-md relative glass-panel w-full">
               
               {/* Tab Selector */}
               <div className="flex border-b border-zinc-900 mb-6 gap-6">
