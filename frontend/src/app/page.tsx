@@ -8,6 +8,13 @@ import { apiRequest, setAuthToken, getAuthToken, getUserType } from '@/utils/api
 export default function Home() {
   const router = useRouter();
   const authSectionRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1.35;
+    }
+  }, []);
   
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   
@@ -215,6 +222,7 @@ export default function Home() {
         {/* Background Video */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
           <video 
+            ref={videoRef}
             autoPlay 
             loop 
             muted
@@ -223,29 +231,29 @@ export default function Home() {
           >
             <source src="/intro_reveal.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black"></div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-8 select-none relative z-10">
+        <div className="max-w-3xl mx-auto space-y-8 select-none relative z-10 bg-black/60 backdrop-blur-md border border-[#8c7030]/25 p-8 md:p-12 rounded-3xl shadow-2xl shadow-black/90">
           
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#d4af37]/80 bg-zinc-950 shadow-lg gold-border-glow">
             <Shield className="h-9 w-9 text-[#d4af37]" />
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-wider font-serif text-gold-gradient py-2">
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-wider font-serif text-gold-gradient py-2 drop-shadow-[0_4px_16px_rgba(212,175,55,0.45)]">
               CHAKRAVYUHA
             </h1>
-            <p className="text-sm md:text-base font-extrabold tracking-widest text-[#c5a059] uppercase max-w-xl mx-auto border-y border-[#8c7030]/20 py-2.5">
+            <p className="text-sm md:text-base font-black tracking-widest text-[#d4af37] uppercase max-w-xl mx-auto border-y border-[#8c7030]/20 py-2.5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
               Official Coding & DSA Club of Amrita
             </p>
           </div>
 
-          <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto font-light leading-relaxed">
+          <p className="text-sm md:text-base text-zinc-200 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             We are the vanguard of competitive programmers, algorithmic thinkers, and software engineers. Join our ranks to conquer weekly challenges, construct production systems, and launch into national hackathons.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 relative z-20">
             <button
               onClick={scrollToAuth}
               className="px-8 py-3 rounded-lg border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black font-extrabold text-sm uppercase tracking-wider hover:from-[#f6e05e] hover:to-[#d4af37] transition-all shadow-xl shadow-amber-500/5"
