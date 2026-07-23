@@ -15,6 +15,28 @@ export default function Home() {
       videoRef.current.playbackRate = 1.35;
     }
   }, []);
+
+  // Custom client-side scroll reveal animation trigger using IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    const elements = document.querySelectorAll('.reveal-fade-up, .reveal-fade-left, .reveal-fade-right');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el));
+      observer.disconnect();
+    };
+  }, []);
   
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   
@@ -284,7 +306,7 @@ export default function Home() {
       <section id="about-section" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
           
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-6 reveal-fade-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
               <Code className="h-3.5 w-3.5" /> Who We Are
             </div>
@@ -318,42 +340,24 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Slider/Carousel block as visual showcase on left */}
-          <div className="lg:col-span-6 space-y-4 select-none">
-            <div className="relative rounded-2xl border border-zinc-800 bg-zinc-950/40 backdrop-blur-md overflow-hidden aspect-[16/10] shadow-2xl group">
-              {slides.map((slide, idx) => (
-                <div 
-                  key={idx}
-                  className={`absolute inset-0 w-full h-full flex flex-col justify-end p-8 transition-opacity duration-1000 bg-gradient-to-t from-black via-black/40 to-transparent ${idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                >
-                  <img 
-                    src={slide.image} 
-                    alt={slide.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 z-[-1] transition-transform duration-10000 group-hover:scale-105"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                  <div className={`absolute inset-0 bg-gradient-to-br ${slide.fallbackGrad} opacity-30 z-[-2]`}></div>
-
-                  <div className="space-y-1.5 max-w-xl">
-                    <h3 className="text-xl font-bold tracking-wide font-serif text-[#d4af37]">
-                      {slide.title}
-                    </h3>
-                    <p className="text-xs text-zinc-300 leading-relaxed font-light">
-                      {slide.desc}
-                    </p>
-                  </div>
+          {/* Featured Visual Frame */}
+          <div className="lg:col-span-6 space-y-4 select-none reveal-fade-right">
+            <div className="relative rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-md overflow-hidden aspect-[16/10] shadow-2xl group p-3">
+              <div className="w-full h-full relative rounded-xl overflow-hidden border border-zinc-900 bg-zinc-950">
+                <img 
+                  src="/DSC01551.JPG" 
+                  alt="Chakravyuha Featured Visual"
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-85 transition-opacity duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37]/10 to-zinc-950/80 mix-blend-multiply"></div>
+                <div className="absolute bottom-6 left-6 right-6 space-y-1.5">
+                  <h3 className="text-lg font-bold tracking-wide font-serif text-[#d4af37]">
+                    The Amrita Vanguard
+                  </h3>
+                  <p className="text-xs text-zinc-300 leading-relaxed font-light">
+                    Forging competitive programming leaders through algorithmic excellence and national hackathon conquests.
+                  </p>
                 </div>
-              ))}
-
-              {/* Slider Dots */}
-              <div className="absolute bottom-4 right-8 flex gap-2 z-20">
-                {slides.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentSlide(idx)}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentSlide ? 'bg-[#d4af37] w-5' : 'bg-zinc-600'}`}
-                  ></button>
-                ))}
               </div>
             </div>
           </div>
@@ -361,27 +365,114 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. CLUB STATS PILLARS */}
+      {/* 3. SHOWCASE GALLERY SECTION */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3 reveal-fade-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
+            <Trophy className="h-3.5 w-3.5" /> Club Showcase
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold font-serif text-white tracking-wide leading-tight">
+            Warriors in the Arena
+          </h2>
+          <p className="text-sm text-zinc-400 font-light leading-relaxed max-w-xl mx-auto">
+            Witness the focus, intensity, and triumph of Chakravyuha members conquering real-world challenges, algorithms, and hackathons.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          
+          {/* Photo 1 */}
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-left">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
+              <img 
+                src="/DSC01551.JPG" 
+                alt="Chakravyuha coding lab session" 
+                className="w-full h-full object-cover image-glow-hover opacity-75 group-hover:opacity-100 transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 space-y-2">
+                <span className="text-[9px] uppercase font-black text-[#d4af37] tracking-widest bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20">Competitive Coding</span>
+                <h3 className="text-lg font-bold text-white font-serif tracking-wide">High-Octane Coding Wars</h3>
+                <p className="text-xs text-zinc-300 font-light leading-relaxed">Students testing their algorithms in local club battlegrounds and mock runs.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Photo 2 */}
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-right">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
+              <img 
+                src="/DSC01678.JPG" 
+                alt="Warriors working in lab" 
+                className="w-full h-full object-cover image-glow-hover opacity-75 group-hover:opacity-100 transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 space-y-2">
+                <span className="text-[9px] uppercase font-black text-blue-400 tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">Development</span>
+                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Collaborative System Engineering</h3>
+                <p className="text-xs text-zinc-300 font-light leading-relaxed">Full-stack project development and white-board mapping for next-generation systems.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Photo 3 */}
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-left delay-100">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
+              <img 
+                src="/DSC07025.JPG" 
+                alt="Hackathon team whiteboarding" 
+                className="w-full h-full object-cover image-glow-hover opacity-75 group-hover:opacity-100 transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 space-y-2">
+                <span className="text-[9px] uppercase font-black text-purple-400 tracking-widest bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">Brainstorming</span>
+                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Hackathon Warfare Room</h3>
+                <p className="text-xs text-zinc-300 font-light leading-relaxed">Cross-functional teams designing blueprints to solve national challenges for SIH.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Photo 4 */}
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-right delay-100">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
+              <img 
+                src="/DSC07187.JPG.jpeg" 
+                alt="Award ceremonies" 
+                className="w-full h-full object-cover image-glow-hover opacity-75 group-hover:opacity-100 transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 space-y-2">
+                <span className="text-[9px] uppercase font-black text-emerald-400 tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Victory</span>
+                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Champions and Awards</h3>
+                <p className="text-xs text-zinc-300 font-light leading-relaxed">Celebrating victories at competitive programming matches and hackathon championships.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. CLUB STATS PILLARS */}
       <section className="py-20 border-y border-[#8c7030]/15 bg-zinc-950/20 backdrop-blur-md z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             
-            <div className="space-y-1">
+            <div className="space-y-1 reveal-fade-up">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">390+</span>
               <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Active Warriors</span>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 reveal-fade-up delay-100">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">5,000+</span>
               <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Problems Solved</span>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 reveal-fade-up delay-200">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">10+</span>
               <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Hackathons Won</span>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 reveal-fade-up delay-300">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">30+</span>
               <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Rankings Placed</span>
             </div>
@@ -390,12 +481,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. MAIN REGISTRATION AND LOGIN SECTION */}
+      {/* 5. MAIN REGISTRATION AND LOGIN SECTION */}
       <section ref={authSectionRef} className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Column: Descriptive info leading to registration */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-7 space-y-6 reveal-fade-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
               <Activity className="h-3.5 w-3.5" /> Portal Gateways
             </div>
@@ -425,7 +516,7 @@ export default function Home() {
           </div>
 
           {/* Right Column: Tabbed Auth Card */}
-          <div className="lg:col-span-5 flex flex-col justify-center w-full">
+          <div className="lg:col-span-5 flex flex-col justify-center w-full reveal-fade-right">
             <div className="rounded-2xl border border-[#8c7030]/25 bg-zinc-950/85 p-5 sm:p-8 shadow-2xl backdrop-blur-md relative glass-panel w-full">
               
               {/* Tab Selector */}
