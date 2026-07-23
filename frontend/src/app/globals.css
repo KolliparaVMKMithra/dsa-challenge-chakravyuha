@@ -254,15 +254,60 @@ body.light ::-webkit-scrollbar-track {
 
 /* Futuristic login card custom ambient neon glow */
 .cyber-card-glow {
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9), 
-              0 0 40px rgba(212, 175, 55, 0.02),
-              inset 0 0 12px rgba(212, 175, 55, 0.05);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.95), 
+              0 0 50px rgba(212, 175, 55, 0.04),
+              inset 0 0 20px rgba(212, 175, 55, 0.03);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: rgba(8, 8, 10, 0.9);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .cyber-card-glow:hover {
-  border-color: rgba(212, 175, 55, 0.4);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 
-              0 0 50px rgba(212, 175, 55, 0.06),
-              inset 0 0 15px rgba(212, 175, 55, 0.08);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.98), 
+              0 0 60px rgba(212, 175, 55, 0.08),
+              inset 0 0 25px rgba(212, 175, 55, 0.06);
+}
+
+/* Slashed cyber-corners clip path */
+.slashed-clip {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+}
+
+/* Tech Dots canvas backdrop */
+.tech-dot-grid {
+  background-image: radial-gradient(rgba(212, 175, 55, 0.06) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+}
+
+/* Smooth text gold glow */
+.glow-text-gold {
+  text-shadow: 0 0 15px rgba(212, 175, 55, 0.35);
+}
+
+/* Symmetrical glowing line */
+.glowing-portal-line {
+  background: linear-gradient(180deg, transparent, rgba(212, 175, 55, 0.6) 20%, rgba(212, 175, 55, 0.6) 80%, transparent);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);
+}
+
+/* Dynamic gradient flow borders */
+.gradient-border-animated {
+  position: relative;
+}
+.gradient-border-animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(135deg, #d4af37, transparent 35%, #8c7030 65%, transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.4;
+  transition: opacity 0.5s ease;
+}
+.gradient-border-animated:hover::after {
+  opacity: 1;
 }
