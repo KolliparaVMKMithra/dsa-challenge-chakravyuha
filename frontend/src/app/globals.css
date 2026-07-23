@@ -182,7 +182,7 @@ body.light ::-webkit-scrollbar-track {
 .reveal-fade-up {
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal-fade-up.active {
   opacity: 1;
@@ -192,7 +192,7 @@ body.light ::-webkit-scrollbar-track {
 .reveal-fade-left {
   opacity: 0;
   transform: translateX(-40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal-fade-left.active {
   opacity: 1;
@@ -202,11 +202,37 @@ body.light ::-webkit-scrollbar-track {
 .reveal-fade-right {
   opacity: 0;
   transform: translateX(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal-fade-right.active {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* Skew reveal for text elements */
+.reveal-skew-up {
+  opacity: 0;
+  transform: translateY(40px) skewY(2deg);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-skew-up.active {
+  opacity: 1;
+  transform: translateY(0) skewY(0deg);
+}
+
+/* Scale reveal for grid gallery cards */
+.reveal-scale-up {
+  opacity: 0;
+  transform: scale(0.96) translateY(20px);
+  filter: blur(4px);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 1s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-scale-up.active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0);
 }
 
 /* Stagger delays */
@@ -224,4 +250,19 @@ body.light ::-webkit-scrollbar-track {
   transform: scale(1.02) translateY(-2px);
   box-shadow: 0 10px 30px rgba(212, 175, 55, 0.12), 0 0 20px rgba(212, 175, 55, 0.08);
   border-color: rgba(212, 175, 55, 0.45);
+}
+
+/* Futuristic login card custom ambient neon glow */
+.cyber-card-glow {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9), 
+              0 0 40px rgba(212, 175, 55, 0.02),
+              inset 0 0 12px rgba(212, 175, 55, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.cyber-card-glow:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 
+              0 0 50px rgba(212, 175, 55, 0.06),
+              inset 0 0 15px rgba(212, 175, 55, 0.08);
 }

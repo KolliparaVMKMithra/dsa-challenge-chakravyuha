@@ -29,7 +29,7 @@ export default function Home() {
       { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
     );
 
-    const elements = document.querySelectorAll('.reveal-fade-up, .reveal-fade-left, .reveal-fade-right');
+    const elements = document.querySelectorAll('.reveal-fade-up, .reveal-fade-left, .reveal-fade-right, .reveal-skew-up, .reveal-scale-up');
     elements.forEach((el) => observer.observe(el));
 
     return () => {
@@ -306,7 +306,7 @@ export default function Home() {
       <section id="about-section" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
           
-          <div className="lg:col-span-6 space-y-6 reveal-fade-left">
+          <div className="lg:col-span-6 space-y-6 reveal-skew-up">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
               <Code className="h-3.5 w-3.5" /> Who We Are
             </div>
@@ -341,7 +341,7 @@ export default function Home() {
           </div>
 
           {/* Featured Visual Frame */}
-          <div className="lg:col-span-6 space-y-4 select-none reveal-fade-right">
+          <div className="lg:col-span-6 space-y-4 select-none reveal-scale-up">
             <div className="relative rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-md overflow-hidden aspect-[16/10] shadow-2xl group p-3">
               <div className="w-full h-full relative rounded-xl overflow-hidden border border-zinc-900 bg-zinc-950">
                 <img 
@@ -367,14 +367,14 @@ export default function Home() {
 
       {/* 3. SHOWCASE GALLERY SECTION */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3 reveal-fade-up">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3 reveal-skew-up">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
             <Trophy className="h-3.5 w-3.5" /> Club Showcase
           </div>
           <h2 className="text-3xl md:text-5xl font-bold font-serif text-white tracking-wide leading-tight">
             Warriors in the Arena
           </h2>
-          <p className="text-sm text-zinc-400 font-light leading-relaxed max-w-xl mx-auto">
+          <p className="text-sm text-zinc-350 font-normal leading-relaxed max-w-xl mx-auto">
             Witness the focus, intensity, and triumph of Chakravyuha members conquering real-world challenges, algorithms, and hackathons.
           </p>
         </div>
@@ -382,7 +382,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           
           {/* Photo 1 */}
-          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-left">
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-scale-up">
             <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
               <img 
                 src="/DSC01551.JPG" 
@@ -393,13 +393,13 @@ export default function Home() {
               <div className="absolute bottom-6 left-6 right-6 space-y-2">
                 <span className="text-[9px] uppercase font-black text-[#d4af37] tracking-widest bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20">Competitive Coding</span>
                 <h3 className="text-lg font-bold text-white font-serif tracking-wide">High-Octane Coding Wars</h3>
-                <p className="text-xs text-zinc-300 font-light leading-relaxed">Students testing their algorithms in local club battlegrounds and mock runs.</p>
+                <p className="text-xs text-zinc-200 font-normal leading-relaxed">Students testing their algorithms in local club battlegrounds and mock runs.</p>
               </div>
             </div>
           </div>
 
           {/* Photo 2 */}
-          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-right">
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-scale-up delay-100">
             <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
               <img 
                 src="/DSC01678.JPG" 
@@ -408,15 +408,15 @@ export default function Home() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
               <div className="absolute bottom-6 left-6 right-6 space-y-2">
-                <span className="text-[9px] uppercase font-black text-blue-400 tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">Development</span>
-                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Collaborative System Engineering</h3>
-                <p className="text-xs text-zinc-300 font-light leading-relaxed">Full-stack project development and white-board mapping for next-generation systems.</p>
+                <span className="text-[9px] uppercase font-black text-[#d4af37] tracking-widest bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20">Founders</span>
+                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Chakravyuha Founders</h3>
+                <p className="text-xs text-zinc-200 font-normal leading-relaxed">The builders who laid down the initial blueprints of algorithmic and coding mentorship at Amrita.</p>
               </div>
             </div>
           </div>
 
           {/* Photo 3 */}
-          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-left delay-100">
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-scale-up delay-200">
             <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
               <img 
                 src="/DSC07025.JPG" 
@@ -427,13 +427,13 @@ export default function Home() {
               <div className="absolute bottom-6 left-6 right-6 space-y-2">
                 <span className="text-[9px] uppercase font-black text-purple-400 tracking-widest bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">Brainstorming</span>
                 <h3 className="text-lg font-bold text-white font-serif tracking-wide">Hackathon Warfare Room</h3>
-                <p className="text-xs text-zinc-300 font-light leading-relaxed">Cross-functional teams designing blueprints to solve national challenges for SIH.</p>
+                <p className="text-xs text-zinc-200 font-normal leading-relaxed">Cross-functional teams designing blueprints to solve national challenges for SIH.</p>
               </div>
             </div>
           </div>
 
           {/* Photo 4 */}
-          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-fade-right delay-100">
+          <div className="group relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-xl reveal-scale-up delay-300">
             <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
               <img 
                 src="/DSC07187.JPG.jpeg" 
@@ -442,9 +442,9 @@ export default function Home() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
               <div className="absolute bottom-6 left-6 right-6 space-y-2">
-                <span className="text-[9px] uppercase font-black text-emerald-400 tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Victory</span>
-                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Champions and Awards</h3>
-                <p className="text-xs text-zinc-300 font-light leading-relaxed">Celebrating victories at competitive programming matches and hackathon championships.</p>
+                <span className="text-[9px] uppercase font-black text-emerald-400 tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Core Team</span>
+                <h3 className="text-lg font-bold text-white font-serif tracking-wide">Chakravyuha Core Team</h3>
+                <p className="text-xs text-zinc-200 font-normal leading-relaxed">The elite squad coordinating sheets, contests, and hackathons for all club members.</p>
               </div>
             </div>
           </div>
@@ -457,24 +457,24 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             
-            <div className="space-y-1 reveal-fade-up">
+            <div className="space-y-1 reveal-scale-up">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">390+</span>
-              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Active Warriors</span>
+              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Active Warriors</span>
             </div>
 
-            <div className="space-y-1 reveal-fade-up delay-100">
+            <div className="space-y-1 reveal-scale-up delay-100">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">5,000+</span>
-              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Problems Solved</span>
+              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Problems Solved</span>
             </div>
 
-            <div className="space-y-1 reveal-fade-up delay-200">
+            <div className="space-y-1 reveal-scale-up delay-200">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">10+</span>
-              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Hackathons Won</span>
+              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Hackathons Won</span>
             </div>
 
-            <div className="space-y-1 reveal-fade-up delay-300">
+            <div className="space-y-1 reveal-scale-up delay-300">
               <span className="block text-4xl font-extrabold text-[#d4af37] font-serif">30+</span>
-              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Rankings Placed</span>
+              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-widest">Rankings Placed</span>
             </div>
 
           </div>
@@ -486,7 +486,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Column: Descriptive info leading to registration */}
-          <div className="lg:col-span-7 space-y-6 reveal-fade-left">
+          <div className="lg:col-span-7 space-y-6 reveal-skew-up">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
               <Activity className="h-3.5 w-3.5" /> Portal Gateways
             </div>
@@ -495,29 +495,29 @@ export default function Home() {
               Ready to breach the formations?
             </h2>
             
-            <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed max-w-xl">
+            <p className="text-sm text-zinc-200 font-normal leading-relaxed max-w-xl">
               Create an account or login to access your customized dashboard. Track your coding progress, submit solutions to YUKTI sheets, and download verification certificates for successful completions.
             </p>
 
-            <ul className="space-y-3 text-xs text-zinc-300">
+            <ul className="space-y-3 text-xs text-white font-semibold">
               <li className="flex items-center gap-3">
-                <CheckCircle2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <CheckCircle2 className="h-4.5 w-4.5 text-[#d4af37] flex-shrink-0" />
                 <span>Unified authentication across all club events.</span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <CheckCircle2 className="h-4.5 w-4.5 text-[#d4af37] flex-shrink-0" />
                 <span>Nullable roll numbers and personal emails supported for incoming 2026 Batch.</span>
               </li>
               <li className="flex items-center gap-3">
-                <CheckCircle2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <CheckCircle2 className="h-4.5 w-4.5 text-[#d4af37] flex-shrink-0" />
                 <span>Dynamic dashboards showing live stats, leaderboards, and certificate registries.</span>
               </li>
             </ul>
           </div>
 
           {/* Right Column: Tabbed Auth Card */}
-          <div className="lg:col-span-5 flex flex-col justify-center w-full reveal-fade-right">
-            <div className="rounded-2xl border border-[#8c7030]/25 bg-zinc-950/85 p-5 sm:p-8 shadow-2xl backdrop-blur-md relative glass-panel w-full">
+          <div className="lg:col-span-5 flex flex-col justify-center w-full reveal-scale-up">
+            <div className="rounded-2xl bg-zinc-950/95 p-5 sm:p-8 relative w-full cyber-card-glow backdrop-blur-xl">
               
               {/* Tab Selector */}
               <div className="flex border-b border-zinc-900 mb-6 gap-6">
@@ -555,7 +555,7 @@ export default function Home() {
               {activeTab === 'login' && (
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-1.5">
                       Email or Roll Number
                     </label>
                     <div className="relative">
@@ -572,7 +572,7 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-1.5">
                       Password
                     </label>
                     <div className="relative">
