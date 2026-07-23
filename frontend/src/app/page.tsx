@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Lock, User, AlertCircle, LogIn, Mail, Phone, Award, BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowDown, Users, Flame, Terminal, Code, Cpu, Trophy, Activity } from 'lucide-react';
+import Link from 'next/link';
+import { Shield, Lock, User, AlertCircle, LogIn, Mail, Phone, Award, BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowDown, Users, Flame, Terminal, Code, Cpu, Trophy, Activity, Map, Compass, ExternalLink, ArrowRight } from 'lucide-react';
 import { apiRequest, setAuthToken, getAuthToken, getUserType } from '@/utils/api';
 
 export default function Home() {
@@ -487,6 +488,99 @@ export default function Home() {
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* 4.5 CAMPUS COMPASS SECTION */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative tech-dot-grid border-t border-[#8c7030]/10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          {/* Left: Card visual linking to Haseeb's, Karthi's, and Narendra's sites */}
+          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-4 order-2 lg:order-1 reveal-scale-up">
+            
+            {/* Card 1: Karthi */}
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-5 flex flex-col justify-between hover:scale-103 transition-transform">
+              <div className="space-y-3">
+                <Compass className="h-5 w-5 text-amber-400" />
+                <h4 className="text-sm font-bold text-white font-serif">Campus Compass</h4>
+                <p className="text-[10px] text-zinc-300 font-light leading-relaxed">
+                  Interactive campus mapping, contact directory, and leave guides.
+                </p>
+              </div>
+              <a 
+                href="https://campus-compass-karthi.netlify.app/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="mt-4 flex items-center justify-center gap-1 text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 py-1.5 rounded hover:bg-amber-500 hover:text-black transition-colors"
+              >
+                Open Site <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+
+            {/* Card 2: Haseeb */}
+            <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-5 flex flex-col justify-between hover:scale-103 transition-transform">
+              <div className="space-y-3">
+                <Compass className="h-5 w-5 text-cyan-400" />
+                <h4 className="text-sm font-bold text-white font-serif">Profound Alpaca</h4>
+                <p className="text-[10px] text-zinc-300 font-light leading-relaxed">
+                  Freshman orientation checklist, academic calendar, and photo gallery.
+                </p>
+              </div>
+              <a 
+                href="https://profound-alpaca-350538.netlify.app/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="mt-4 flex items-center justify-center gap-1 text-[10px] uppercase font-bold text-cyan-400 bg-cyan-500/10 py-1.5 rounded hover:bg-cyan-500 hover:text-black transition-colors"
+              >
+                Open Site <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+
+            {/* Card 3: Narendra */}
+            <div className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-5 flex flex-col justify-between hover:scale-103 transition-transform">
+              <div className="space-y-3">
+                <Compass className="h-5 w-5 text-purple-400" />
+                <h4 className="text-sm font-bold text-white font-serif">Whimsical Selkie</h4>
+                <p className="text-[10px] text-zinc-300 font-light leading-relaxed">
+                  Grading system details, academic guidelines, and student rules.
+                </p>
+              </div>
+              <a 
+                href="https://whimsical-selkie-9ae561.netlify.app/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="mt-4 flex items-center justify-center gap-1 text-[10px] uppercase font-bold text-purple-400 bg-purple-500/10 py-1.5 rounded hover:bg-purple-500 hover:text-black transition-colors"
+              >
+                Open Site <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+
+          </div>
+
+          {/* Right: Symmetrical text block describing the event */}
+          <div className="lg:col-span-6 space-y-6 order-1 lg:order-2 reveal-skew-up">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
+              <Map className="h-3.5 w-3.5 text-[#d4af37]" /> Campus Compass Guide
+            </div>
+            
+            <h2 className="text-3xl md:text-5xl font-bold font-serif text-white leading-tight">
+              Explore Amrita <span className="text-gold-gradient glow-text-gold">Campus Guide Portals</span>
+            </h2>
+            
+            <p className="text-base text-zinc-200 font-normal leading-relaxed">
+              During our flagship <strong>Campus Compass Event</strong>, Chakravyuha challenged students to engineer digital guide systems for incoming batches. Students developed interactive solutions containing campus routes, hostels guidelines, academic policies, mess menus, dos & donts, and resource libraries.
+            </p>
+            
+            <div className="pt-2">
+              <Link 
+                href="/campus-guide" 
+                className="inline-flex items-center gap-2.5 rounded border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] px-6 py-3 text-xs font-bold uppercase tracking-wider text-black hover:from-[#f6e05e] hover:to-[#d4af37] transition-all shadow-lg shadow-[#d4af37]/5"
+              >
+                Open Full Campus Guide Hub <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+
         </div>
       </section>
 

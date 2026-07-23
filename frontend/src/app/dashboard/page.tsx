@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, QrCode, Calendar, Sparkles, CheckCircle2, Flame, RefreshCw, Download, ArrowRight, UserCheck, Award } from 'lucide-react';
+import { Trophy, QrCode, Calendar, Sparkles, CheckCircle2, Flame, RefreshCw, Download, ArrowRight, UserCheck, Award, Map, Compass } from 'lucide-react';
 import { apiRequest, getAuthToken, clearAuth } from '@/utils/api';
 
 interface StudentInfo {
@@ -301,6 +301,26 @@ export default function Dashboard() {
               </button>
             </div>
           )}
+
+          {/* Campus Compass Guide Card */}
+          <div className="rounded-lg border border-[#8c7030]/20 bg-zinc-950/80 p-6 shadow-md glass-panel flex flex-col items-center text-center relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-[#d4af37]/10 text-[#d4af37] font-extrabold text-[8px] uppercase px-2.5 py-1 rounded-bl tracking-wider border-l border-b border-[#d4af37]/20">
+              New Resource
+            </div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-2 flex items-center gap-1.5 mt-2">
+              <Compass className="h-4 w-4 text-[#d4af37]" />
+              Campus Guide Hub
+            </h3>
+            <p className="text-[10px] text-zinc-300 leading-relaxed mb-4">
+              Access rules, policies, dos & donts, and student-built guides from our recent <strong>Campus Compass</strong> event.
+            </p>
+            <Link 
+              href="/campus-guide" 
+              className="flex w-full items-center justify-center gap-2 rounded border border-[#d4af37] bg-[#d4af37]/10 hover:bg-[#d4af37]/20 py-2.5 text-xs font-bold uppercase tracking-wider text-[#d4af37] transition-all gold-border-glow"
+            >
+              Open Campus Guide <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
 
         </div>
 
