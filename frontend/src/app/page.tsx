@@ -772,7 +772,7 @@ export default function Home() {
                         src={member.img}
                         alt={member.name}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                        style={{objectPosition: 'center 25%'}}
+                        style={{objectPosition: 'center 75%'}}
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           const p = e.currentTarget.parentElement!;
@@ -780,10 +780,11 @@ export default function Home() {
                         }}
                       />
 
-                      {/* Heavy top gradient to cover watermark text on photos */}
+                      {/* Bottom gradient for name readability — watermark text is above visible area now */}
                       <div className="absolute inset-0" style={{
-                        background: 'linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.1) 55%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.97) 100%)'
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.7) 75%, rgba(0,0,0,0.97) 100%)'
                       }}></div>
+
 
                       {/* Scan line effect */}
                       <div className="absolute inset-0 opacity-[0.04] pointer-events-none group-hover:opacity-[0.07] transition-opacity" style={{
@@ -892,7 +893,7 @@ export default function Home() {
                   src={selectedMember.img}
                   alt={selectedMember.name}
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{objectPosition: 'center 20%'}}
+                  style={{objectPosition: 'center 70%'}}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     const p = e.currentTarget.parentElement!;
