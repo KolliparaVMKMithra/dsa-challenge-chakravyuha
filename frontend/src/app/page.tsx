@@ -3,8 +3,61 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Shield, Lock, User, AlertCircle, LogIn, Mail, Phone, Award, BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowDown, Users, Flame, Terminal, Code, Cpu, Trophy, Activity, Map, Compass, ExternalLink, ArrowRight } from 'lucide-react';
+import { Shield, Lock, User, AlertCircle, LogIn, Mail, Phone, Award, BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowDown, Users, Flame, Terminal, Code, Cpu, Trophy, Activity, Map, Compass, ExternalLink, ArrowRight, Menu, X } from 'lucide-react';
 import { apiRequest, setAuthToken, getAuthToken, getUserType } from '@/utils/api';
+
+interface TeamMember {
+  name: string;
+  role: string;
+  img: string;
+  dept: 'founders' | 'core' | 'tech' | 'design' | 'events' | 'content' | 'community';
+}
+
+const teamMembers: TeamMember[] = [
+  // Founders & Co-Founders
+  { name: "Mithra", role: "Founder", img: "/team/founders and co-founders/Mithra_founder.jpg", dept: "founders" },
+  { name: "Ganesh", role: "Co-Founder", img: "/team/founders and co-founders/Ganesh.jpg", dept: "founders" },
+  { name: "Harikiran", role: "Co-Founder", img: "/team/founders and co-founders/Harikiran.jpg", dept: "founders" },
+  { name: "Krishna", role: "Co-Founder", img: "/team/founders and co-founders/Krishna.jpg", dept: "founders" },
+  { name: "Rudra", role: "Co-Founder", img: "/team/founders and co-founders/Rudra.jpg", dept: "founders" },
+  { name: "Maneesh", role: "Co-Founder", img: "/team/founders and co-founders/maneesh.jpg", dept: "founders" },
+  { name: "Sindhuja", role: "Co-Founder", img: "/team/founders and co-founders/sindhuja.jpg", dept: "founders" },
+  
+  // Core Roles
+  { name: "Athul Krishna", role: "Strategy & Innovation Head", img: "/team/core_roles/athul_krishna_strategy_and_innovation_head.jpg", dept: "core" },
+  { name: "Jaydeep", role: "Treasurer", img: "/team/core_roles/jaydeep_tresurer.jpg", dept: "core" },
+  { name: "Medha", role: "General Secretary", img: "/team/core_roles/medha_general_secretary.jpg", dept: "core" },
+  
+  // Tech Leads
+  { name: "Dhanush", role: "Tech Lead", img: "/team/tech leads/dhanuh.jpg", dept: "tech" },
+  { name: "Mithun", role: "Tech Lead", img: "/team/tech leads/mithun.jpg", dept: "tech" },
+  { name: "Revanth", role: "Tech Lead", img: "/team/tech leads/revanth.jpg", dept: "tech" },
+  { name: "Rishikesh", role: "Tech Lead", img: "/team/tech leads/rishikesh.jpg", dept: "tech" },
+  { name: "Rishitha", role: "Tech Lead", img: "/team/tech leads/rishitha.jpg", dept: "tech" },
+  
+  // Design Leads
+  { name: "Harini", role: "Design Lead", img: "/team/design leads/harini.jpg", dept: "design" },
+  { name: "Hasini", role: "Design Lead", img: "/team/design leads/hasini.jpg", dept: "design" },
+  { name: "Hemendra", role: "Design Lead", img: "/team/design leads/hemendra.jpg", dept: "design" },
+  { name: "Rithesh", role: "Design Lead", img: "/team/design leads/rithesh.jpg", dept: "design" },
+  
+  // Events & PR Leads
+  { name: "Akhila", role: "Events & PR Lead", img: "/team/events and pr leads/akhila.jpg", dept: "events" },
+  { name: "Gayatri", role: "Events & PR Lead", img: "/team/events and pr leads/gayatri.jpg", dept: "events" },
+  { name: "Karthik", role: "Events & PR Lead", img: "/team/events and pr leads/karthik.jpg", dept: "events" },
+  { name: "Lalith Aditya", role: "Events & PR Lead", img: "/team/events and pr leads/lalith aditya.jpg", dept: "events" },
+  { name: "Pranavi", role: "Events & PR Lead", img: "/team/events and pr leads/pranavi.jpg", dept: "events" },
+  { name: "Rithvik", role: "Events & PR Lead", img: "/team/events and pr leads/rithvik.jpg", dept: "events" },
+  { name: "Satya Shivani", role: "Events & PR Lead", img: "/team/events and pr leads/satya_shivani.jpg", dept: "events" },
+  
+  // Content Leads
+  { name: "Lasya", role: "Content Lead", img: "/team/content leads/lasya.jpg", dept: "content" },
+  { name: "Shreeram", role: "Content Lead", img: "/team/content leads/shreeram.jpg", dept: "content" },
+  
+  // Community Leads
+  { name: "Mohitha", role: "Community & Engagement Lead", img: "/team/community and engagement leads/mohitha.jpg", dept: "community" },
+  { name: "Reshma", role: "Community & Engagement Lead", img: "/team/community and engagement leads/reshma.jpg", dept: "community" },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -48,6 +101,8 @@ export default function Home() {
   }, []);
   
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [selectedDept, setSelectedDept] = useState<'founders' | 'core' | 'tech' | 'design' | 'events' | 'content' | 'community'>('founders');
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
   // Login fields
   const [loginUsername, setLoginUsername] = useState('');
@@ -240,8 +295,102 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col bg-black text-white relative overflow-hidden min-h-screen">
+    <div className="flex flex-col bg-black text-white relative overflow-hidden min-h-screen pt-16">
       
+      {/* LANDING PAGE NAVBAR */}
+      <header className="fixed top-0 left-0 w-full z-50 border-b border-[#8c7030]/20 bg-black/80 backdrop-blur-md transition-all">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          
+          {/* Logo */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-[#d4af37]/60 bg-zinc-900">
+              <img 
+                src="/club_logo.jpg" 
+                alt="Chakravyuha Logo" 
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-sm font-bold tracking-wider text-gold-gradient font-serif">CHAKRAVYUHA</span>
+              <span className="text-[9px] tracking-widest text-[#c5a059] uppercase">Amrita Amaravati</span>
+            </div>
+          </div>
+
+          {/* Desktop Nav Links */}
+          <nav className="hidden md:flex items-center gap-8">
+            <button 
+              onClick={() => document.getElementById('team-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] transition-colors"
+            >
+              Our Team
+            </button>
+            <button 
+              onClick={() => document.getElementById('campus-guide-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] transition-colors"
+            >
+              Campus Guide
+            </button>
+            <button 
+              onClick={scrollToAuth}
+              className="text-xs font-bold uppercase tracking-wider text-black bg-[#d4af37] hover:bg-[#f6e05e] border border-[#d4af37] px-4 py-2 rounded transition-all shadow-md shadow-[#d4af37]/10"
+            >
+              Login / Register
+            </button>
+          </nav>
+
+          {/* Mobile Menu Button (Hamburger) */}
+          <div className="md:hidden flex items-center gap-4">
+            <button
+              onClick={scrollToAuth}
+              className="text-[10px] font-bold uppercase tracking-wider text-black bg-[#d4af37] px-3 py-1.5 rounded transition-all"
+            >
+              Login
+            </button>
+            <button 
+              onClick={() => {
+                const target = document.getElementById('mobile-nav');
+                if (target) target.classList.toggle('hidden');
+              }}
+              className="p-1.5 text-zinc-400 hover:text-[#d4af37] transition-colors"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
+
+        </div>
+
+        {/* Mobile Nav dropdown menu */}
+        <div id="mobile-nav" className="hidden md:hidden border-t border-zinc-900 bg-black/95 py-4 px-6 space-y-4">
+          <button 
+            onClick={() => {
+              document.getElementById('team-section')?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById('mobile-nav')?.classList.add('hidden');
+            }}
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37]"
+          >
+            Our Team
+          </button>
+          <button 
+            onClick={() => {
+              document.getElementById('campus-guide-section')?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById('mobile-nav')?.classList.add('hidden');
+            }}
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37]"
+          >
+            Campus Guide
+          </button>
+          <button 
+            onClick={() => {
+              scrollToAuth();
+              document.getElementById('mobile-nav')?.classList.add('hidden');
+            }}
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-[#d4af37]"
+          >
+            Enter Portal (Login / Register)
+          </button>
+        </div>
+      </header>
+
       {/* Background radial glows */}
       <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none"></div>
       <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -462,6 +611,152 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 3.5 PANTHEON OF COMMANDERS (TEAM SECTION) */}
+      <section id="team-section" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative tech-dot-grid border-t border-[#8c7030]/10">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3 reveal-skew-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
+            <Users className="h-3.5 w-3.5" /> Our Team
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold font-serif text-white tracking-wide leading-tight">
+            The <span className="text-gold-gradient glow-text-gold">Chakravyuha Pantheon</span>
+          </h2>
+          <p className="text-base text-zinc-200 font-normal leading-relaxed max-w-xl mx-auto font-sans">
+            Meet the developers, designers, events managers, and coordinators behind Amrita Amaravati's premier tech hub.
+          </p>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap justify-center gap-2 mb-12 max-w-4xl mx-auto reveal-scale-up">
+          {[
+            { id: 'founders', label: 'Founders & Co-Founders' },
+            { id: 'core', label: 'Core Roles' },
+            { id: 'tech', label: 'Tech Leads' },
+            { id: 'design', label: 'Design Leads' },
+            { id: 'events', label: 'Events & PR Leads' },
+            { id: 'content', label: 'Content Leads' },
+            { id: 'community', label: 'Community Leads' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedDept(tab.id as any)}
+              className={`px-4 py-2.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                selectedDept === tab.id
+                  ? 'border-[#d4af37] bg-[#d4af37]/10 text-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.15)]'
+                  : 'border-zinc-900 bg-zinc-950/40 text-zinc-400 hover:text-white hover:border-zinc-800'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Members Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 justify-center">
+          {teamMembers
+            .filter((m) => m.dept === selectedDept)
+            .map((member, idx) => (
+              <div
+                key={idx}
+                onClick={() => setSelectedMember(member)}
+                className="group relative rounded-xl border border-zinc-900 bg-zinc-950/40 p-3 shadow-md hover:border-[#d4af37]/40 cursor-pointer transition-all hover:scale-105 duration-300 flex flex-col items-center text-center reveal-scale-up"
+              >
+                {/* Profile Image */}
+                <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-900 bg-zinc-950 mb-3 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.1)] transition-all">
+                  <img
+                    src={member.img}
+                    alt={member.name}
+                    className="w-full h-full object-cover opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${member.name}`;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                </div>
+
+                <h4 className="font-bold text-white text-xs group-hover:text-[#d4af37] transition-colors line-clamp-1">{member.name}</h4>
+                <p className="text-[9px] text-zinc-400 mt-0.5 line-clamp-1">{member.role}</p>
+
+                {/* Accent line on hover */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-transparent group-hover:bg-[#d4af37] transition-colors rounded-t"></div>
+              </div>
+            ))}
+        </div>
+      </section>
+
+      {/* MEMBER DETAILS CYBER MODAL */}
+      {selectedMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all animate-fade-in">
+          <div className="relative w-full max-w-xl rounded-2xl border border-[#d4af37]/30 bg-zinc-950/95 p-6 sm:p-8 shadow-2xl shadow-black/90 slashed-clip overflow-hidden">
+            
+            {/* Ambient Corner Glows */}
+            <div className="absolute -top-12 -right-12 w-24 h-24 bg-[#d4af37]/10 rounded-full blur-xl"></div>
+            <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-[#d4af37]/10 rounded-full blur-xl"></div>
+
+            <button
+              onClick={() => setSelectedMember(null)}
+              className="absolute top-4 right-4 p-2 rounded-full border border-zinc-900 bg-zinc-950 text-zinc-400 hover:text-[#d4af37] hover:border-[#d4af37]/40 transition-all z-10"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+              
+              {/* Profile Image Column */}
+              <div className="sm:col-span-5 flex justify-center">
+                <div className="relative w-40 h-40 rounded-xl border border-[#d4af37]/40 bg-zinc-950 overflow-hidden shadow-xl shadow-black/60 slashed-clip group">
+                  <img
+                    src={selectedMember.img}
+                    alt={selectedMember.name}
+                    className="w-full h-full object-cover opacity-90 group-hover:scale-103 transition-transform duration-500"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedMember.name}`;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                </div>
+              </div>
+
+              {/* Description Details Column */}
+              <div className="sm:col-span-7 space-y-4 text-left">
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20">
+                    {selectedMember.dept === 'founders' ? 'Founder Circle' : selectedMember.dept === 'core' ? 'Core Secretariat' : 'Division Lead'}
+                  </span>
+                  <h3 className="text-2xl font-bold font-serif text-white tracking-wide">{selectedMember.name}</h3>
+                  <p className="text-xs text-[#d4af37] font-semibold">{selectedMember.role}</p>
+                </div>
+
+                <div className="border-t border-zinc-900 pt-3">
+                  <p className="text-xs text-zinc-300 leading-relaxed font-light font-sans">
+                    Operational Command: Coordinating competitive sheets, DSA hackathons, and software architectures for Amrita Vishwa Vidyapeetham.
+                  </p>
+                </div>
+
+                <div className="flex gap-4 pt-2 text-[10px] text-zinc-500 uppercase font-bold tracking-wider">
+                  <div>
+                    <span className="block text-[8px] text-zinc-650">Department</span>
+                    <span className="text-zinc-300">{selectedMember.dept} division</span>
+                  </div>
+                  <div className="w-[1px] h-8 bg-zinc-900"></div>
+                  <div>
+                    <span className="block text-[8px] text-zinc-650">Headquarters</span>
+                    <span className="text-zinc-300">Amaravati</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <button
+              onClick={() => setSelectedMember(null)}
+              className="mt-6 w-full py-2.5 rounded border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-xs font-bold uppercase tracking-wider text-black hover:from-[#f6e05e] hover:to-[#d4af37] transition-all"
+            >
+              Exit Terminal
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 4. CLUB STATS PILLARS */}
       <section className="py-20 border-y border-[#8c7030]/15 bg-zinc-950/30 backdrop-blur-md z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -492,7 +787,7 @@ export default function Home() {
       </section>
 
       {/* 4.5 CAMPUS COMPASS SECTION */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative tech-dot-grid border-t border-[#8c7030]/10">
+      <section id="campus-guide-section" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative tech-dot-grid border-t border-[#8c7030]/10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
           {/* Left: Card visual linking to Haseeb's, Karthi's, and Narendra's sites */}
