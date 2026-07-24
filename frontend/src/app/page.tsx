@@ -370,8 +370,9 @@ export default function Home() {
         </div>
 
         {/* Mobile Nav dropdown */}
-        <div id="mobile-nav" className="hidden md:hidden py-4 px-6 space-y-4"
+        <div id="mobile-nav" className="hidden py-4 px-6 space-y-4"
           style={{background: 'rgba(0,0,0,0.95)', borderTop: '1px solid rgba(212,175,55,0.1)'}}>
+
           <button 
             onClick={() => {
               document.getElementById('team-section')?.scrollIntoView({ behavior: 'smooth' });
