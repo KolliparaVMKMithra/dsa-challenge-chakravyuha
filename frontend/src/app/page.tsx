@@ -23,10 +23,10 @@ const teamMembers: TeamMember[] = [
   { name: "Maneesh", role: "Co-Founder", img: "/team/founders and co-founders/maneesh.jpg", dept: "founders" },
   { name: "Sindhuja", role: "Co-Founder", img: "/team/founders and co-founders/sindhuja.jpg", dept: "founders" },
   
-  // Core Roles
+  // Core Roles (Medha first)
+  { name: "Medha", role: "General Secretary", img: "/team/core_roles/medha_general_secretary.jpg", dept: "core" },
   { name: "Athul Krishna", role: "Strategy & Innovation Head", img: "/team/core_roles/athul_krishna_strategy_and_innovation_head.jpg", dept: "core" },
   { name: "Jaydeep", role: "Treasurer", img: "/team/core_roles/jaydeep_tresurer.jpg", dept: "core" },
-  { name: "Medha", role: "General Secretary", img: "/team/core_roles/medha_general_secretary.jpg", dept: "core" },
   
   // Tech Leads
   { name: "Dhanush", role: "Tech Lead", img: "/team/tech leads/dhanuh.jpg", dept: "tech" },
@@ -297,52 +297,62 @@ export default function Home() {
   return (
     <div className="flex flex-col bg-black text-white relative overflow-hidden min-h-screen pt-16">
       
-      {/* LANDING PAGE NAVBAR */}
-      <header className="fixed top-0 left-0 w-full z-50 border-b border-[#8c7030]/20 bg-black/80 backdrop-blur-md transition-all">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      {/* =================== PREMIUM NAVBAR =================== */}
+      <header className="fixed top-0 left-0 w-full z-50 transition-all duration-500"
+        style={{background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(212,175,55,0.08)'}}>
+        
+        {/* Ultra-thin gold accent line at very top */}
+        <div className="h-px w-full" style={{background: 'linear-gradient(90deg, transparent 0%, #d4af37 30%, #f6e05e 50%, #d4af37 70%, transparent 100%)', opacity: 0.6}}></div>
+
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 lg:px-12">
           
           {/* Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="relative h-10 w-10 overflow-hidden rounded-full border border-[#d4af37]/60 bg-zinc-900">
+          <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="relative h-10 w-10 overflow-hidden rounded-full flex-shrink-0"
+              style={{border: '1.5px solid rgba(212,175,55,0.5)', boxShadow: '0 0 12px rgba(212,175,55,0.15)'}}>
               <img 
                 src="/club_logo.jpg" 
                 alt="Chakravyuha Logo" 
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="flex flex-col text-left">
-              <span className="text-sm font-bold tracking-wider text-gold-gradient font-serif">CHAKRAVYUHA</span>
-              <span className="text-[9px] tracking-widest text-[#c5a059] uppercase">Amrita Amaravati</span>
+              <span className="text-sm font-black tracking-[0.15em] uppercase" style={{background: 'linear-gradient(135deg, #d4af37, #f6e05e, #d4af37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontFamily: 'Georgia, serif'}}>CHAKRAVYUHA</span>
+              <span className="text-[9px] tracking-[0.25em] text-[#c5a059]/60 uppercase font-medium">Amrita · Amaravati</span>
             </div>
           </div>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button 
-              onClick={() => document.getElementById('team-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] transition-colors"
-            >
-              Our Team
-            </button>
-            <button 
-              onClick={() => document.getElementById('campus-guide-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] transition-colors"
-            >
-              Campus Guide
-            </button>
+          <nav className="hidden md:flex items-center gap-10">
+            {[
+              { label: 'Our Team', id: 'team-section' },
+              { label: 'Campus Guide', id: 'campus-guide-section' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' })}
+                className="relative text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400 hover:text-white transition-colors duration-300 group py-1"
+              >
+                {item.label}
+                <span className="absolute bottom-0 left-0 w-0 h-px group-hover:w-full transition-all duration-400" style={{background: 'linear-gradient(90deg, #d4af37, #f6e05e)'}}></span>
+              </button>
+            ))}
+            
             <button 
               onClick={scrollToAuth}
-              className="text-xs font-bold uppercase tracking-wider text-black bg-[#d4af37] hover:bg-[#f6e05e] border border-[#d4af37] px-4 py-2 rounded transition-all shadow-md shadow-[#d4af37]/10"
+              className="relative text-[11px] font-black uppercase tracking-[0.18em] text-black px-5 py-2.5 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105"
+              style={{background: 'linear-gradient(135deg, #d4af37 0%, #f6e05e 50%, #8c7030 100%)', boxShadow: '0 4px 20px rgba(212,175,55,0.25)'}}
             >
-              Login / Register
+              <span className="relative z-10">Login / Register</span>
             </button>
           </nav>
 
-          {/* Mobile Menu Button (Hamburger) */}
-          <div className="md:hidden flex items-center gap-4">
+          {/* Mobile */}
+          <div className="md:hidden flex items-center gap-3">
             <button
               onClick={scrollToAuth}
-              className="text-[10px] font-bold uppercase tracking-wider text-black bg-[#d4af37] px-3 py-1.5 rounded transition-all"
+              className="text-[10px] font-black uppercase tracking-wider text-black px-3 py-2 rounded-lg"
+              style={{background: 'linear-gradient(135deg, #d4af37, #8c7030)'}}
             >
               Login
             </button>
@@ -351,7 +361,7 @@ export default function Home() {
                 const target = document.getElementById('mobile-nav');
                 if (target) target.classList.toggle('hidden');
               }}
-              className="p-1.5 text-zinc-400 hover:text-[#d4af37] transition-colors"
+              className="p-2 text-zinc-400 hover:text-[#d4af37] transition-colors"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -359,14 +369,15 @@ export default function Home() {
 
         </div>
 
-        {/* Mobile Nav dropdown menu */}
-        <div id="mobile-nav" className="hidden md:hidden border-t border-zinc-900 bg-black/95 py-4 px-6 space-y-4">
+        {/* Mobile Nav dropdown */}
+        <div id="mobile-nav" className="hidden md:hidden py-4 px-6 space-y-4"
+          style={{background: 'rgba(0,0,0,0.95)', borderTop: '1px solid rgba(212,175,55,0.1)'}}>
           <button 
             onClick={() => {
               document.getElementById('team-section')?.scrollIntoView({ behavior: 'smooth' });
               document.getElementById('mobile-nav')?.classList.add('hidden');
             }}
-            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37]"
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] py-2 transition-colors"
           >
             Our Team
           </button>
@@ -375,7 +386,7 @@ export default function Home() {
               document.getElementById('campus-guide-section')?.scrollIntoView({ behavior: 'smooth' });
               document.getElementById('mobile-nav')?.classList.add('hidden');
             }}
-            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37]"
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] py-2 transition-colors"
           >
             Campus Guide
           </button>
@@ -384,12 +395,15 @@ export default function Home() {
               scrollToAuth();
               document.getElementById('mobile-nav')?.classList.add('hidden');
             }}
-            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-[#d4af37]"
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider py-2 transition-colors"
+            style={{color: '#d4af37'}}
           >
-            Enter Portal (Login / Register)
+            Login / Register →
           </button>
         </div>
       </header>
+
+
 
       {/* Background radial glows */}
       <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none"></div>
@@ -611,151 +625,362 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3.5 PANTHEON OF COMMANDERS (TEAM SECTION) */}
-      <section id="team-section" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative tech-dot-grid border-t border-[#8c7030]/10">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3 reveal-skew-up">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#8c7030]/20 bg-zinc-950/80 text-[10px] font-extrabold text-[#d4af37] uppercase tracking-wider">
-            <Users className="h-3.5 w-3.5" /> Our Team
+      {/* =================== TEAM SECTION =================== */}
+      <section id="team-section" className="relative z-10 overflow-hidden"
+        style={{background: 'linear-gradient(180deg, #050505 0%, #080600 50%, #050505 100%)'}}>
+        
+        {/* Cyber grid background */}
+        <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{
+          backgroundImage: `linear-gradient(rgba(212,175,55,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.6) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}></div>
+        
+        {/* Ambient glow orbs */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] pointer-events-none opacity-[0.03]"
+          style={{background: 'radial-gradient(ellipse, #d4af37, transparent 70%)', filter: 'blur(80px)'}}></div>
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] pointer-events-none opacity-[0.03]"
+          style={{background: 'radial-gradient(ellipse, #d4af37, transparent 70%)', filter: 'blur(60px)'}}></div>
+
+        <div className="max-w-[1500px] mx-auto px-6 lg:px-16 py-28">
+
+          {/* HEADER */}
+          <div className="mb-20 reveal-skew-up">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-px flex-1 max-w-[80px]" style={{background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5))'}}></div>
+              <span className="text-[10px] uppercase tracking-[0.5em] font-black" style={{color: 'rgba(212,175,55,0.6)'}}>CHAKRAVYUHA · PERSONNEL DATABASE</span>
+              <div className="h-px flex-1" style={{background: 'linear-gradient(90deg, rgba(212,175,55,0.5), transparent)'}}></div>
+            </div>
+            <h2 className="text-6xl md:text-8xl lg:text-[9rem] font-black leading-none tracking-tight mb-4" style={{
+              fontFamily: 'Georgia, serif',
+              background: 'linear-gradient(135deg, #ffffff 0%, #d4af37 40%, #8c7030 70%, #d4af37 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              letterSpacing: '-0.03em'
+            }}>
+              THE PANTHEON
+            </h2>
+            <p className="text-zinc-500 text-base max-w-lg font-light tracking-wide mt-4" style={{letterSpacing: '0.05em'}}>
+              Authorized Personnel Only — Chakravyuha Command Structure
+            </p>
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold font-serif text-white tracking-wide leading-tight">
-            The <span className="text-gold-gradient glow-text-gold">Chakravyuha Pantheon</span>
-          </h2>
-          <p className="text-base text-zinc-200 font-normal leading-relaxed max-w-xl mx-auto font-sans">
-            Meet the developers, designers, events managers, and coordinators behind Amrita Amaravati's premier tech hub.
-          </p>
-        </div>
 
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12 max-w-4xl mx-auto reveal-scale-up">
-          {[
-            { id: 'founders', label: 'Founders & Co-Founders' },
-            { id: 'core', label: 'Core Roles' },
-            { id: 'tech', label: 'Tech Leads' },
-            { id: 'design', label: 'Design Leads' },
-            { id: 'events', label: 'Events & PR Leads' },
-            { id: 'content', label: 'Content Leads' },
-            { id: 'community', label: 'Community Leads' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedDept(tab.id as any)}
-              className={`px-4 py-2.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-                selectedDept === tab.id
-                  ? 'border-[#d4af37] bg-[#d4af37]/10 text-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.15)]'
-                  : 'border-zinc-900 bg-zinc-950/40 text-zinc-400 hover:text-white hover:border-zinc-800'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          {/* MAIN LAYOUT */}
+          <div className="flex flex-col lg:flex-row gap-12 items-start">
 
-        {/* Members Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 justify-center">
-          {teamMembers
-            .filter((m) => m.dept === selectedDept)
-            .map((member, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSelectedMember(member)}
-                className="group relative rounded-xl border border-zinc-900 bg-zinc-950/40 p-3 shadow-md hover:border-[#d4af37]/40 cursor-pointer transition-all hover:scale-105 duration-300 flex flex-col items-center text-center reveal-scale-up"
-              >
-                {/* Profile Image */}
-                <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-900 bg-zinc-950 mb-3 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.1)] transition-all">
-                  <img
-                    src={member.img}
-                    alt={member.name}
-                    className="w-full h-full object-cover opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${member.name}`;
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+            {/* LEFT: Sidebar */}
+            <div className="lg:w-64 flex-shrink-0">
+              <div className="lg:sticky lg:top-24 overflow-hidden" style={{
+                background: 'rgba(10,8,0,0.8)',
+                border: '1px solid rgba(212,175,55,0.08)',
+                backdropFilter: 'blur(30px)',
+                clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))'
+              }}>
+                {/* Sidebar header */}
+                <div className="px-5 py-4 flex items-center gap-2" style={{borderBottom: '1px solid rgba(212,175,55,0.06)'}}>
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{background: '#d4af37', boxShadow: '0 0 6px #d4af37'}}></div>
+                  <p className="text-[9px] uppercase tracking-[0.4em] font-black" style={{color: 'rgba(212,175,55,0.5)'}}>DIVISION SELECT</p>
                 </div>
-
-                <h4 className="font-bold text-white text-xs group-hover:text-[#d4af37] transition-colors line-clamp-1">{member.name}</h4>
-                <p className="text-[9px] text-zinc-400 mt-0.5 line-clamp-1">{member.role}</p>
-
-                {/* Accent line on hover */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-transparent group-hover:bg-[#d4af37] transition-colors rounded-t"></div>
+                {[
+                  { id: 'founders', label: 'Founders & Co-Founders', count: 7 },
+                  { id: 'core', label: 'Core Secretariat', count: 3 },
+                  { id: 'tech', label: 'Tech Leads', count: 5 },
+                  { id: 'design', label: 'Design Leads', count: 4 },
+                  { id: 'events', label: 'Events & PR Leads', count: 7 },
+                  { id: 'content', label: 'Content Leads', count: 2 },
+                  { id: 'community', label: 'Community Leads', count: 2 },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedDept(tab.id as any)}
+                    className="w-full flex items-center gap-3 px-5 py-4 text-left transition-all duration-300 relative group"
+                    style={{
+                      borderBottom: '1px solid rgba(212,175,55,0.04)',
+                      borderLeft: selectedDept === tab.id ? '2px solid #d4af37' : '2px solid transparent',
+                      background: selectedDept === tab.id ? 'linear-gradient(90deg, rgba(212,175,55,0.07), transparent)' : 'transparent'
+                    }}
+                  >
+                    {/* Active scan line */}
+                    {selectedDept === tab.id && (
+                      <div className="absolute inset-0 pointer-events-none opacity-30"
+                        style={{background: 'linear-gradient(90deg, rgba(212,175,55,0.1), transparent 60%)'}}></div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-bold text-xs uppercase tracking-wider truncate transition-colors ${selectedDept === tab.id ? 'text-[#d4af37]' : 'text-zinc-600 group-hover:text-zinc-300'}`}
+                        style={{letterSpacing: '0.12em'}}>
+                        {tab.label}
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-black flex-shrink-0"
+                      style={{color: selectedDept === tab.id ? 'rgba(212,175,55,0.7)' : 'rgba(255,255,255,0.1)'}}>
+                      {String(tab.count).padStart(2, '0')}
+                    </span>
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* RIGHT: Cards */}
+            <div className="flex-1 min-w-0">
+              {/* Section title */}
+              <div className="mb-10 dept-slide-in" key={selectedDept}>
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] uppercase tracking-[0.5em] font-black mb-1" style={{color: 'rgba(212,175,55,0.4)'}}>
+                      DIVISION
+                    </span>
+                    <h3 className="text-3xl font-black text-white uppercase" style={{fontFamily: 'Georgia, serif', letterSpacing: '0.05em'}}>
+                      {selectedDept === 'founders' ? 'Founders & Co-Founders' :
+                       selectedDept === 'core' ? 'Core Secretariat' :
+                       selectedDept === 'tech' ? 'Tech Leads' :
+                       selectedDept === 'design' ? 'Design Leads' :
+                       selectedDept === 'events' ? 'Events & PR Leads' :
+                       selectedDept === 'content' ? 'Content Leads' : 'Community Leads'}
+                    </h3>
+                  </div>
+                  <div className="flex-1 h-px" style={{background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)'}}></div>
+                </div>
+              </div>
+
+              {/* Member Cards — Futuristic Portrait Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                {teamMembers
+                  .filter((m) => m.dept === selectedDept)
+                  .map((member, idx) => (
+                    <div
+                      key={`${selectedDept}-${idx}`}
+                      onClick={() => setSelectedMember(member)}
+                      className="group relative cursor-pointer overflow-hidden"
+                      style={{
+                        aspectRatio: '2/3',
+                        background: '#0a0800',
+                        transition: 'all 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
+                        clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-10px) scale(1.03)';
+                        e.currentTarget.style.boxShadow = '0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,175,55,0.4), 0 0 30px rgba(212,175,55,0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0px) scale(1)';
+                        e.currentTarget.style.boxShadow = '0 0 0 1px rgba(212,175,55,0.08)';
+                      }}
+                    >
+                      {/* Outer border via box-shadow on rest */}
+                      <div className="absolute inset-0" style={{boxShadow: 'inset 0 0 0 1px rgba(212,175,55,0.08)'}}></div>
+
+                      {/* Photo */}
+                      <img
+                        src={member.img}
+                        alt={member.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
+                        style={{objectPosition: 'center 25%'}}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const p = e.currentTarget.parentElement!;
+                          p.style.background = 'linear-gradient(160deg, #1a1200 0%, #0a0800 100%)';
+                        }}
+                      />
+
+                      {/* Heavy top gradient to cover watermark text on photos */}
+                      <div className="absolute inset-0" style={{
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.1) 55%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.97) 100%)'
+                      }}></div>
+
+                      {/* Scan line effect */}
+                      <div className="absolute inset-0 opacity-[0.04] pointer-events-none group-hover:opacity-[0.07] transition-opacity" style={{
+                        backgroundImage: 'repeating-linear-gradient(0deg, rgba(212,175,55,0.8) 0px, rgba(212,175,55,0.8) 1px, transparent 1px, transparent 3px)',
+                        backgroundSize: '100% 3px'
+                      }}></div>
+
+                      {/* Hover neon border glow */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                        style={{boxShadow: 'inset 0 0 0 1px rgba(212,175,55,0.35), inset 0 0 20px rgba(212,175,55,0.05)'}}></div>
+
+                      {/* Top-right diagonal slash decoration */}
+                      <div className="absolute top-0 right-0 w-8 h-8 opacity-40 group-hover:opacity-80 transition-opacity duration-300"
+                        style={{background: 'linear-gradient(225deg, rgba(212,175,55,0.5) 0%, transparent 60%)'}}></div>
+
+                      {/* Index number — top left */}
+                      <div className="absolute top-3 left-3">
+                        <span className="text-[10px] font-black" style={{
+                          color: 'rgba(212,175,55,0.35)',
+                          fontFamily: 'monospace',
+                          letterSpacing: '0.1em'
+                        }}>{String(idx + 1).padStart(2, '0')}</span>
+                      </div>
+
+                      {/* Bottom info panel */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        {/* Role badge — appears on hover */}
+                        <div className="mb-2 overflow-hidden" style={{height: '0', transition: 'height 0.3s ease'}}>
+                          <span className="text-[8px] uppercase tracking-[0.25em] font-black px-2 py-0.5 block w-fit"
+                            style={{
+                              background: 'rgba(212,175,55,0.1)',
+                              border: '1px solid rgba(212,175,55,0.25)',
+                              color: '#d4af37',
+                              clipPath: 'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%)'
+                            }}>
+                            {member.dept === 'founders' ? (member.role === 'Founder' ? 'FOUNDER' : 'CO-FOUNDER') : member.role.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <h4 className="text-white font-black text-base leading-tight" style={{
+                          fontFamily: 'Georgia, serif',
+                          textShadow: '0 2px 20px rgba(0,0,0,1)',
+                          letterSpacing: '0.02em'
+                        }}>
+                          {member.name}
+                        </h4>
+
+                        {/* Expandable role text on hover */}
+                        <p className="text-xs font-medium mt-0.5 translate-y-1 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300"
+                          style={{color: 'rgba(212,175,55,0.65)'}}>
+                          {member.role}
+                        </p>
+
+                        {/* CTA line */}
+                        <div className="flex items-center gap-2 mt-3 translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-400">
+                          <div className="h-px w-4" style={{background: '#d4af37'}}></div>
+                          <span className="text-[8px] uppercase tracking-[0.3em] font-black" style={{color: 'rgba(212,175,55,0.5)'}}>VIEW FILE</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* MEMBER DETAILS CYBER MODAL */}
+      {/* =================== MEMBER MODAL =================== */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all animate-fade-in">
-          <div className="relative w-full max-w-xl rounded-2xl border border-[#d4af37]/30 bg-zinc-950/95 p-6 sm:p-8 shadow-2xl shadow-black/90 slashed-clip overflow-hidden">
-            
-            {/* Ambient Corner Glows */}
-            <div className="absolute -top-12 -right-12 w-24 h-24 bg-[#d4af37]/10 rounded-full blur-xl"></div>
-            <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-[#d4af37]/10 rounded-full blur-xl"></div>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop-enter"
+          style={{background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)'}}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedMember(null); }}
+        >
+          <div className="modal-enter relative w-full max-w-4xl overflow-hidden"
+            style={{
+              background: '#060500',
+              border: '1px solid rgba(212,175,55,0.15)',
+              maxHeight: '92vh',
+              overflow: 'auto',
+              clipPath: 'polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px))'
+            }}>
 
+            {/* Cyber grid overlay */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
+              backgroundImage: `linear-gradient(rgba(212,175,55,1) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,1) 1px, transparent 1px)`,
+              backgroundSize: '40px 40px'
+            }}></div>
+
+            {/* Close */}
             <button
               onClick={() => setSelectedMember(null)}
-              className="absolute top-4 right-4 p-2 rounded-full border border-zinc-900 bg-zinc-950 text-zinc-400 hover:text-[#d4af37] hover:border-[#d4af37]/40 transition-all z-10"
+              className="absolute top-5 right-5 z-20 w-10 h-10 flex items-center justify-center transition-all duration-300 hover:scale-110 group"
+              style={{background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.15)',
+                clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))'}}
             >
-              <X className="h-4 w-4" />
+              <X className="w-4 h-4 text-zinc-500 group-hover:text-[#d4af37] transition-colors" />
             </button>
 
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-              
-              {/* Profile Image Column */}
-              <div className="sm:col-span-5 flex justify-center">
-                <div className="relative w-40 h-40 rounded-xl border border-[#d4af37]/40 bg-zinc-950 overflow-hidden shadow-xl shadow-black/60 slashed-clip group">
-                  <img
-                    src={selectedMember.img}
-                    alt={selectedMember.name}
-                    className="w-full h-full object-cover opacity-90 group-hover:scale-103 transition-transform duration-500"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${selectedMember.name}`;
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-[45%_55%] min-h-[480px]">
+
+              {/* LEFT: Full photo */}
+              <div className="relative overflow-hidden min-h-[300px] md:min-h-0">
+                <img
+                  src={selectedMember.img}
+                  alt={selectedMember.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{objectPosition: 'center 20%'}}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const p = e.currentTarget.parentElement!;
+                    p.style.background = 'linear-gradient(160deg, #1a1200, #060500)';
+                  }}
+                />
+                {/* Gradient fades for blending */}
+                <div className="absolute inset-0 hidden md:block" style={{
+                  background: 'linear-gradient(90deg, transparent 60%, #060500 100%)'
+                }}></div>
+                <div className="absolute inset-0 md:hidden" style={{
+                  background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 40%, rgba(6,5,0,1) 95%)'
+                }}></div>
+                {/* Scan lines */}
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+                  backgroundImage: 'repeating-linear-gradient(0deg, rgba(212,175,55,0.8) 0px, transparent 1px, transparent 3px)',
+                  backgroundSize: '100% 3px'
+                }}></div>
               </div>
 
-              {/* Description Details Column */}
-              <div className="sm:col-span-7 space-y-4 text-left">
-                <div className="space-y-1">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20">
-                    {selectedMember.dept === 'founders' ? 'Founder Circle' : selectedMember.dept === 'core' ? 'Core Secretariat' : 'Division Lead'}
+              {/* RIGHT: Info panel */}
+              <div className="relative p-8 md:p-12 flex flex-col justify-center">
+
+                {/* Top classification badge */}
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{background: '#d4af37', boxShadow: '0 0 8px #d4af37'}}></div>
+                  <span className="text-[9px] uppercase tracking-[0.5em] font-black" style={{color: 'rgba(212,175,55,0.5)'}}>
+                    {selectedMember.dept === 'founders' ? 'FOUNDER CIRCLE' : selectedMember.dept === 'core' ? 'CORE SECRETARIAT' : 'DIVISION COMMANDER'}
                   </span>
-                  <h3 className="text-2xl font-bold font-serif text-white tracking-wide">{selectedMember.name}</h3>
-                  <p className="text-xs text-[#d4af37] font-semibold">{selectedMember.role}</p>
                 </div>
 
-                <div className="border-t border-zinc-900 pt-3">
-                  <p className="text-xs text-zinc-300 leading-relaxed font-light font-sans">
-                    Operational Command: Coordinating competitive sheets, DSA hackathons, and software architectures for Amrita Vishwa Vidyapeetham.
-                  </p>
+                {/* Name */}
+                <h2 className="font-black leading-tight mb-1" style={{
+                  fontFamily: 'Georgia, serif',
+                  fontSize: 'clamp(2rem, 4vw, 3rem)',
+                  letterSpacing: '-0.01em',
+                  background: 'linear-gradient(135deg, #fff 0%, rgba(212,175,55,0.8) 100%)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
+                }}>
+                  {selectedMember.name}
+                </h2>
+                <p className="text-sm font-semibold mb-8 uppercase tracking-widest" style={{color: 'rgba(212,175,55,0.6)'}}>
+                  {selectedMember.role}
+                </p>
+
+                {/* Divider */}
+                <div className="h-px mb-8" style={{background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)'}}></div>
+
+                {/* Data rows */}
+                <div className="space-y-5 mb-10">
+                  {[
+                    { label: 'DIVISION', value: selectedMember.dept.toUpperCase() },
+                    { label: 'DESIGNATION', value: selectedMember.role },
+                    { label: 'HEADQUARTERS', value: 'Amrita Vishwa Vidyapeetham, Amaravati' },
+                    { label: 'CLEARANCE', value: selectedMember.dept === 'founders' ? 'ALPHA — HIGHEST' : selectedMember.dept === 'core' ? 'BETA — ELEVATED' : 'GAMMA — STANDARD' },
+                  ].map((row) => (
+                    <div key={row.label} className="flex gap-4 items-start">
+                      <div className="flex-shrink-0 pt-0.5">
+                        <div className="w-1 h-1 mt-[5px] rounded-full" style={{background: 'rgba(212,175,55,0.5)'}}></div>
+                      </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.3em] mb-0.5" style={{color: 'rgba(212,175,55,0.35)'}}>
+                          {row.label}
+                        </p>
+                        <p className="text-sm font-medium text-zinc-200">{row.value}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="flex gap-4 pt-2 text-[10px] text-zinc-500 uppercase font-bold tracking-wider">
-                  <div>
-                    <span className="block text-[8px] text-zinc-650">Department</span>
-                    <span className="text-zinc-300">{selectedMember.dept} division</span>
-                  </div>
-                  <div className="w-[1px] h-8 bg-zinc-900"></div>
-                  <div>
-                    <span className="block text-[8px] text-zinc-650">Headquarters</span>
-                    <span className="text-zinc-300">Amaravati</span>
-                  </div>
-                </div>
+                {/* Close button */}
+                <button
+                  onClick={() => setSelectedMember(null)}
+                  className="w-full py-4 font-black text-xs uppercase tracking-[0.4em] text-black transition-all duration-300 hover:opacity-90 hover:scale-[1.02]"
+                  style={{
+                    background: 'linear-gradient(135deg, #d4af37 0%, #f6e05e 50%, #8c7030 100%)',
+                    clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))'
+                  }}
+                >
+                  CLOSE FILE
+                </button>
               </div>
-
             </div>
-
-            <button
-              onClick={() => setSelectedMember(null)}
-              className="mt-6 w-full py-2.5 rounded border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-xs font-bold uppercase tracking-wider text-black hover:from-[#f6e05e] hover:to-[#d4af37] transition-all"
-            >
-              Exit Terminal
-            </button>
           </div>
         </div>
       )}
+
+
 
       {/* 4. CLUB STATS PILLARS */}
       <section className="py-20 border-y border-[#8c7030]/15 bg-zinc-950/30 backdrop-blur-md z-10">
