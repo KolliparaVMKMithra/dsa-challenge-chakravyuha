@@ -11,15 +11,16 @@ interface TeamMember {
   role: string;
   img: string;
   dept: 'founders' | 'core' | 'tech' | 'design' | 'events' | 'content' | 'community';
+  title?: string; // optional special title shown in modal
 }
 
 const teamMembers: TeamMember[] = [
   // Founders & Co-Founders
   { name: "Mithra", role: "Founder", img: "/team/founders and co-founders/Mithra_founder.jpg", dept: "founders" },
+  { name: "Rudra", role: "Co-Founder", img: "/team/founders and co-founders/Rudra.jpg", dept: "founders", title: "President of Student Council" },
   { name: "Ganesh", role: "Co-Founder", img: "/team/founders and co-founders/Ganesh.jpg", dept: "founders" },
   { name: "Harikiran", role: "Co-Founder", img: "/team/founders and co-founders/Harikiran.jpg", dept: "founders" },
   { name: "Krishna", role: "Co-Founder", img: "/team/founders and co-founders/Krishna.jpg", dept: "founders" },
-  { name: "Rudra", role: "Co-Founder", img: "/team/founders and co-founders/Rudra.jpg", dept: "founders" },
   { name: "Maneesh", role: "Co-Founder", img: "/team/founders and co-founders/maneesh.jpg", dept: "founders" },
   { name: "Sindhuja", role: "Co-Founder", img: "/team/founders and co-founders/sindhuja.jpg", dept: "founders" },
   
@@ -936,21 +937,37 @@ export default function Home() {
                 }}>
                   {selectedMember.name}
                 </h2>
-                <p className="text-sm font-semibold mb-8 uppercase tracking-widest" style={{color: 'rgba(212,175,55,0.6)'}}>
+                <p className="text-sm font-semibold uppercase tracking-widest" style={{color: 'rgba(212,175,55,0.6)'}}>
                   {selectedMember.role}
                 </p>
 
+                {/* Special title badge — shown only when member has a title */}
+                {selectedMember.title && (
+                  <div className="mt-3 mb-6 inline-flex items-center gap-2 px-3 py-1.5"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.05))',
+                      border: '1px solid rgba(212,175,55,0.35)',
+                      clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))'
+                    }}>
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{background: '#d4af37', boxShadow: '0 0 6px #d4af37'}}></div>
+                    <span className="text-xs font-black uppercase tracking-widest" style={{color: '#d4af37'}}>
+                      {selectedMember.title}
+                    </span>
+                  </div>
+                )}
+
                 {/* Divider */}
-                <div className="h-px mb-8" style={{background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)'}}></div>
+                <div className="h-px mb-8 mt-4" style={{background: 'linear-gradient(90deg, rgba(212,175,55,0.3), transparent)'}}></div>
 
                 {/* Data rows */}
                 <div className="space-y-5 mb-10">
-                  {[
+                  {([
                     { label: 'DIVISION', value: selectedMember.dept.toUpperCase() },
                     { label: 'DESIGNATION', value: selectedMember.role },
+                    selectedMember.title ? { label: 'STUDENT TITLE', value: selectedMember.title } : null,
                     { label: 'HEADQUARTERS', value: 'Amrita Vishwa Vidyapeetham, Amaravati' },
                     { label: 'CLEARANCE', value: selectedMember.dept === 'founders' ? 'ALPHA — HIGHEST' : selectedMember.dept === 'core' ? 'BETA — ELEVATED' : 'GAMMA — STANDARD' },
-                  ].map((row) => (
+                  ].filter(Boolean) as {label: string, value: string}[]).map((row) => (
                     <div key={row.label} className="flex gap-4 items-start">
                       <div className="flex-shrink-0 pt-0.5">
                         <div className="w-1 h-1 mt-[5px] rounded-full" style={{background: 'rgba(212,175,55,0.5)'}}></div>
