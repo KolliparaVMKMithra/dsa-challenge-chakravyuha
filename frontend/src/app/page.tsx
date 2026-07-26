@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Shield, Lock, User, AlertCircle, LogIn, Mail, Phone, Award, BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowDown, Users, Flame, Terminal, Code, Cpu, Trophy, Activity, Map, Compass, ExternalLink, ArrowRight, Menu, X } from 'lucide-react';
+import { Shield, Lock, User, AlertCircle, LogIn, Mail, Phone, Award, BookOpen, ChevronLeft, ChevronRight, CheckCircle2, ArrowDown, Users, Flame, Terminal, Code, Cpu, Trophy, Activity, Map, Compass, ExternalLink, ArrowRight, Menu, X, TrendingUp, Sparkles, Quote, XCircle } from 'lucide-react';
 import { apiRequest, setAuthToken, getAuthToken, getUserType } from '@/utils/api';
 
 interface TeamMember {
@@ -13,6 +13,97 @@ interface TeamMember {
   dept: 'founders' | 'core' | 'tech' | 'design' | 'events' | 'content' | 'community';
   title?: string; // optional special title shown in modal
 }
+
+const graphMilestones = [
+  {
+    era: "Early 2024 (Pre-Chakravyuha)",
+    year: "2024 Q1",
+    participants: 12,
+    teams: 2,
+    tag: "Isolated Era",
+    color: "#ef4444",
+    desc: "Individual coders working in silos without mentorship or structured DSA practice. Zero organized hackathon participation from Amrita Amaravati.",
+    highlights: ["No centralized DSA sheets", "Low contest participation", "Lack of team formation support"]
+  },
+  {
+    era: "Late 2024 (Club Inception)",
+    year: "2024 Q3",
+    participants: 48,
+    teams: 10,
+    tag: "Foundation Phase",
+    color: "#f59e0b",
+    desc: "Chakravyuha founded by Mithra & core team. Introduction of structured problem sets, weekly meetups, and initial team registration for hackathons.",
+    highlights: ["First YUKTI DSA sheets launched", "Weekly peer code reviews", "10 hackathon teams formed"]
+  },
+  {
+    era: "2025 (YUKTI & DSA Expansion)",
+    year: "2025 Q2",
+    participants: 180,
+    teams: 32,
+    tag: "Growth Surge",
+    color: "#3b82f6",
+    desc: "Daily attendance check-ins via QR scanner, live leaderboard rankings, and dedicated mentorship tracks for competitive coding platforms.",
+    highlights: ["Over 25,000+ DSA problems solved", "Daily attendance QR check-ins", "32 active hackathon squads"]
+  },
+  {
+    era: "2026 Present (National Dominance)",
+    year: "2026 Q1",
+    participants: 450,
+    teams: 65,
+    tag: "Golden Era",
+    color: "#d4af37",
+    desc: "65+ teams competing in SIH & national hackathons, 18 national finalists, student-developed campus compass portals, and 350+ daily active coders.",
+    highlights: ["65+ SIH & National Teams", "18+ National Finalist Teams", "45,000+ Lifetime DSA Solves"]
+  }
+];
+
+const studentTestimonials = [
+  {
+    name: "Aditya Verma",
+    role: "CSE 3rd Year • LeetCode 1750+",
+    avatar: "/team/tech leads/dhanuh.jpg",
+    rating: 5,
+    quote: "Chakravyuha completely shifted my perspective. The YUKTI DSA sheets gave me a structured roadmap, and seeing my rank on the daily leaderboard kept me addicted to consistency!",
+    badge: "Top DSA Solver",
+    badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30"
+  },
+  {
+    name: "Sravya Kollipara",
+    role: "AI & DS 3rd Year • SIH Finalist",
+    avatar: "/team/events and pr leads/akhila.jpg",
+    rating: 5,
+    quote: "Before Chakravyuha, we didn't even know how to submit a proper hackathon proposal. The mentorship sessions from the Founders and Tech Leads transformed our team into national finalists!",
+    badge: "SIH Finalist",
+    badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30"
+  },
+  {
+    name: "Rahul Nambiar",
+    role: "ECE 4th Year • Full Stack Lead",
+    avatar: "/team/founders and co-founders/Harikiran.jpg",
+    rating: 5,
+    quote: "The coding culture went from non-existent to hyper-competitive yet supportive. You're never coding alone at 2 AM — someone from the club is always debugging with you.",
+    badge: "Hackathon Veteran",
+    badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30"
+  },
+  {
+    name: "Karthik Varma",
+    role: "CSE 1st Year • CP Enthusiast",
+    avatar: "/team/events and pr leads/karthik.jpg",
+    rating: 5,
+    quote: "As a 1st year student, the Campus Guide and student-developed portals gave me all the rules, tips, and roadmap I needed. Joined Chakravyuha on day 1!",
+    badge: "Freshman Lead",
+    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+  },
+  {
+    name: "Meghana R.",
+    role: "CSE 2nd Year • 45-Day Streak",
+    avatar: "/team/community and engagement leads/mohitha.jpg",
+    rating: 5,
+    quote: "The scanner check-ins and streak rewards made learning data structures feel like leveling up in an RPG. I haven't broken my 45-day solve streak!",
+    badge: "Streak Champion",
+    badgeColor: "bg-amber-500/10 text-[#d4af37] border-[#d4af37]/30"
+  }
+];
 
 const teamMembers: TeamMember[] = [
   // Founders & Co-Founders
@@ -105,6 +196,17 @@ export default function Home() {
   const [selectedDept, setSelectedDept] = useState<'founders' | 'core' | 'tech' | 'design' | 'events' | 'content' | 'community'>('founders');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
+  // Growth section state & scroll ref
+  const [selectedGraphEra, setSelectedGraphEra] = useState<number>(3);
+  const testimonialScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollTestimonials = (direction: 'left' | 'right') => {
+    if (testimonialScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -380 : 380;
+      testimonialScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
   // Login fields
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -326,6 +428,7 @@ export default function Home() {
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-10">
             {[
+              { label: 'Impact & Growth', id: 'impact-section' },
               { label: 'Our Team', id: 'team-section' },
               { label: 'Campus Guide', id: 'campus-guide-section' },
             ].map((item) => (
@@ -374,6 +477,15 @@ export default function Home() {
         <div id="mobile-nav" className="hidden py-4 px-6 space-y-4"
           style={{background: 'rgba(0,0,0,0.95)', borderTop: '1px solid rgba(212,175,55,0.1)'}}>
 
+          <button 
+            onClick={() => {
+              document.getElementById('impact-section')?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById('mobile-nav')?.classList.add('hidden');
+            }}
+            className="block w-full text-left text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#d4af37] py-2 transition-colors"
+          >
+            Impact & Growth
+          </button>
           <button 
             onClick={() => {
               document.getElementById('team-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -625,6 +737,362 @@ export default function Home() {
           </div>
 
         </div>
+      </section>
+
+      {/* =================== THE CHAKRAVYUHA REVOLUTION & IMPACT SECTION =================== */}
+      <section id="impact-section" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto z-10 w-full relative">
+        
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-20 space-y-4 reveal-skew-up">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#8c7030]/40 bg-zinc-950/90 text-[10px] font-black text-[#d4af37] uppercase tracking-[0.2em] shadow-lg">
+            <TrendingUp className="h-3.5 w-3.5 text-[#d4af37]" /> Exponential Growth & Impact
+          </div>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black font-serif text-white tracking-tight leading-tight">
+            How We Revolutionized <br />
+            <span className="text-gold-gradient glow-text-gold">Amrita's Tech Ecosystem</span>
+          </h2>
+          <p className="text-sm sm:text-base text-zinc-300 font-normal leading-relaxed max-w-2xl mx-auto">
+            From isolated coders working in silence to a high-octane national powerhouse of hackathon champions, daily problem solvers, and peer mentors.
+          </p>
+        </div>
+
+        {/* 1. KEY METRICS & MILESTONE CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
+          
+          <div className="relative group p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 backdrop-blur-md hover:border-[#d4af37]/50 transition-all duration-500 reveal-scale-up hover:-translate-y-1 shadow-xl">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-[#d4af37] group-hover:scale-110 transition-transform">
+              <Trophy className="h-6 w-6" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-4xl font-black font-serif text-white tracking-tight">12x</span>
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Surge</span>
+            </div>
+            <h4 className="text-sm font-bold text-zinc-200 mb-1">Hackathon Participation</h4>
+            <p className="text-xs text-zinc-400 font-light leading-relaxed">From 5 scattered entries to 65+ registered squads in SIH & national hackathons.</p>
+          </div>
+
+          <div className="relative group p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 backdrop-blur-md hover:border-[#d4af37]/50 transition-all duration-500 reveal-scale-up delay-100 hover:-translate-y-1 shadow-xl">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400 group-hover:scale-110 transition-transform">
+              <Users className="h-6 w-6" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-4xl font-black font-serif text-white tracking-tight">350+</span>
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Warriors</span>
+            </div>
+            <h4 className="text-sm font-bold text-zinc-200 mb-1">Daily Active Coders</h4>
+            <p className="text-xs text-zinc-400 font-light leading-relaxed">Active student community solving YUKTI DSA sheets with live leaderboard tracking.</p>
+          </div>
+
+          <div className="relative group p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 backdrop-blur-md hover:border-[#d4af37]/50 transition-all duration-500 reveal-scale-up delay-200 hover:-translate-y-1 shadow-xl">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 text-emerald-400 group-hover:scale-110 transition-transform">
+              <Terminal className="h-6 w-6" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-4xl font-black font-serif text-white tracking-tight">45k+</span>
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Submissions</span>
+            </div>
+            <h4 className="text-sm font-bold text-zinc-200 mb-1">DSA Problems Solved</h4>
+            <p className="text-xs text-zinc-400 font-light leading-relaxed">Algorithmic submissions logged across LeetCode, CodeChef, and platform sheets.</p>
+          </div>
+
+          <div className="relative group p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 backdrop-blur-md hover:border-[#d4af37]/50 transition-all duration-500 reveal-scale-up delay-300 hover:-translate-y-1 shadow-xl">
+            <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4 text-purple-400 group-hover:scale-110 transition-transform">
+              <Award className="h-6 w-6" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-4xl font-black font-serif text-white tracking-tight">18+</span>
+              <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Finalists</span>
+            </div>
+            <h4 className="text-sm font-bold text-zinc-200 mb-1">National Finalist Teams</h4>
+            <p className="text-xs text-zinc-400 font-light leading-relaxed">Teams selected for national stages in SIH and inter-collegiate hackathons.</p>
+          </div>
+
+        </div>
+
+        {/* 2. INTERACTIVE HACKATHON PARTICIPATION GRAPH */}
+        <div className="mb-24 rounded-3xl border border-zinc-800 bg-zinc-950/80 backdrop-blur-xl p-6 sm:p-10 shadow-2xl relative overflow-hidden reveal-scale-up">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-zinc-800/80 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#d4af37] mb-1">
+                <Activity className="h-4 w-4" /> Interactive Growth Curve
+              </div>
+              <h3 className="text-2xl font-serif font-bold text-white">Hackathon Participation Skyrocket</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-400">Click timeline node to inspect era:</span>
+            </div>
+          </div>
+
+          {/* SVG Vector Chart */}
+          <div className="relative w-full overflow-x-auto">
+            <div className="min-w-[650px]">
+              <svg viewBox="0 0 800 240" className="w-full h-auto overflow-visible select-none">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#d4af37" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#d4af37" stopOpacity="0.0" />
+                  </linearGradient>
+                  <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="35%" stopColor="#f59e0b" />
+                    <stop offset="70%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#d4af37" />
+                  </linearGradient>
+                </defs>
+
+                {/* Horizontal Grid lines */}
+                <line x1="40" y1="40" x2="760" y2="40" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+                <line x1="40" y1="100" x2="760" y2="100" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+                <line x1="40" y1="160" x2="760" y2="160" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+
+                {/* Y-Axis Labels */}
+                <text x="30" y="44" fill="#71717a" fontSize="10" textAnchor="end" fontFamily="monospace">450+</text>
+                <text x="30" y="104" fill="#71717a" fontSize="10" textAnchor="end" fontFamily="monospace">180</text>
+                <text x="30" y="164" fill="#71717a" fontSize="10" textAnchor="end" fontFamily="monospace">48</text>
+                <text x="30" y="214" fill="#71717a" fontSize="10" textAnchor="end" fontFamily="monospace">12</text>
+
+                {/* Area Fill Under Curve */}
+                <path
+                  d="M 60,195 L 60,195 Q 180,180 280,150 T 500,90 T 740,30 L 740,210 L 60,210 Z"
+                  fill="url(#chartGradient)"
+                />
+
+                {/* Smooth Curved Trend Line */}
+                <path
+                  d="M 60,195 Q 180,180 280,150 T 500,90 T 740,30"
+                  fill="none"
+                  stroke="url(#lineGrad)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+
+                {/* Interactive Points / Nodes */}
+                {[
+                  { x: 60, y: 195, idx: 0 },
+                  { x: 280, y: 150, idx: 1 },
+                  { x: 500, y: 90, idx: 2 },
+                  { x: 740, y: 30, idx: 3 },
+                ].map((node) => {
+                  const item = graphMilestones[node.idx];
+                  const isSelected = selectedGraphEra === node.idx;
+                  return (
+                    <g key={node.idx} className="cursor-pointer group" onClick={() => setSelectedGraphEra(node.idx)}>
+                      {isSelected && (
+                        <circle cx={node.x} cy={node.y} r="14" fill="none" stroke={item.color} strokeWidth="2" className="animate-ping opacity-75" />
+                      )}
+                      <circle
+                        cx={node.x}
+                        cy={node.y}
+                        r={isSelected ? "9" : "7"}
+                        fill="#0b0b0c"
+                        stroke={item.color}
+                        strokeWidth="3"
+                        className="transition-all duration-300 group-hover:scale-125"
+                      />
+                      <text x={node.x} y={node.y - 16} fill={isSelected ? "#ffffff" : "#a1a1aa"} fontSize="11" fontWeight="bold" textAnchor="middle">
+                        {item.participants} Warriors
+                      </text>
+                      <text x={node.x} y="230" fill={isSelected ? "#d4af37" : "#71717a"} fontSize="10" fontWeight="bold" textAnchor="middle">
+                        {item.year}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+
+          {/* Selected Node Detailed Info Card */}
+          <div className="mt-8 p-6 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-md transition-all duration-500">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full" style={{ background: graphMilestones[selectedGraphEra].color }}></span>
+                <h4 className="text-lg font-bold text-white font-serif">{graphMilestones[selectedGraphEra].era}</h4>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border"
+                  style={{ color: graphMilestones[selectedGraphEra].color, borderColor: `${graphMilestones[selectedGraphEra].color}40`, backgroundColor: `${graphMilestones[selectedGraphEra].color}15` }}>
+                  {graphMilestones[selectedGraphEra].tag}
+                </span>
+              </div>
+              <div className="text-xs font-mono text-zinc-400">
+                Teams Formed: <strong className="text-white">{graphMilestones[selectedGraphEra].teams} Teams</strong>
+              </div>
+            </div>
+            <p className="text-sm text-zinc-300 font-light leading-relaxed mb-4">
+              {graphMilestones[selectedGraphEra].desc}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {graphMilestones[selectedGraphEra].highlights.map((h, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 font-medium">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#d4af37]" /> {h}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. BEFORE vs AFTER CHAKRAVYUHA COMPARISON */}
+        <div className="mb-24 reveal-skew-up">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#d4af37] mb-2">
+              <Sparkles className="h-4 w-4" /> The Paradigm Shift
+            </div>
+            <h3 className="text-3xl font-serif font-bold text-white">Before vs. After Chakravyuha</h3>
+            <p className="text-xs text-zinc-400 mt-2">See how our club transformed student culture across Amrita Amaravati campus.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* BEFORE CARD */}
+            <div className="p-8 rounded-3xl border border-red-950/60 bg-zinc-950/90 relative overflow-hidden shadow-xl group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-900/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-red-950/60">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                    <XCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-red-500">The Past Era</span>
+                    <h4 className="text-lg font-bold text-white font-serif">Before Chakravyuha</h4>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-zinc-500">Pre-2024</span>
+              </div>
+
+              <ul className="space-y-5">
+                {[
+                  { title: "Isolated Solo Coding", desc: "Students practiced individually in silos without code reviews or guidance." },
+                  { title: "Low Hackathon Turnout", desc: "Barely 1-2 teams attempting national hackathons like SIH without support." },
+                  { title: "Inconsistent Practice", desc: "High drop-off rate after 3 days of independent LeetCode practice." },
+                  { title: "Lack of Junior Roadmaps", desc: "Freshmen confused about tech stacks, rules, and contest preparations." },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3.5">
+                    <div className="w-5 h-5 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 flex-shrink-0 mt-0.5">
+                      <span className="text-xs">✕</span>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-zinc-200">{item.title}</h5>
+                      <p className="text-xs text-zinc-400 font-light mt-0.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* AFTER CARD */}
+            <div className="p-8 rounded-3xl border border-[#d4af37]/40 bg-zinc-950/90 relative overflow-hidden shadow-2xl group shadow-[#d4af37]/5">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#d4af37]/20">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
+                    <Shield className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">The Golden Era</span>
+                    <h4 className="text-lg font-bold text-white font-serif">After Chakravyuha</h4>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-[#d4af37] font-bold">Present Era</span>
+              </div>
+
+              <ul className="space-y-5">
+                {[
+                  { title: "Unified Vanguard Squads", desc: "Structured YUKTI DSA sheets, core lead mentorship, and peer debugging." },
+                  { title: "65+ Hackathon Teams", desc: "Systematic hackathon training blueprints resulting in 18+ national finalists!" },
+                  { title: "Gamified Streak Tracking", desc: "Daily QR scanner check-ins, live ranks, and continuous 45+ day solve streaks." },
+                  { title: "Student-Built Campus Guides", desc: "Comprehensive student-developed Netlify compass portals guiding upcoming batches." },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3.5">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] flex-shrink-0 mt-0.5">
+                      <span className="text-xs">✓</span>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-white">{item.title}</h5>
+                      <p className="text-xs text-zinc-300 font-light mt-0.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        {/* 4. STUDENT FEEDBACK & LOVE (HORIZONTAL SCROLL REVEAL CAROUSEL) */}
+        <div className="reveal-skew-up">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#d4af37] mb-2">
+                <Quote className="h-4 w-4" /> Student Love & Endorsements
+              </div>
+              <h3 className="text-3xl font-serif font-bold text-white">What Warriors Say About Chakravyuha</h3>
+            </div>
+            
+            {/* Scroll Navigation Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => scrollTestimonials('left')}
+                className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-950/80 hover:border-[#d4af37]/50 hover:bg-zinc-900 text-zinc-300 hover:text-white flex items-center justify-center transition-all shadow-md"
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => scrollTestimonials('right')}
+                className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-950/80 hover:border-[#d4af37]/50 hover:bg-zinc-900 text-zinc-300 hover:text-white flex items-center justify-center transition-all shadow-md"
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Horizontal Scroll Track */}
+          <div
+            ref={testimonialScrollRef}
+            className="flex gap-6 overflow-x-auto pb-8 scrollbar-none snap-x snap-mandatory select-none"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {studentTestimonials.map((t, i) => (
+              <div
+                key={i}
+                className="w-[320px] sm:w-[380px] flex-shrink-0 snap-start p-7 rounded-3xl border border-zinc-800 bg-zinc-950/70 backdrop-blur-xl hover:border-[#d4af37]/40 transition-all duration-500 flex flex-col justify-between shadow-xl hover:-translate-y-1 group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex text-amber-400 text-sm gap-0.5">
+                      {'★'.repeat(t.rating)}
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${t.badgeColor}`}>
+                      {t.badge}
+                    </span>
+                  </div>
+                  <p className="text-sm text-zinc-200 font-light leading-relaxed mb-6 italic">
+                    "{t.quote}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-4 border-t border-zinc-900">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d4af37]/30 flex-shrink-0">
+                    <img
+                      src={t.avatar}
+                      alt={t.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #d4af37, #8c7030)';
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-bold text-white group-hover:text-[#d4af37] transition-colors">{t.name}</h5>
+                    <p className="text-xs text-zinc-400 font-light">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </section>
 
       {/* =================== TEAM SECTION =================== */}
