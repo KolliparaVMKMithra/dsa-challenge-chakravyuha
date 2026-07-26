@@ -120,7 +120,9 @@ Follow these instructions to configure Microsoft Power Automate to dynamically c
     "full_name": { "type": "string" },
     "roll_number": { "type": "string" },
     "qr_key": { "type": "string" },
-    "qr_image_url": { "type": "string" }
+    "qr_image_url": { "type": "string" },
+    "subject": { "type": "string" },
+    "html_body": { "type": "string" }
   }
 }
 ```
@@ -129,46 +131,12 @@ Follow these instructions to configure Microsoft Power Automate to dynamically c
 1. Click **+ Next Step** and search for **"Send an email (V2) - Office 365 Outlook"** (or Gmail connector if using public SMTP).
 2. Configure the action properties:
    * **To**: Click **"Add dynamic content"** and select the `email` property.
-   * **Subject**: `🛡️ Chakravyuha DSA Challenge — Your Warrior QR Code`
-   * **Body**: Click the **"Code View"** button `</>` in the text editor and insert the styled HTML template below:
-```html
-<div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; background-color: #0c0a09; color: #e4e4e7; padding: 40px 30px; border: 1px solid #c5a059; border-radius: 8px;">
-  <h1 style="color: #d4af37; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-family: 'Georgia', serif; font-size: 28px; margin-bottom: 5px;">CHAKRAVYUHA</h1>
-  <p style="text-align: center; font-size: 10px; text-transform: uppercase; color: #a1a1aa; letter-spacing: 3px; margin-top: 0; margin-bottom: 25px;">Daily DSA Challenge Battlefield</p>
-  <hr style="border: 0; border-top: 1px solid #27272a; margin: 25px 0;" />
-  
-  <p style="font-size: 14px; line-height: 1.6;">Hail Warrior <strong>@{triggerBody()?['full_name']}</strong>,</p>
-  <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa;">Your registration is successful. Below are your unique battlefield credentials:</p>
-  
-  <div style="background-color: #1c1917; border-left: 3px solid #d4af37; padding: 15px; margin: 20px 0; border-radius: 4px;">
-    <table style="width: 100%; font-size: 13px; color: #e4e4e7; border-collapse: collapse;">
-      <tr>
-        <td style="padding: 4px 0; font-weight: bold; width: 120px; color: #c5a059;">Roll Number:</td>
-        <td style="padding: 4px 0; font-family: monospace;">@{triggerBody()?['roll_number']}</td>
-      </tr>
-      <tr>
-        <td style="padding: 4px 0; font-weight: bold; color: #c5a059;">College Email:</td>
-        <td style="padding: 4px 0;">@{triggerBody()?['email']}</td>
-      </tr>
-      <tr>
-        <td style="padding: 4px 0; font-weight: bold; color: #c5a059;">Battlefield Key:</td>
-        <td style="padding: 4px 0; font-family: monospace; color: #38bdf8;">@{triggerBody()?['qr_key']}</td>
-      </tr>
-    </table>
-  </div>
-  
-  <p style="font-size: 14px; line-height: 1.6; text-align: center; color: #a1a1aa; margin-top: 30px;">
-    Your Permanent Attendance QR Code Credential:
-  </p>
-  <p style="text-align: center; margin: 20px 0;">
-    <img src="@{triggerBody()?['qr_image_url']}" alt="Warrior QR Code" style="border: 4px solid #c5a059; border-radius: 6px; background-color: #ffffff; padding: 12px; width: 200px; height: 200px;" />
-  </p>
-  
-  <p style="font-size: 12px; font-style: italic; color: #71717a; text-align: center; margin-top: 30px;">
-    Present this QR Code daily at the battlefield scanner to record your attendance check-in.
-  </p>
-</div>
+   * **Subject**: Click **"Add dynamic content"** and select the `subject` property.
+   * **Body**: Click the **"Code View"** button `</>` in the text editor and insert:
 ```
+@{triggerBody()?['html_body']}
+```
+> **Note:** The backend sends a fully styled, premium HTML email in the `html_body` field. Power Automate simply forwards it as-is. No additional HTML templating is needed in the flow.
 3. Save the flow. Copy the newly generated **"HTTP POST URL"** from the trigger.
 
 ### Step 3: Link FastAPI to the Webhook URL

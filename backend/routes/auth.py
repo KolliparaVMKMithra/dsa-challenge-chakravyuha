@@ -76,60 +76,154 @@ def send_mock_whatsapp_sms(student: Student, qr_base64: str) -> str:
     return message
 
 def trigger_power_automate_signup_webhook(student: Student):
-    """Triggers the Power Automate webhook for successful signup, if configured."""
+    """Triggers the Power Automate webhook for successful signup, if configured.
+    Sends a premium HTML welcome email with QR code and battlefield credentials.
+    This fires ONLY on first registration — the signup route itself prevents duplicates.
+    """
     webhook_url = os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL")
-    qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={student.qr_key}"
+    qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={student.qr_key}"
+    roll = student.roll_number or "N/A"
     
-    welcome_message = (
-        f"Welcome to Chakravyuha, Amrita's leading tech club! Your winning era starts here. "
-        f"Get ready to conquer weekly coding challenges, master data structures, and level up your skills. "
-        f"We are thrilled to have you on board, Warrior {student.full_name}!"
-    )
+    # ── Premium HTML Email Body ──────────────────────────────────────────
+    html_body = f"""
+<div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">
+
+  <!-- ═══ HEADER BANNER ═══ -->
+  <div style="background:linear-gradient(135deg,#1a1508 0%,#0a0908 50%,#1a1508 100%);padding:40px 30px 30px;text-align:center;border-bottom:2px solid #d4af37;">
+    <div style="width:60px;height:60px;margin:0 auto 16px;border:2px solid #d4af37;border-radius:50%;line-height:60px;font-size:28px;">🛡️</div>
+    <h1 style="color:#d4af37;text-transform:uppercase;letter-spacing:4px;font-family:Georgia,serif;font-size:32px;margin:0 0 4px;">CHAKRAVYUHA</h1>
+    <p style="font-size:10px;text-transform:uppercase;color:#8c7030;letter-spacing:5px;margin:0;">Amrita Vishwa Vidyapeetham &bull; Amaravati</p>
+  </div>
+
+  <!-- ═══ WELCOME SECTION ═══ -->
+  <div style="padding:35px 30px 10px;">
+    <p style="font-size:13px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;font-weight:bold;margin:0 0 12px;">⚔️ Warrior Inducted</p>
+    <h2 style="font-size:24px;color:#ffffff;margin:0 0 20px;font-weight:700;line-height:1.3;">
+      Welcome to the Arena, <span style="color:#d4af37;">{student.full_name}</span>!
+    </h2>
+    <p style="font-size:15px;color:#d4d4d8;line-height:1.8;margin:0 0 8px;">
+      You have just entered <strong style="color:#f6e05e;">Amrita's leading tech club</strong>. Your winning era starts <em>right now</em>.
+    </p>
+    <p style="font-size:14px;color:#a1a1aa;line-height:1.7;margin:0 0 25px;">
+      From weekly algorithmic battles to national hackathon campaigns, you are now part of an elite network of competitive programmers, builders, and innovators. The battlefield awaits your brilliance.
+    </p>
+  </div>
+
+  <!-- ═══ CREDENTIALS CARD ═══ -->
+  <div style="margin:0 30px 30px;background:linear-gradient(135deg,#1c1917,#151310);border:1px solid rgba(212,175,55,0.25);border-radius:10px;overflow:hidden;">
+    <div style="background:rgba(212,175,55,0.08);padding:12px 20px;border-bottom:1px solid rgba(212,175,55,0.15);">
+      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;">🔐 Your Battlefield Credentials</p>
+    </div>
+    <div style="padding:20px;">
+      <table style="width:100%;font-size:14px;color:#e4e4e7;border-collapse:collapse;">
+        <tr>
+          <td style="padding:8px 0;font-weight:700;width:140px;color:#c5a059;vertical-align:top;">Full Name</td>
+          <td style="padding:8px 0;color:#ffffff;font-weight:600;">{student.full_name}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;vertical-align:top;">Roll Number</td>
+          <td style="padding:8px 0;font-family:'Courier New',monospace;letter-spacing:1px;">{roll}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;vertical-align:top;">Email</td>
+          <td style="padding:8px 0;">{student.college_email}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;vertical-align:top;">Warrior Key</td>
+          <td style="padding:8px 0;font-family:'Courier New',monospace;color:#38bdf8;font-weight:700;letter-spacing:0.5px;">{student.qr_key}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ QR CODE SHOWCASE ═══ -->
+  <div style="text-align:center;padding:0 30px 35px;">
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Permanent Attendance QR</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Present this at the battlefield scanner every day</p>
+    <div style="display:inline-block;padding:16px;background:#ffffff;border:3px solid #d4af37;border-radius:12px;box-shadow:0 8px 30px rgba(212,175,55,0.15);">
+      <img src="{qr_image_url}" alt="Warrior QR Code" style="width:180px;height:180px;display:block;" />
+    </div>
+  </div>
+
+  <!-- ═══ WHAT AWAITS YOU ═══ -->
+  <div style="margin:0 30px 30px;background:rgba(212,175,55,0.04);border:1px solid rgba(212,175,55,0.12);border-radius:10px;padding:24px;">
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;margin:0 0 16px;">⚡ What Awaits You</p>
+    <table style="width:100%;font-size:13px;color:#d4d4d8;border-collapse:collapse;">
+      <tr>
+        <td style="padding:6px 12px 6px 0;vertical-align:top;width:30px;font-size:18px;">🏆</td>
+        <td style="padding:6px 0;"><strong style="color:#fff;">Weekly DSA Challenges</strong> — Sharpen your skills with curated problem sheets across all difficulty levels</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 12px 6px 0;vertical-align:top;font-size:18px;">💻</td>
+        <td style="padding:6px 0;"><strong style="color:#fff;">CodeChef Contests</strong> — Compete in rated programming contests and climb the leaderboard</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 12px 6px 0;vertical-align:top;font-size:18px;">🚀</td>
+        <td style="padding:6px 0;"><strong style="color:#fff;">National Hackathons</strong> — Represent Amrita in prestigious tech competitions nationwide</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 12px 6px 0;vertical-align:top;font-size:18px;">🎯</td>
+        <td style="padding:6px 0;"><strong style="color:#fff;">Streak Rewards</strong> — Maintain daily consistency and earn recognition on the elite leaderboard</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══ CTA FOOTER ═══ -->
+  <div style="text-align:center;padding:25px 30px 35px;">
+    <p style="font-size:16px;color:#ffffff;font-weight:700;margin:0 0 6px;">The battlefield is live. Your era begins now.</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 24px;">Login to your dashboard and start conquering challenges today.</p>
+    <div style="border-top:1px solid rgba(212,175,55,0.15);padding-top:20px;margin-top:10px;">
+      <p style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:2px;margin:0;">Chakravyuha &bull; Official Coding &amp; DSA Club of Amrita &bull; Amaravati</p>
+    </div>
+  </div>
+
+</div>
+"""
+
+    email_subject = "⚔️ Welcome to Chakravyuha — Your Winning Era Starts Now, Warrior!"
     
     payload = {
         "email": student.college_email,
         "full_name": student.full_name,
-        "roll_number": student.roll_number or "N/A",
+        "roll_number": roll,
         "qr_key": student.qr_key,
         "qr_image_url": qr_image_url,
-        "welcome_message": welcome_message,
-        "subject": "Welcome to Chakravyuha - Your Winning Era Starts Here! 🛡️"
+        "subject": email_subject,
+        "html_body": html_body
     }
     
-    # Always log the signup email locally to debug_emails.log for testing and verification
+    # ── Local debug log ──────────────────────────────────────────────────
     import datetime
     debug_emails_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_emails.log")
     log_content = (
-        f"========================================\n"
-        f"SIGNUP WELCOME EMAIL: Welcome to Chakravyuha!\n"
-        f"Timestamp: {datetime.datetime.utcnow()}\n"
-        f"Recipient: {student.college_email} ({student.full_name})\n"
-        f"----------------------------------------\n"
-        f"Subject: Welcome to Chakravyuha - Your Winning Era Starts Here! 🛡️\n\n"
-        f"Hail Warrior {student.full_name},\n\n"
-        f"{welcome_message}\n\n"
-        f"Your registration is successful. Below are your unique credentials:\n"
-        f"- Roll Number: {student.roll_number or 'N/A'}\n"
-        f"- Email: {student.college_email}\n"
-        f"- Unique QR key: {student.qr_key}\n"
-        f"- QR Code Image URL: {qr_image_url}\n\n"
-        f"Keep this QR code safe. Present it daily at the battlefield scanner to record your attendance.\n"
-        f"========================================\n\n"
+        f"{'='*60}\n"
+        f"SIGNUP WELCOME EMAIL\n"
+        f"Timestamp : {datetime.datetime.utcnow()}\n"
+        f"Recipient : {student.college_email} ({student.full_name})\n"
+        f"Subject   : {email_subject}\n"
+        f"Roll No.  : {roll}\n"
+        f"QR Key    : {student.qr_key}\n"
+        f"QR URL    : {qr_image_url}\n"
+        f"{'='*60}\n\n"
     )
     try:
         with open(debug_emails_path, "a", encoding="utf-8") as f:
             f.write(log_content)
-        logger.info(f"Welcome email simulated and logged to debug_emails.log for {student.college_email}")
+        logger.info(f"Welcome email logged to debug_emails.log for {student.college_email}")
     except Exception as e:
-        logger.error(f"Failed to log signup welcome email to debug_emails.log: {e}")
+        logger.error(f"Failed to log signup welcome email: {e}")
 
+    # ── Fire webhook ─────────────────────────────────────────────────────
     if not webhook_url:
         logger.info("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL not configured. Skipping webhook trigger.")
         return
         
     try:
         import requests
-        res = requests.post(webhook_url, json=payload, timeout=5)
+        res = requests.post(webhook_url, json=payload, timeout=10)
         logger.info(f"Power Automate signup webhook triggered: status_code={res.status_code}")
     except Exception as e:
         logger.error(f"Failed to trigger Power Automate signup webhook: {e}")
