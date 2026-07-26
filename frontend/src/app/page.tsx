@@ -1207,7 +1207,7 @@ export default function Home() {
                       onClick={() => setSelectedMember(member)}
                       className="group relative cursor-pointer overflow-hidden"
                       style={{
-                        aspectRatio: '3/4',
+                        aspectRatio: (selectedDept === 'founders' || selectedDept === 'core') ? '1/1' : '4/5',
                         background: '#0a0800',
                         transition: 'all 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
                         clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
@@ -1224,12 +1224,12 @@ export default function Home() {
                       {/* Outer border via box-shadow on rest */}
                       <div className="absolute inset-0" style={{boxShadow: 'inset 0 0 0 1px rgba(212,175,55,0.08)'}}></div>
 
-                      {/* Photo - Centered top to show full head, face, and shoulders */}
+                      {/* Photo - Centered to match exact aspect ratio */}
                       <img
                         src={member.img}
                         alt={member.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                        style={{objectPosition: 'center 15%'}}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        style={{objectPosition: 'center center'}}
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           const p = e.currentTarget.parentElement!;
@@ -1345,12 +1345,12 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-[45%_55%] min-h-[480px]">
 
               {/* LEFT: Full photo */}
-              <div className="relative overflow-hidden min-h-[300px] md:min-h-0">
+              <div className="relative overflow-hidden min-h-[320px] md:min-h-0 bg-[#080600] flex items-center justify-center p-3">
                 <img
                   src={selectedMember.img}
                   alt={selectedMember.name}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{objectPosition: 'center 15%'}}
+                  className="w-full h-full object-contain max-h-[520px] transition-transform duration-500"
+                  style={{objectPosition: 'center center'}}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     const p = e.currentTarget.parentElement!;
