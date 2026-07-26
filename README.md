@@ -16,35 +16,6 @@ The platform is organized into two core layers:
 * **Client Application**: `http://localhost:3000` (Web UI interface)
 * **Backend API Gateway**: `http://localhost:8000` (Swagger docs available at `http://localhost:8000/docs`)
 
----
-
-## 🔒 Platform Credentials
-
-To ensure a clean dashboard for user testing, **all mock student data and registration logs have been cleared**. The database is initialized with the following production admin accounts:
-
-### 1. Scan Admins (Access restricted to Scanner page `/admin/scan` only)
-* **Passcode (Common for all)**: `scan@admin321`
-* **Supported Login Usernames / Emails**:
-  * `satya_shivani` (or `satya_shivani@chakravyuha.edu`)
-  * `rithvik` (or `rithvik@chakravyuha.edu`)
-  * `pranavi` (or `pranavi@chakravyuha.edu`)
-  * `akhila` (or `akhila@chakravyuha.edu`)
-  * `lalith_aditya` (or `lalith_aditya@chakravyuha.edu`)
-  * `gayatri` (or `gayatri@chakravyuha.edu`)
-  * `karthik` (or `karthik@chakravyuha.edu`)
-
-### 2. Super Admins (Full platform access: `/admin/super` & `/admin/scan`)
-* **Passcode (Common for all)**: `super@admin321`
-* **Supported Login Usernames / Emails**:
-  * `mithra` (or `mithra@chakravyuha.edu`)
-  * `rudrabhishek` (or `rudrabhishek@chakravyuha.edu`)
-  * `hari_kiran` (or `hari_kiran@chakravyuha.edu`)
-  * `krishna` (or `krishna@chakravyuha.edu`)
-  * `maneesh` (or `maneesh@chakravyuha.edu`)
-  * `sindhuja` (or `sindhuja@chakravyuha.edu`)
-  * `ganesh` (or `ganesh@chakravyuha.edu`)
-
----
 
 ## 🛠️ Step-by-Step Setup Guide
 
