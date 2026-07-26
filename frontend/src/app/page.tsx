@@ -1207,7 +1207,7 @@ export default function Home() {
                       onClick={() => setSelectedMember(member)}
                       className="group relative cursor-pointer overflow-hidden"
                       style={{
-                        aspectRatio: '2/3',
+                        aspectRatio: '3/4',
                         background: '#0a0800',
                         transition: 'all 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
                         clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))',
@@ -1224,12 +1224,12 @@ export default function Home() {
                       {/* Outer border via box-shadow on rest */}
                       <div className="absolute inset-0" style={{boxShadow: 'inset 0 0 0 1px rgba(212,175,55,0.08)'}}></div>
 
-                      {/* Photo */}
+                      {/* Photo - Centered top to show full head, face, and shoulders */}
                       <img
                         src={member.img}
                         alt={member.name}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                        style={{objectPosition: 'center 75%'}}
+                        style={{objectPosition: 'center 15%'}}
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           const p = e.currentTarget.parentElement!;
@@ -1237,9 +1237,9 @@ export default function Home() {
                         }}
                       />
 
-                      {/* Bottom gradient for name readability — watermark text is above visible area now */}
+                      {/* Bottom gradient for text readability */}
                       <div className="absolute inset-0" style={{
-                        background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.7) 75%, rgba(0,0,0,0.97) 100%)'
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.7) 75%, rgba(0,0,0,0.95) 100%)'
                       }}></div>
 
 
@@ -1350,7 +1350,7 @@ export default function Home() {
                   src={selectedMember.img}
                   alt={selectedMember.name}
                   className="absolute inset-0 w-full h-full object-cover"
-                  style={{objectPosition: 'center 70%'}}
+                  style={{objectPosition: 'center 15%'}}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     const p = e.currentTarget.parentElement!;
