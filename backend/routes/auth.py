@@ -78,19 +78,55 @@ def send_mock_whatsapp_sms(student: Student, qr_base64: str) -> str:
 def trigger_power_automate_signup_webhook(student: Student):
     """Triggers the Power Automate webhook for successful signup, if configured."""
     webhook_url = os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL")
+    qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={student.qr_key}"
+    
+    welcome_message = (
+        f"Welcome to Chakravyuha, Amrita's leading tech club! Your winning era starts here. "
+        f"Get ready to conquer weekly coding challenges, master data structures, and level up your skills. "
+        f"We are thrilled to have you on board, Warrior {student.full_name}!"
+    )
+    
+    payload = {
+        "email": student.college_email,
+        "full_name": student.full_name,
+        "roll_number": student.roll_number or "N/A",
+        "qr_key": student.qr_key,
+        "qr_image_url": qr_image_url,
+        "welcome_message": welcome_message,
+        "subject": "Welcome to Chakravyuha - Your Winning Era Starts Here! 🛡️"
+    }
+    
+    # Always log the signup email locally to debug_emails.log for testing and verification
+    import datetime
+    debug_emails_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_emails.log")
+    log_content = (
+        f"========================================\n"
+        f"SIGNUP WELCOME EMAIL: Welcome to Chakravyuha!\n"
+        f"Timestamp: {datetime.datetime.utcnow()}\n"
+        f"Recipient: {student.college_email} ({student.full_name})\n"
+        f"----------------------------------------\n"
+        f"Subject: Welcome to Chakravyuha - Your Winning Era Starts Here! 🛡️\n\n"
+        f"Hail Warrior {student.full_name},\n\n"
+        f"{welcome_message}\n\n"
+        f"Your registration is successful. Below are your unique credentials:\n"
+        f"- Roll Number: {student.roll_number or 'N/A'}\n"
+        f"- Email: {student.college_email}\n"
+        f"- Unique QR key: {student.qr_key}\n"
+        f"- QR Code Image URL: {qr_image_url}\n\n"
+        f"Keep this QR code safe. Present it daily at the battlefield scanner to record your attendance.\n"
+        f"========================================\n\n"
+    )
+    try:
+        with open(debug_emails_path, "a", encoding="utf-8") as f:
+            f.write(log_content)
+        logger.info(f"Welcome email simulated and logged to debug_emails.log for {student.college_email}")
+    except Exception as e:
+        logger.error(f"Failed to log signup welcome email to debug_emails.log: {e}")
+
     if not webhook_url:
         logger.info("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL not configured. Skipping webhook trigger.")
         return
         
-    qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={student.qr_key}"
-    payload = {
-        "email": student.college_email,
-        "full_name": student.full_name,
-        "roll_number": student.roll_number,
-        "qr_key": student.qr_key,
-        "qr_image_url": qr_image_url
-    }
-    
     try:
         import requests
         res = requests.post(webhook_url, json=payload, timeout=5)
