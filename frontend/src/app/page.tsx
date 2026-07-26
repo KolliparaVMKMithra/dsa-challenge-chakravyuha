@@ -59,45 +59,40 @@ const graphMilestones = [
 
 const studentTestimonials = [
   {
-    name: "Aditya Verma",
+    name: "Anonymous Student",
     role: "CSE 3rd Year • LeetCode 1750+",
-    avatar: "/team/tech leads/dhanuh.jpg",
     rating: 5,
     quote: "Chakravyuha completely shifted my perspective. The YUKTI DSA sheets gave me a structured roadmap, and seeing my rank on the daily leaderboard kept me addicted to consistency!",
     badge: "Top DSA Solver",
     badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30"
   },
   {
-    name: "Sravya Kollipara",
+    name: "Anonymous Student",
     role: "AI & DS 3rd Year • SIH Finalist",
-    avatar: "/team/events and pr leads/akhila.jpg",
     rating: 5,
     quote: "Before Chakravyuha, we didn't even know how to submit a proper hackathon proposal. The mentorship sessions from the Founders and Tech Leads transformed our team into national finalists!",
     badge: "SIH Finalist",
     badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30"
   },
   {
-    name: "Rahul Nambiar",
+    name: "Anonymous Student",
     role: "ECE 4th Year • Full Stack Lead",
-    avatar: "/team/founders and co-founders/Harikiran.jpg",
     rating: 5,
     quote: "The coding culture went from non-existent to hyper-competitive yet supportive. You're never coding alone at 2 AM — someone from the club is always debugging with you.",
     badge: "Hackathon Veteran",
     badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30"
   },
   {
-    name: "Karthik Varma",
+    name: "Anonymous Student",
     role: "CSE 1st Year • CP Enthusiast",
-    avatar: "/team/events and pr leads/karthik.jpg",
     rating: 5,
     quote: "As a 1st year student, the Campus Guide and student-developed portals gave me all the rules, tips, and roadmap I needed. Joined Chakravyuha on day 1!",
     badge: "Freshman Lead",
     badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
   },
   {
-    name: "Meghana R.",
+    name: "Anonymous Student",
     role: "CSE 2nd Year • 45-Day Streak",
-    avatar: "/team/community and engagement leads/mohitha.jpg",
     rating: 5,
     quote: "The scanner check-ins and streak rewards made learning data structures feel like leveling up in an RPG. I haven't broken my 45-day solve streak!",
     badge: "Streak Champion",
@@ -1072,16 +1067,8 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-4 border-t border-zinc-900">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d4af37]/30 flex-shrink-0">
-                    <img
-                      src={t.avatar}
-                      alt={t.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #d4af37, #8c7030)';
-                      }}
-                    />
+                  <div className="w-9 h-9 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] flex-shrink-0 shadow-sm">
+                    <User className="h-4 w-4" />
                   </div>
                   <div>
                     <h5 className="text-sm font-bold text-white group-hover:text-[#d4af37] transition-colors">{t.name}</h5>
