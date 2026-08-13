@@ -146,6 +146,9 @@ class EventRegistration(Base):
     student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
     event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
     registered_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    attended = Column(Boolean, default=False, nullable=False)
+    attended_at = Column(DateTime, nullable=True)
+    attendance_marked_by = Column(String(100), nullable=True)
 
     student = relationship("Student", back_populates="event_registrations")
     event = relationship("Event", back_populates="registrations")

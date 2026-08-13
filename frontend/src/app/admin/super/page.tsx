@@ -2542,6 +2542,7 @@ export default function SuperAdminPage() {
                                   <th className="py-3 px-4 text-center">Problems Solved</th>
                                   <th className="py-3 px-4 text-center">Streak</th>
                                   <th className="py-3 px-4 text-center">Attendance logs</th>
+                                  <th className="py-3 px-4 text-center">Event Attendance</th>
                                   <th className="py-3 px-4 text-center">Actions</th>
                                 </tr>
                               </thead>
@@ -2573,6 +2574,13 @@ export default function SuperAdminPage() {
                                     </td>
                                     <td className="py-3.5 px-4 text-center font-semibold text-blue-400">
                                       {std.attendance_count} logs
+                                    </td>
+                                    <td className="py-3.5 px-4 text-center">
+                                      {std.attended ? (
+                                        <span className="px-2.5 py-0.5 rounded border border-emerald-950 bg-emerald-950/20 text-emerald-400 font-bold uppercase tracking-wider text-[9px]">Present</span>
+                                      ) : (
+                                        <span className="px-2.5 py-0.5 rounded border border-rose-950 bg-rose-950/20 text-rose-400 font-bold uppercase tracking-wider text-[9px]">Absent</span>
+                                      )}
                                     </td>
                                     <td className="py-3.5 px-4 text-center">
                                       <button

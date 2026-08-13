@@ -54,10 +54,38 @@ export default function QrScannerPage() {
   const [session, setSession] = useState<'forenoon' | 'afternoon'>('forenoon');
   const sessionRef = useRef<'forenoon' | 'afternoon'>('forenoon');
 
+  // Event Selection States
+  interface EventData {
+    id: number;
+    name: string;
+    description: string;
+    status: string;
+    is_registered: boolean;
+    year_restricted: number | null;
+  }
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [attendanceType, setAttendanceType] = useState<'daily' | 'event'>('daily');
+  const attendanceTypeRef = useRef<'daily' | 'event'>('daily');
+
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const selectedEventIdRef = useRef<number | null>(null);
+
   const handleSessionChange = (newSession: 'forenoon' | 'afternoon') => {
     setSession(newSession);
     sessionRef.current = newSession;
-    fetchTodayAttendance(newSession);
+    fetchTodayAttendance(newSession, selectedEventIdRef.current, attendanceTypeRef.current);
+  };
+
+  const handleAttendanceTypeChange = (type: 'daily' | 'event') => {
+    setAttendanceType(type);
+    attendanceTypeRef.current = type;
+    fetchTodayAttendance(sessionRef.current, selectedEventIdRef.current, type);
+  };
+
+  const handleEventChange = (eventId: number | null) => {
+    setSelectedEventId(eventId);
+    selectedEventIdRef.current = eventId;
+    fetchTodayAttendance(sessionRef.current, eventId, attendanceTypeRef.current);
   };
 
   // Helper to play synthesized beep sounds using browser AudioContext API
@@ -107,6 +135,16 @@ export default function QrScannerPage() {
     setShowLoginPrompt(false);
     setLoading(false);
     fetchTodayAttendance();
+    fetchEvents();
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const data = await apiRequest('/api/dsa/events');
+      setEvents(data || []);
+    } catch (err) {
+      console.error('Failed to fetch events:', err);
+    }
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -127,6 +165,7 @@ export default function QrScannerPage() {
       setIsAdmin(true);
       setShowLoginPrompt(false);
       fetchTodayAttendance();
+      fetchEvents();
     } catch (err: any) {
       setLoginError(err.message || 'Login failed. Please check credentials.');
     } finally {
@@ -134,10 +173,25 @@ export default function QrScannerPage() {
     }
   };
 
-  const fetchTodayAttendance = async (sessionVal = sessionRef.current) => {
+  const fetchTodayAttendance = async (
+    sessionVal = sessionRef.current,
+    eventIdVal = selectedEventIdRef.current,
+    typeVal = attendanceTypeRef.current
+  ) => {
     setRecordsLoading(true);
     try {
-      const data = await apiRequest(`/api/admin/attendance/today?session=${sessionVal}`);
+      let url = `/api/admin/attendance/today`;
+      if (typeVal === 'event') {
+        if (!eventIdVal) {
+          setAttendanceRecords([]);
+          setRecordsLoading(false);
+          return;
+        }
+        url += `?event_id=${eventIdVal}`;
+      } else {
+        url += `?session=${sessionVal}`;
+      }
+      const data = await apiRequest(url);
       setAttendanceRecords(data);
     } catch (err: any) {
       console.error(err);
@@ -154,7 +208,7 @@ export default function QrScannerPage() {
       const token = getAuthToken();
       const type = getUserType();
       if (token && (type === 'attendance_admin' || type === 'super_admin')) {
-        fetchTodayAttendance(sessionRef.current);
+        fetchTodayAttendance(sessionRef.current, selectedEventIdRef.current, attendanceTypeRef.current);
       }
     }, 3000);
 
@@ -208,9 +262,19 @@ export default function QrScannerPage() {
     stopScanning();
     
     try {
+      const payload: any = { qr_key: decodedText };
+      if (attendanceTypeRef.current === 'event') {
+        if (!selectedEventIdRef.current) {
+          throw new Error('Please select an event first.');
+        }
+        payload.event_id = selectedEventIdRef.current;
+      } else {
+        payload.session = sessionRef.current;
+      }
+
       const result = await apiRequest('/api/admin/scan', {
         method: 'POST',
-        body: JSON.stringify({ qr_key: decodedText, session: sessionRef.current })
+        body: JSON.stringify(payload)
       });
       
       playBeep('success');
@@ -223,8 +287,8 @@ export default function QrScannerPage() {
         time: `${result.time} (${result.session})`
       });
       
-      // Reload today's attendance logs
-      fetchTodayAttendance(sessionRef.current);
+      // Reload attendance logs
+      fetchTodayAttendance(sessionRef.current, selectedEventIdRef.current, attendanceTypeRef.current);
     } catch (err: any) {
       playBeep('error');
       setScanResult({
@@ -366,28 +430,63 @@ export default function QrScannerPage() {
           </p>
         </div>
 
-        {/* Session Selector (Forenoon / Afternoon) */}
-        <div className="flex bg-zinc-900/80 rounded-md border border-[#8c7030]/20 p-1">
-          <button
-            onClick={() => handleSessionChange('forenoon')}
-            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all focus:outline-none ${
-              session === 'forenoon'
-                ? 'bg-[#d4af37] text-black'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Forenoon (FN)
-          </button>
-          <button
-            onClick={() => handleSessionChange('afternoon')}
-            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all focus:outline-none ${
-              session === 'afternoon'
-                ? 'bg-[#d4af37] text-black'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            Afternoon (AN)
-          </button>
+        {/* Session / Event Selector */}
+        <div className="flex flex-col sm:flex-row items-end gap-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Attendance Type</span>
+            <select
+              value={attendanceType}
+              onChange={(e) => handleAttendanceTypeChange(e.target.value as 'daily' | 'event')}
+              className="bg-zinc-900 border border-[#8c7030]/20 rounded-md px-3 py-1.5 text-xs text-white focus:border-[#d4af37] focus:outline-none"
+            >
+              <option value="daily">Daily Attendance</option>
+              <option value="event">Event Attendance</option>
+            </select>
+          </div>
+
+          {attendanceType === 'daily' ? (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Daily Session</span>
+              <div className="flex bg-zinc-900/80 rounded-md border border-[#8c7030]/20 p-1">
+                <button
+                  onClick={() => handleSessionChange('forenoon')}
+                  className={`px-4 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all focus:outline-none ${
+                    session === 'forenoon'
+                      ? 'bg-[#d4af37] text-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Forenoon (FN)
+                </button>
+                <button
+                  onClick={() => handleSessionChange('afternoon')}
+                  className={`px-4 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all focus:outline-none ${
+                    session === 'afternoon'
+                      ? 'bg-[#d4af37] text-black'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Afternoon (AN)
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Select Event</span>
+              <select
+                value={selectedEventId || ''}
+                onChange={(e) => handleEventChange(e.target.value ? parseInt(e.target.value, 10) : null)}
+                className="bg-zinc-900 border border-[#8c7030]/20 rounded-md px-3 py-1.5 text-xs text-white focus:border-[#d4af37] focus:outline-none w-56"
+              >
+                <option value="">-- Choose Event --</option>
+                {events.map((evt) => (
+                  <option key={evt.id} value={evt.id}>
+                    {evt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

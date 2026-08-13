@@ -157,6 +157,26 @@ def startup_db_init():
                 logger.info("sqlite: Successfully migrated students table to allow NULL roll_number.")
         except Exception as e:
             logger.warning(f"Failed to migrate SQLite schema for roll_number: {e}")
+
+    # Run migration: add attended columns to event_registrations
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        columns = [c['name'] for c in inspector.get_columns('event_registrations')]
+        if 'attended' not in columns:
+            logger.info("Adding 'attended' columns to event_registrations table...")
+            with engine.begin() as conn:
+                if engine.name == 'sqlite':
+                    conn.execute(text("ALTER TABLE event_registrations ADD COLUMN attended BOOLEAN NOT NULL DEFAULT 0;"))
+                    conn.execute(text("ALTER TABLE event_registrations ADD COLUMN attended_at DATETIME;"))
+                    conn.execute(text("ALTER TABLE event_registrations ADD COLUMN attendance_marked_by VARCHAR(100);"))
+                else:  # postgresql
+                    conn.execute(text("ALTER TABLE event_registrations ADD COLUMN attended BOOLEAN NOT NULL DEFAULT FALSE;"))
+                    conn.execute(text("ALTER TABLE event_registrations ADD COLUMN attended_at TIMESTAMP;"))
+                    conn.execute(text("ALTER TABLE event_registrations ADD COLUMN attendance_marked_by VARCHAR(100);"))
+            logger.info("Successfully added 'attended' columns to event_registrations.")
+    except Exception as e:
+        logger.warning(f"Failed to check or apply event_registrations migration: {e}")
     
     from backend.database import SessionLocal
     db = SessionLocal()

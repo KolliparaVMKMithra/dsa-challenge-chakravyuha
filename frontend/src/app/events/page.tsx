@@ -614,7 +614,11 @@ export default function Events() {
                       Coming Soon
                     </button>
                   ) : isOrientation ? (
-                    studentYear === 1 ? (
+                    event.is_registered ? (
+                      <button disabled className="px-4 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-[#d4af37] text-xs font-bold uppercase tracking-wider cursor-not-allowed">
+                        Already Registered
+                      </button>
+                    ) : studentYear === 1 ? (
                       <button
                         onClick={() => { setOrientationEvent(event); setOrientationModalOpen(true); }}
                         className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] text-black font-extrabold text-xs uppercase rounded tracking-wider hover:bg-[#f6e05e] transition"

@@ -700,7 +700,7 @@ def register_event(
     ).first()
     
     if existing:
-        return {"detail": "Already registered for this event."}
+        raise HTTPException(status_code=400, detail="You have already registered for this event.")
         
     reg = EventRegistration(
         student_id=current_user.id,
@@ -713,30 +713,17 @@ def register_event(
     import os
     import logging
     import datetime as dt
+    import requests
     _logger = logging.getLogger(__name__)
-    webhook_url = os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL") or os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL")
+    webhook_url = os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL") or os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL")
     if webhook_url:
-        payload = {
-            "student_name": current_user.full_name,
-            "student_email": current_user.college_email,
-            "event_name": event.name,
-            "event_id": event.id,
-            "qr_key": current_user.qr_key,
-            "year": current_user.year,
-            "timestamp": dt.datetime.utcnow().isoformat() + "Z"
-        }
-        try:
-            resp = req_lib.post(webhook_url, json=payload, timeout=5)
-            _logger.info(f"Event registration webhook sent, status {resp.status_code}")
-        except Exception as e:
-            _logger.error(f"Failed to send event registration webhook: {e}")
-
-    # Send confirmation email for year-restricted (orientation) events
-    if year_restricted is not None:
         qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={current_user.qr_key}"
         roll = current_user.roll_number or "N/A"
-        clean_event_name = event.description.split("|")[0].strip() if "|" in event.description else event.name
         
+        event_notes = "This event registration is confirmed. Please present your profile QR code at the registration desk for verification and marking your attendance."
+        if year_restricted is not None:
+            event_notes = "This exclusive orientation is your first step into Chakravyuha's ecosystem — designed to help 1st year students understand SIH 2026, build winning teams, and start their competitive programming journey with expert mentorship."
+
         html_body = f"""
 <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">
 
@@ -754,10 +741,10 @@ def register_event(
       You're registered, <span style="color:#d4af37;">{current_user.full_name}</span>!
     </h2>
     <p style="font-size:14px;color:#d4d4d8;line-height:1.8;margin:0 0 8px;">
-      Your registration for <strong style="color:#f6e05e;">{event.name}</strong> has been confirmed.
+      Successfully registered for the event: <strong style="color:#f6e05e;">{event.name}</strong>. Present this QR code for marking attendance.
     </p>
     <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0 0 25px;">
-      This exclusive orientation is your first step into Chakravyuha's ecosystem — designed to help 1st year students understand SIH 2026, build winning teams, and start their competitive programming journey with expert mentorship.
+      {event_notes}
     </p>
   </div>
 
@@ -799,7 +786,7 @@ def register_event(
   <!-- QR CODE -->
   <div style="text-align:center;padding:0 30px 35px;">
     <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Profile QR Code</p>
-    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Carry this to the event for check-in</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Carry/present this QR code for marking attendance</p>
     <div style="display:inline-block;padding:16px;background:#ffffff;border:3px solid #d4af37;border-radius:12px;box-shadow:0 8px 30px rgba(212,175,55,0.15);">
       <img src="{qr_image_url}" alt="Profile QR Code" style="width:180px;height:180px;display:block;" />
     </div>
@@ -807,7 +794,7 @@ def register_event(
 
   <!-- FOOTER -->
   <div style="text-align:center;padding:20px 30px 30px;">
-    <p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">See you at the Orientation! 🚀</p>
+    <p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">See you at the event! 🚀</p>
     <p style="font-size:12px;color:#71717a;margin:0 0 24px;">Prepare to build, compete, and conquer.</p>
     <div style="border-top:1px solid rgba(212,175,55,0.15);padding-top:20px;">
       <p style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:2px;margin:0;">Chakravyuha &bull; Official Coding &amp; DSA Club of Amrita &bull; Amaravati</p>
@@ -816,7 +803,7 @@ def register_event(
 
 </div>
 """
-        subject = f"✅ Registration Confirmed — {event.name} | Chakravyuha"
+        subject = f"Successfully registered for the event: {event.name}"
         payload = {
             "email": current_user.college_email,
             "full_name": current_user.full_name,
@@ -832,24 +819,23 @@ def register_event(
             debug_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_emails.log")
             with open(debug_path, "a", encoding="utf-8") as f:
                 f.write(f"{'='*60}\n")
-                f.write(f"ORIENTATION EVENT CONFIRMATION EMAIL\n")
+                f.write(f"EVENT CONFIRMATION EMAIL\n")
                 f.write(f"Timestamp : {dt.datetime.utcnow()}\n")
                 f.write(f"Recipient : {current_user.college_email} ({current_user.full_name})\n")
                 f.write(f"Event     : {event.name}\n")
                 f.write(f"Subject   : {subject}\n")
                 f.write(f"{'='*60}\n\n")
         except Exception as log_err:
-            _logger.error(f"Failed to log orientation email: {log_err}")
+            _logger.error(f"Failed to log event confirmation email: {log_err}")
 
         # Fire webhook
-        if webhook_url:
-            try:
-                req_lib.post(webhook_url, json=payload, timeout=10)
-                _logger.info(f"Orientation confirmation email webhook triggered for {current_user.college_email}")
-            except Exception as wh_err:
-                _logger.error(f"Failed to trigger orientation email webhook: {wh_err}")
-        else:
-            _logger.info("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL not set — skipping orientation email webhook.")
+        try:
+            resp = requests.post(webhook_url, json=payload, timeout=10)
+            _logger.info(f"Event confirmation email webhook triggered for {current_user.college_email}, status {resp.status_code}")
+        except Exception as wh_err:
+            _logger.error(f"Failed to trigger event confirmation email webhook: {wh_err}")
+    else:
+        _logger.info("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL not configured. Skipping webhook trigger.")
 
     return {"detail": "Registration successful."}
 

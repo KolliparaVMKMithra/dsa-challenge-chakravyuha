@@ -21,10 +21,12 @@ logger = logging.getLogger(__name__)
 DEBUG_EMAILS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_emails.log")
 
 @router.post("/scan")
-def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
-    """Scans a student's QR key and marks them present for the day."""
+def scan_qr(payload: Dict[str, Any], current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
+    """Scans a student's QR key and marks them present for the day or for a specific event."""
     qr_key = payload.get("qr_key")
     session = payload.get("session", "forenoon")
+    event_id = payload.get("event_id")
+    
     if not qr_key:
         raise HTTPException(status_code=400, detail="qr_key is required")
         
@@ -32,9 +34,55 @@ def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_curren
     if not student:
         raise HTTPException(status_code=404, detail="Student not found with this QR code")
         
+    # Detect if session starts with "event_"
+    if not event_id and isinstance(session, str) and session.startswith("event_"):
+        try:
+            event_id = int(session.split("_")[1])
+        except ValueError:
+            pass
+
+    if event_id is not None:
+        event = db.query(Event).filter(Event.id == event_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found.")
+            
+        reg = db.query(EventRegistration).filter(
+            EventRegistration.student_id == student.id,
+            EventRegistration.event_id == event_id
+        ).first()
+        
+        if not reg:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{student.full_name} ({student.roll_number}) is not registered for event {event.name}."
+            )
+            
+        if reg.attended:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Attendance already marked for {student.full_name} ({student.roll_number}) for event {event.name}."
+            )
+            
+        reg.attended = True
+        reg.attended_at = datetime.datetime.utcnow()
+        reg.attendance_marked_by = current_admin.full_name
+        db.commit()
+        db.refresh(reg)
+        
+        return {
+            "success": True,
+            "student_name": student.full_name,
+            "name": student.full_name,
+            "roll_number": student.roll_number,
+            "branch": student.branch,
+            "year": student.year,
+            "session": f"Event: {event.name}",
+            "time": reg.attended_at.strftime("%d-%m-%Y %I:%M %p")
+        }
+        
     today = datetime.date.today()
     
-    # Check duplicate attendance
+    # Check duplicate daily attendance
     existing = db.query(Attendance).filter(
         Attendance.student_id == student.id,
         Attendance.date == today,
@@ -44,7 +92,7 @@ def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_curren
     if existing:
         raise HTTPException(
             status_code=400, 
-            detail=f"Attendance already marked for {session.capitalize()} today for {student.full_name} ({student.roll_number})"
+            detail=f"Attendance already marked for {str(session).capitalize()} today for {student.full_name} ({student.roll_number})"
         )
         
     # Mark present
@@ -65,13 +113,41 @@ def scan_qr(payload: Dict[str, str], current_admin: Student = Depends(get_curren
         "roll_number": student.roll_number,
         "branch": student.branch,
         "year": student.year,
-        "session": session.capitalize(),
+        "session": str(session).capitalize(),
         "time": attendance.timestamp.strftime("%d-%m-%Y %I:%M %p")
     }
 
 @router.get("/attendance/today")
-def get_today_attendance(session: str = "forenoon", current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
-    """Lists all students marked present today for the specified session."""
+def get_today_attendance(session: str = "forenoon", event_id: Optional[int] = None, current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
+    """Lists all students marked present today for the specified session or event."""
+    if not event_id and isinstance(session, str) and session.startswith("event_"):
+        try:
+            event_id = int(session.split("_")[1])
+        except ValueError:
+            pass
+
+    if event_id is not None:
+        regs = db.query(EventRegistration).filter(
+            EventRegistration.event_id == event_id,
+            EventRegistration.attended == True
+        ).all()
+        
+        result = []
+        for r in regs:
+            timestamp_val = r.attended_at if r.attended_at else r.registered_at
+            result.append({
+                "timestamp": timestamp_val,
+                "marked_by": r.attendance_marked_by or "System",
+                "full_name": r.student.full_name,
+                "name": r.student.full_name,
+                "roll_number": r.student.roll_number or "N/A",
+                "branch": r.student.branch,
+                "year": r.student.year,
+                "session": "Event Attendance"
+            })
+        result.sort(key=lambda x: x["timestamp"], reverse=True)
+        return result
+
     today = datetime.date.today()
     records = db.query(
         Attendance.timestamp,
@@ -1051,7 +1127,10 @@ def get_event_registrations(event_id: int, current_admin: Student = Depends(get_
             "streak_count": r.student.streak_count,
             "problems_solved": solved_counts.get(student_id, 0),
             "attendance_count": attendance_counts.get(student_id, 0),
-            "registered_at": r.registered_at.isoformat() + "Z"
+            "registered_at": r.registered_at.isoformat() + "Z",
+            "attended": r.attended,
+            "attended_at": r.attended_at.isoformat() + "Z" if r.attended_at else None,
+            "attendance_marked_by": r.attendance_marked_by
         })
     return {
         "event_name": event.name,
