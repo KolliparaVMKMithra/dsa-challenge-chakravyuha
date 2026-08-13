@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trophy, Calendar, Sparkles, CheckCircle2, ChevronRight, Loader2, ShieldAlert, X, Flame, Timer, Clock } from 'lucide-react';
+import { Trophy, Calendar, Sparkles, CheckCircle2, ChevronRight, Loader2, ShieldAlert, X, Flame, Timer, Clock, User, Mail, Phone, BookOpen, AlertCircle } from 'lucide-react';
 import { apiRequest, getAuthToken } from '@/utils/api';
 
 interface EventData {
@@ -11,6 +11,17 @@ interface EventData {
   description: string;
   status: string;
   is_registered: boolean;
+  year_restricted: number | null;
+}
+
+interface StudentDetails {
+  full_name: string;
+  college_email: string;
+  roll_number: string;
+  phone_number: string;
+  branch: string;
+  year: number;
+  qr_key: string;
 }
 
 // ─── Confetti ─────────────────────────────────────────────────────────────────
@@ -284,6 +295,147 @@ function CountdownModal({ open, onClose, confettiActive }: {
   );
 }
 
+// ─── Orientation Registration Modal ───────────────────────────────────────────
+function OrientationModal({ open, onClose, event, onSuccess }: {
+  open: boolean;
+  onClose: () => void;
+  event: EventData | null;
+  onSuccess: () => void;
+}) {
+  const [details, setDetails] = useState<StudentDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!open || !event) return;
+    setDetails(null); setSubmitError(null); setDone(false);
+    setLoadingDetails(true);
+    apiRequest('/api/dsa/events/my-details')
+      .then(data => setDetails(data))
+      .catch(err => setSubmitError(err.message || 'Failed to load your details.'))
+      .finally(() => setLoadingDetails(false));
+  }, [open, event]);
+
+  const handleConfirm = async () => {
+    if (!event || !details) return;
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      await apiRequest(`/api/dsa/events/${event.id}/register`, { method: 'POST' });
+      setDone(true);
+      setTimeout(() => {
+        onClose();
+        onSuccess();
+      }, 2000);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!open || !event) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.90)', backdropFilter: 'blur(10px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(160deg, #0e0c00 0%, #060500 100%)',
+          border: '1px solid rgba(212,175,55,0.25)',
+          boxShadow: '0 0 80px rgba(212,175,55,0.08), 0 40px 100px rgba(0,0,0,0.9)',
+        }}
+      >
+        <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #d4af37, #8c7030, #d4af37)' }} />
+        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition z-20">
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="p-7 space-y-6">
+          {/* Header */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">🎯 Confirm Registration</p>
+            <h2 className="text-lg font-extrabold font-serif text-white leading-tight">{event.name}</h2>
+            <p className="text-xs text-zinc-500">Verify your details below and confirm your spot.</p>
+          </div>
+
+          {/* Body */}
+          {loadingDetails ? (
+            <div className="flex items-center justify-center py-10 gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-[#d4af37]" />
+              <span className="text-sm text-zinc-400">Fetching your details...</span>
+            </div>
+          ) : submitError ? (
+            <div className="flex items-start gap-2 text-sm text-rose-300 bg-rose-950/20 border border-rose-900/40 rounded-lg p-3">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" /><span>{submitError}</span>
+            </div>
+          ) : done ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <CheckCircle2 className="h-12 w-12 text-emerald-400" />
+              <p className="text-base font-bold text-white">Registration Confirmed!</p>
+              <p className="text-xs text-zinc-400">A confirmation email with your QR code has been sent to your college email.</p>
+            </div>
+          ) : details ? (
+            <div className="space-y-4">
+              {/* Details card */}
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.15)', background: 'rgba(212,175,55,0.03)' }}>
+                <div className="px-4 py-2.5" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)', background: 'rgba(212,175,55,0.05)' }}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d4af37]">Your Details</p>
+                </div>
+                <div className="p-4 space-y-3">
+                  {[
+                    { Icon: User, label: 'Name', val: details.full_name },
+                    { Icon: Mail, label: 'Email', val: details.college_email },
+                    { Icon: BookOpen, label: 'Roll No', val: details.roll_number },
+                    { Icon: Phone, label: 'Phone', val: details.phone_number },
+                    { Icon: BookOpen, label: 'Branch / Year', val: `${details.branch} — Year ${details.year}` },
+                  ].map(({ Icon, label, val }) => (
+                    <div key={label} className="flex items-start gap-3">
+                      <Icon className="h-3.5 w-3.5 mt-0.5 text-[#d4af37] flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-bold">{label}</p>
+                        <p className="text-sm text-zinc-200 font-medium truncate">{val}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-[11px] text-zinc-500 text-center">After confirming, a registration email with your QR code will be sent to your college email.</p>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={submitting}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition disabled:opacity-60"
+                  style={{ background: 'linear-gradient(135deg, #d4af37, #8c7030)', color: '#000' }}
+                >
+                  {submitting ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Registering...</> : 'Confirm & Register'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)' }} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function Events() {
   const router = useRouter();
@@ -294,11 +446,25 @@ export default function Events() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [sihModalOpen, setSihModalOpen] = useState(false);
   const [confettiActive, setConfettiActive] = useState(false);
+  const [orientationModalOpen, setOrientationModalOpen] = useState(false);
+  const [orientationEvent, setOrientationEvent] = useState<EventData | null>(null);
+  const [studentYear, setStudentYear] = useState<number | null>(null);
+
 
   const fetchEvents = async () => {
     try {
       const data = await apiRequest('/api/dsa/events');
       setEvents(data);
+      // Identify orientation event (year restricted to 1st year)
+      const orient = data.find((e: EventData) => e.year_restricted === 1);
+      if (orient) setOrientationEvent(orient);
+      // After events, fetch student year if not yet fetched
+      try {
+        const details = await apiRequest('/api/dsa/events/my-details');
+        setStudentYear(details.year);
+      } catch (err) {
+        console.warn('Could not fetch student details for year');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load events.');
     } finally {
@@ -380,6 +546,7 @@ export default function Events() {
           {events.map((event) => {
             const isYukti = event.name.toUpperCase().includes('YUKTI');
             const isSih = event.name.toUpperCase().includes('SMART INDIA HACKATHON');
+            const isOrientation = event.year_restricted === 1;
             const isUpcoming = event.status === 'upcoming';
 
             return (
@@ -422,6 +589,13 @@ export default function Events() {
                       </span>
                     </div>
                   )}
+                  {isOrientation && (
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)', color: '#d4af37' }}>
+                        🎓 Orientation for 1st Years
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer */}
@@ -439,6 +613,19 @@ export default function Events() {
                     >
                       Coming Soon
                     </button>
+                  ) : isOrientation ? (
+                    studentYear === 1 ? (
+                      <button
+                        onClick={() => { setOrientationEvent(event); setOrientationModalOpen(true); }}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] text-black font-extrabold text-xs uppercase rounded tracking-wider hover:bg-[#f6e05e] transition"
+                      >
+                        Register Orientation
+                      </button>
+                    ) : (
+                      <button disabled className="px-4 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-wider cursor-not-allowed">
+                        Ineligible (Year {studentYear || '—'})
+                      </button>
+                    )
                   ) : isUpcoming ? (
                     <button disabled className="px-4 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-wider cursor-not-allowed">
                       Coming Soon
@@ -473,6 +660,7 @@ export default function Events() {
 
       {/* SIH Countdown Modal */}
       <CountdownModal open={sihModalOpen} onClose={closeSihModal} confettiActive={confettiActive} />
+      <OrientationModal open={orientationModalOpen} onClose={() => setOrientationModalOpen(false)} event={orientationEvent} onSuccess={() => { fetchEvents(); }} />
     </div>
   );
 }

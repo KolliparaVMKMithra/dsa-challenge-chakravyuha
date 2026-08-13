@@ -288,6 +288,17 @@ def startup_db_init():
             db.commit()
             db.refresh(sih_event)
 
+        orientation_event = db.query(Event).filter(Event.name.like("%SIH 2026 Orientation%")).first()
+        if not orientation_event:
+            orientation_event = Event(
+                name="SIH 2026 Orientation for 1st Years",
+                description="Exclusive orientation session for 1st year students — learn about Smart India Hackathon 2026, team building, problem statement selection, and Chakravyuha's mentorship programme. Only open to 1st year students.|year_restricted:1",
+                status="upcoming"
+            )
+            db.add(orientation_event)
+            db.commit()
+            db.refresh(orientation_event)
+
         # 5. Auto-register all existing students to YUKTI event
         logger.info("Ensuring all existing students are registered for YUKTI event...")
         all_students = db.query(Student).filter(Student.is_admin == False).all()

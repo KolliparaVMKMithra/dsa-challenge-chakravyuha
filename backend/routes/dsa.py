@@ -624,18 +624,52 @@ def list_events(current_user: Student = Depends(get_current_user), db: Session =
         
     result = []
     for e in events:
+        # Parse year_restriction from description (encoded as "|year_restricted:1")
+        year_restricted = None
+        clean_description = e.description
+        if "|year_restricted:" in e.description:
+            parts = e.description.split("|year_restricted:")
+            clean_description = parts[0].strip()
+            try:
+                year_restricted = int(parts[1].strip())
+            except Exception:
+                year_restricted = None
+
         result.append({
             "id": e.id,
             "name": e.name,
-            "description": e.description,
+            "description": clean_description,
             "status": e.status,
-            "is_registered": e.id in registered_event_ids or current_user.is_admin
+            "is_registered": e.id in registered_event_ids or current_user.is_admin,
+            "year_restricted": year_restricted,
         })
     return result
 
+@router.get("/events/my-details")
+def get_my_details_for_event(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Returns the logged-in student's details for pre-filling an event registration form."""
+    if current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admins cannot register for events.")
+    return {
+        "id": current_user.id,
+        "full_name": current_user.full_name,
+        "college_email": current_user.college_email,
+        "roll_number": current_user.roll_number or "N/A",
+        "phone_number": current_user.phone_number,
+        "branch": current_user.branch,
+        "year": current_user.year,
+        "qr_key": current_user.qr_key,
+    }
+
 @router.post("/events/{event_id}/register")
-def register_event(event_id: int, current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Registers the student for a specific event."""
+def register_event(
+    event_id: int,
+    current_user: Student = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    background_tasks: "BackgroundTasks" = None,
+):
+    """Registers the student for a specific event. For orientation events, enforces year restriction and sends confirmation email."""
+    from fastapi import BackgroundTasks as BT
     if current_user.is_admin:
         raise HTTPException(status_code=403, detail="Admins cannot register for events.")
         
@@ -645,6 +679,20 @@ def register_event(event_id: int, current_user: Student = Depends(get_current_us
         
     if event.status == "completed":
         raise HTTPException(status_code=400, detail="Cannot register for a completed event.")
+
+    # Enforce year restriction if encoded in description
+    year_restricted = None
+    if "|year_restricted:" in event.description:
+        try:
+            year_restricted = int(event.description.split("|year_restricted:")[1].strip())
+        except Exception:
+            pass
+    
+    if year_restricted is not None and current_user.year != year_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This event is only open to Year {year_restricted} students. You are a Year {current_user.year} student."
+        )
         
     existing = db.query(EventRegistration).filter(
         EventRegistration.student_id == current_user.id,
@@ -660,7 +708,151 @@ def register_event(event_id: int, current_user: Student = Depends(get_current_us
     )
     db.add(reg)
     db.commit()
+
+    # Send confirmation email for any event registration
+    import os
+    import logging
+    import datetime as dt
+    _logger = logging.getLogger(__name__)
+    webhook_url = os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL") or os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL")
+    if webhook_url:
+        payload = {
+            "student_name": current_user.full_name,
+            "student_email": current_user.college_email,
+            "event_name": event.name,
+            "event_id": event.id,
+            "qr_key": current_user.qr_key,
+            "year": current_user.year,
+            "timestamp": dt.datetime.utcnow().isoformat() + "Z"
+        }
+        try:
+            resp = req_lib.post(webhook_url, json=payload, timeout=5)
+            _logger.info(f"Event registration webhook sent, status {resp.status_code}")
+        except Exception as e:
+            _logger.error(f"Failed to send event registration webhook: {e}")
+
+    # Send confirmation email for year-restricted (orientation) events
+    if year_restricted is not None:
+        qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={current_user.qr_key}"
+        roll = current_user.roll_number or "N/A"
+        clean_event_name = event.description.split("|")[0].strip() if "|" in event.description else event.name
+        
+        html_body = f"""
+<div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#1a1508 0%,#0a0908 50%,#1a1508 100%);padding:40px 30px 30px;text-align:center;border-bottom:2px solid #d4af37;">
+    <div style="width:60px;height:60px;margin:0 auto 16px;border:2px solid #d4af37;border-radius:50%;line-height:60px;font-size:28px;">🎯</div>
+    <h1 style="color:#d4af37;text-transform:uppercase;letter-spacing:4px;font-family:Georgia,serif;font-size:28px;margin:0 0 4px;">CHAKRAVYUHA</h1>
+    <p style="font-size:10px;text-transform:uppercase;color:#8c7030;letter-spacing:5px;margin:0;">Amrita Vishwa Vidyapeetham &bull; Amaravati</p>
+  </div>
+
+  <!-- EVENT CONFIRMATION -->
+  <div style="padding:35px 30px 10px;">
+    <p style="font-size:13px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;font-weight:bold;margin:0 0 12px;">✅ Event Registration Confirmed</p>
+    <h2 style="font-size:22px;color:#ffffff;margin:0 0 16px;font-weight:700;line-height:1.3;">
+      You're registered, <span style="color:#d4af37;">{current_user.full_name}</span>!
+    </h2>
+    <p style="font-size:14px;color:#d4d4d8;line-height:1.8;margin:0 0 8px;">
+      Your registration for <strong style="color:#f6e05e;">{event.name}</strong> has been confirmed.
+    </p>
+    <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0 0 25px;">
+      This exclusive orientation is your first step into Chakravyuha's ecosystem — designed to help 1st year students understand SIH 2026, build winning teams, and start their competitive programming journey with expert mentorship.
+    </p>
+  </div>
+
+  <!-- CREDENTIALS CARD -->
+  <div style="margin:0 30px 30px;background:linear-gradient(135deg,#1c1917,#151310);border:1px solid rgba(212,175,55,0.25);border-radius:10px;overflow:hidden;">
+    <div style="background:rgba(212,175,55,0.08);padding:12px 20px;border-bottom:1px solid rgba(212,175,55,0.15);">
+      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;">🔐 Your Registration Details</p>
+    </div>
+    <div style="padding:20px;">
+      <table style="width:100%;font-size:14px;color:#e4e4e7;border-collapse:collapse;">
+        <tr>
+          <td style="padding:8px 0;font-weight:700;width:140px;color:#c5a059;">Full Name</td>
+          <td style="padding:8px 0;color:#ffffff;font-weight:600;">{current_user.full_name}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;">Roll Number</td>
+          <td style="padding:8px 0;font-family:'Courier New',monospace;letter-spacing:1px;">{roll}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;">Email</td>
+          <td style="padding:8px 0;">{current_user.college_email}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;">Branch / Year</td>
+          <td style="padding:8px 0;">{current_user.branch} — Year {current_user.year}</td>
+        </tr>
+        <tr><td colspan="2" style="border-bottom:1px solid rgba(212,175,55,0.08);"></td></tr>
+        <tr>
+          <td style="padding:8px 0;font-weight:700;color:#c5a059;">Warrior Key</td>
+          <td style="padding:8px 0;font-family:'Courier New',monospace;color:#38bdf8;font-weight:700;">{current_user.qr_key}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- QR CODE -->
+  <div style="text-align:center;padding:0 30px 35px;">
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Profile QR Code</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Carry this to the event for check-in</p>
+    <div style="display:inline-block;padding:16px;background:#ffffff;border:3px solid #d4af37;border-radius:12px;box-shadow:0 8px 30px rgba(212,175,55,0.15);">
+      <img src="{qr_image_url}" alt="Profile QR Code" style="width:180px;height:180px;display:block;" />
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center;padding:20px 30px 30px;">
+    <p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">See you at the Orientation! 🚀</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 24px;">Prepare to build, compete, and conquer.</p>
+    <div style="border-top:1px solid rgba(212,175,55,0.15);padding-top:20px;">
+      <p style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:2px;margin:0;">Chakravyuha &bull; Official Coding &amp; DSA Club of Amrita &bull; Amaravati</p>
+    </div>
+  </div>
+
+</div>
+"""
+        subject = f"✅ Registration Confirmed — {event.name} | Chakravyuha"
+        payload = {
+            "email": current_user.college_email,
+            "full_name": current_user.full_name,
+            "roll_number": roll,
+            "qr_key": current_user.qr_key,
+            "qr_image_url": qr_image_url,
+            "subject": subject,
+            "html_body": html_body
+        }
+
+        # Debug log
+        try:
+            debug_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_emails.log")
+            with open(debug_path, "a", encoding="utf-8") as f:
+                f.write(f"{'='*60}\n")
+                f.write(f"ORIENTATION EVENT CONFIRMATION EMAIL\n")
+                f.write(f"Timestamp : {dt.datetime.utcnow()}\n")
+                f.write(f"Recipient : {current_user.college_email} ({current_user.full_name})\n")
+                f.write(f"Event     : {event.name}\n")
+                f.write(f"Subject   : {subject}\n")
+                f.write(f"{'='*60}\n\n")
+        except Exception as log_err:
+            _logger.error(f"Failed to log orientation email: {log_err}")
+
+        # Fire webhook
+        if webhook_url:
+            try:
+                req_lib.post(webhook_url, json=payload, timeout=10)
+                _logger.info(f"Orientation confirmation email webhook triggered for {current_user.college_email}")
+            except Exception as wh_err:
+                _logger.error(f"Failed to trigger orientation email webhook: {wh_err}")
+        else:
+            _logger.info("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL not set — skipping orientation email webhook.")
+
     return {"detail": "Registration successful."}
+
 
 @router.get("/profile")
 def get_profile(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
