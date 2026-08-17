@@ -118,17 +118,27 @@ def scan_qr(payload: Dict[str, Any], current_admin: Student = Depends(get_curren
     }
 
 @router.get("/attendance/today")
-def get_today_attendance(session: str = "forenoon", event_id: Optional[int] = None, current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
+def get_today_attendance(session: str = "forenoon", event_id: Optional[str] = None, current_admin: Student = Depends(get_current_attendance_admin), db: Session = Depends(get_db)):
     """Lists all students marked present today for the specified session or event."""
-    if not event_id and isinstance(session, str) and session.startswith("event_"):
+    parsed_event_id: Optional[int] = None
+    
+    if event_id is not None:
+        val = str(event_id).strip()
+        if val and val.lower() not in ("null", "undefined"):
+            try:
+                parsed_event_id = int(val)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="event_id must be a valid integer")
+                
+    if not parsed_event_id and isinstance(session, str) and session.startswith("event_"):
         try:
-            event_id = int(session.split("_")[1])
+            parsed_event_id = int(session.split("_")[1])
         except ValueError:
             pass
 
-    if event_id is not None:
+    if parsed_event_id is not None:
         regs = db.query(EventRegistration).filter(
-            EventRegistration.event_id == event_id,
+            EventRegistration.event_id == parsed_event_id,
             EventRegistration.attended == True
         ).all()
         

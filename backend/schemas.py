@@ -217,7 +217,7 @@ class SIHTeamMemberCreate(BaseModel):
     personal_email: str = Field(..., min_length=5, max_length=100)
     phone_number: str = Field(..., min_length=10, max_length=20)
     study_year: int = Field(..., ge=1, le=4)
-    branch: str = Field(..., pattern="^(CSE|CSE-AI|CCE|ECE|Quantum)$")
+    branch: str = Field(..., pattern="^(CSE|CSE-AI|CCE|ECE|Quantum|AIDS)$")
     roll_number: str = Field(..., min_length=2, max_length=50)
     gender: str = Field(..., pattern="^(Woman|Man)$")
 

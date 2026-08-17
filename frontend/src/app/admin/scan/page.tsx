@@ -182,7 +182,9 @@ export default function QrScannerPage() {
     try {
       let url = `/api/admin/attendance/today`;
       if (typeVal === 'event') {
-        if (!eventIdVal) {
+        const eventIdStr = eventIdVal !== null && eventIdVal !== undefined ? String(eventIdVal).trim() : '';
+        const hasVal = eventIdStr !== '' && eventIdStr !== 'null' && eventIdStr !== 'undefined';
+        if (!hasVal) {
           setAttendanceRecords([]);
           setRecordsLoading(false);
           return;

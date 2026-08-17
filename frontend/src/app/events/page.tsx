@@ -573,6 +573,7 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
                           >
                             <option value="CSE">CSE</option>
                             <option value="CSE-AI">CSE-AI</option>
+                            <option value="AIDS">AIDS</option>
                             <option value="CCE">CCE</option>
                             <option value="ECE">ECE</option>
                             <option value="Quantum">Quantum</option>
@@ -685,6 +686,7 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
                           >
                             <option value="CSE">CSE</option>
                             <option value="CSE-AI">CSE-AI</option>
+                            <option value="AIDS">AIDS</option>
                             <option value="CCE">CCE</option>
                             <option value="ECE">ECE</option>
                             <option value="Quantum">Quantum</option>
