@@ -2,6 +2,9 @@ import uuid
 import base64
 import io
 import os
+import time
+import hmac
+import hashlib
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -336,3 +339,107 @@ def get_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     if user is None:
         raise credentials_exception
     return user
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FORGOT PASSWORD — no data is changed except password_hash
+# ──────────────────────────────────────────────────────────────────────────────
+
+# A simple HMAC-signed token: "<student_id>.<timestamp>.<sig>"
+# Valid for 15 minutes. No database table needed.
+_RESET_SECRET = os.environ.get("RESET_TOKEN_SECRET", "chakravyuha-reset-secret-2026")
+_RESET_TTL = 900  # 15 minutes in seconds
+
+
+def _make_reset_token(student_id: str) -> str:
+    ts = str(int(time.time()))
+    payload = f"{student_id}.{ts}"
+    sig = hmac.new(_RESET_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    # base64 encode so it is URL-safe
+    raw = f"{payload}.{sig}"
+    return base64.urlsafe_b64encode(raw.encode()).decode()
+
+
+def _verify_reset_token(token: str) -> str:
+    """Returns student_id if valid; raises HTTPException otherwise."""
+    try:
+        raw = base64.urlsafe_b64decode(token.encode()).decode()
+        parts = raw.split(".")
+        # parts: student_id, timestamp, signature
+        if len(parts) != 3:
+            raise ValueError("bad format")
+        student_id, ts, sig = parts
+        payload = f"{student_id}.{ts}"
+        expected = hmac.new(_RESET_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            raise ValueError("bad sig")
+        if int(time.time()) - int(ts) > _RESET_TTL:
+            raise ValueError("expired")
+        return student_id
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Reset token is invalid or has expired. Please try again. ({exc})"
+        )
+
+
+@router.post("/forgot-password/verify-email")
+def forgot_password_verify_email(
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 1: User provides their college email or personal email.
+    Returns a short-lived reset token if the email exists.
+    NO data is modified here.
+    """
+    email = (body.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+
+    student = db.query(Student).filter(
+        (func.lower(Student.college_email) == email) |
+        (func.lower(Student.personal_email) == email)
+    ).first()
+
+    if not student:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with that email address. Please check and try again."
+        )
+
+    reset_token = _make_reset_token(str(student.id))
+    return {
+        "message": "Email verified. You may now reset your password.",
+        "reset_token": reset_token,
+        "name": student.full_name
+    }
+
+
+@router.post("/forgot-password/reset")
+def forgot_password_reset(
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Step 2: User provides the reset token + new password.
+    ONLY the password_hash field is updated. No other data is touched.
+    """
+    token = (body.get("reset_token") or "").strip()
+    new_password = (body.get("new_password") or "").strip()
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Reset token is missing.")
+    if not new_password or len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters.")
+
+    student_id = _verify_reset_token(token)
+
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Account not found.")
+
+    # ⚠️  ONLY update password_hash — nothing else
+    student.password_hash = get_password_hash(new_password)
+    db.commit()
+
+    return {"message": "Password updated successfully. You can now log in with your new password."}

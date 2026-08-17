@@ -146,6 +146,215 @@ const teamMembers: TeamMember[] = [
   { name: "Reshma", role: "Community & Engagement Lead", img: "/team/community and engagement leads/reshma.jpg", dept: "community" },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Forgot Password Modal
+// ─────────────────────────────────────────────────────────────────────────────
+function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState<'email' | 'reset' | 'done'>('email');
+  const [email, setEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const API = process.env.NEXT_PUBLIC_API_URL || '';
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/forgot-password/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Email verification failed.');
+      setResetToken(data.reset_token);
+      setStudentName(data.name);
+      setStep('reset');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/forgot-password/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset_token: resetToken, new_password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Password reset failed.');
+      setStep('done');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(160deg, #0e0c00 0%, #060500 100%)',
+          border: '1px solid rgba(212,175,55,0.25)',
+          boxShadow: '0 0 80px rgba(212,175,55,0.08), 0 40px 100px rgba(0,0,0,0.9)',
+        }}
+      >
+        <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #d4af37, #8c7030, #d4af37)' }} />
+        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition z-20">
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="p-7 space-y-5">
+          {/* Header */}
+          <div className="text-center space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">🔐 Account Recovery</p>
+            <h2 className="text-lg font-extrabold font-serif text-white">Reset Your Password</h2>
+            <p className="text-xs text-zinc-500">Your account data will remain completely safe.</p>
+          </div>
+
+          {/* Step indicator */}
+          <div className="flex items-center gap-2">
+            {['Verify Email', 'New Password', 'Done'].map((label, i) => {
+              const stepIdx = step === 'email' ? 0 : step === 'reset' ? 1 : 2;
+              return (
+                <div key={label} className="flex items-center gap-2 flex-1">
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${i <= stepIdx ? 'bg-[#d4af37] text-black' : 'bg-zinc-800 text-zinc-500'}`}>{i + 1}</div>
+                  <span className={`text-[9px] font-bold uppercase tracking-wider ${i <= stepIdx ? 'text-[#d4af37]' : 'text-zinc-600'}`}>{label}</span>
+                  {i < 2 && <div className={`flex-1 h-px ${i < stepIdx ? 'bg-[#d4af37]/40' : 'bg-zinc-800'}`} />}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg border border-rose-950 bg-rose-950/20 p-3 text-xs text-rose-300">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Step 1: Verify Email */}
+          {step === 'email' && (
+            <form onSubmit={handleVerifyEmail} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-1.5">
+                  Registered Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute inset-y-0 left-3 h-full w-4 text-zinc-500 flex items-center" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your-college@amrita.edu or personal@email.com"
+                    className="block w-full rounded border border-[#8c7030]/20 bg-zinc-900/60 py-2.5 pl-10 pr-3 text-sm text-white placeholder-zinc-500 focus:border-[#d4af37] focus:outline-none transition-colors"
+                  />
+                </div>
+                <p className="text-[10px] text-zinc-600 mt-1.5">Enter the email you used during registration (college or personal).</p>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] py-2.5 text-sm font-bold uppercase tracking-wider text-black hover:opacity-90 transition disabled:opacity-50"
+              >
+                {loading ? 'Verifying...' : 'Verify Email'}
+              </button>
+            </form>
+          )}
+
+          {/* Step 2: Reset Password */}
+          {step === 'reset' && (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="rounded-lg bg-emerald-950/20 border border-emerald-900/40 p-3 text-xs text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <span>Email verified! Welcome back, <strong>{studentName}</strong>.</span>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-1.5">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute inset-y-0 left-3 h-full w-4 text-zinc-500 flex items-center" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    className="block w-full rounded border border-[#8c7030]/20 bg-zinc-900/60 py-2.5 pl-10 pr-3 text-sm text-white placeholder-zinc-500 focus:border-[#d4af37] focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#d4af37] mb-1.5">Confirm New Password</label>
+                <div className="relative">
+                  <Lock className="absolute inset-y-0 left-3 h-full w-4 text-zinc-500 flex items-center" />
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className={`block w-full rounded border bg-zinc-900/60 py-2.5 pl-10 pr-3 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors ${confirmPassword && confirmPassword !== newPassword ? 'border-rose-500' : 'border-[#8c7030]/20 focus:border-[#d4af37]'}`}
+                  />
+                </div>
+                {confirmPassword && confirmPassword !== newPassword && (
+                  <p className="text-[10px] text-rose-500 mt-1 font-semibold">Passwords do not match.</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] py-2.5 text-sm font-bold uppercase tracking-wider text-black hover:opacity-90 transition disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Reset Password'}
+              </button>
+            </form>
+          )}
+
+          {/* Step 3: Done */}
+          {step === 'done' && (
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <CheckCircle2 className="h-14 w-14 text-emerald-400" />
+              <div>
+                <p className="text-lg font-extrabold text-white">Password Updated!</p>
+                <p className="text-xs text-zinc-400 mt-1">Your password has been reset successfully. All your data is intact — only your password was changed.</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="mt-2 px-6 py-2 rounded border border-[#d4af37] bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-xs font-black uppercase tracking-wider text-black hover:opacity-90 transition"
+              >
+                Back to Login
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const authSectionRef = useRef<HTMLDivElement>(null);
@@ -205,7 +414,8 @@ export default function Home() {
   // Login fields
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+
   // Register fields
   const [registerForm, setRegisterForm] = useState({
     full_name: '',
@@ -1708,6 +1918,17 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* Forgot Password link */}
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setForgotPasswordOpen(true)}
+                      className="text-[11px] text-[#d4af37]/70 hover:text-[#d4af37] transition underline underline-offset-2"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loading}
@@ -1716,6 +1937,11 @@ export default function Home() {
                     {loading ? 'Authorizing...' : 'Enter Battlefield'}
                   </button>
                 </form>
+              )}
+
+              {/* Forgot Password Modal */}
+              {forgotPasswordOpen && (
+                <ForgotPasswordModal onClose={() => setForgotPasswordOpen(false)} />
               )}
 
               {/* REGISTER FORM */}
