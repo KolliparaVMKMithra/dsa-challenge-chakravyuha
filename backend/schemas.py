@@ -232,3 +232,11 @@ class SIHTeamRegistration(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ForgotPasswordVerifyEmail(BaseModel):
+    email: str
+
+
+class ForgotPasswordReset(BaseModel):
+    reset_token: str
+    new_password: str

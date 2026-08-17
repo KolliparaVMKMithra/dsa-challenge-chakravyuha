@@ -12,7 +12,7 @@ from sqlalchemy import func
 import qrcode
 from backend.database import get_db
 from backend.models import Student
-from backend.schemas import StudentSignUp, StudentLogin, Token, StudentResponse
+from backend.schemas import StudentSignUp, StudentLogin, Token, StudentResponse, ForgotPasswordVerifyEmail, ForgotPasswordReset
 from backend.auth import get_password_hash, verify_password, create_access_token, oauth2_scheme
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -384,7 +384,7 @@ def _verify_reset_token(token: str) -> str:
 
 @router.post("/forgot-password/verify-email")
 def forgot_password_verify_email(
-    body: dict,
+    req: ForgotPasswordVerifyEmail,
     db: Session = Depends(get_db)
 ):
     """
@@ -392,7 +392,7 @@ def forgot_password_verify_email(
     Returns a short-lived reset token if the email exists.
     NO data is modified here.
     """
-    email = (body.get("email") or "").strip().lower()
+    email = req.email.strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Email is required.")
 
@@ -417,15 +417,15 @@ def forgot_password_verify_email(
 
 @router.post("/forgot-password/reset")
 def forgot_password_reset(
-    body: dict,
+    req: ForgotPasswordReset,
     db: Session = Depends(get_db)
 ):
     """
     Step 2: User provides the reset token + new password.
     ONLY the password_hash field is updated. No other data is touched.
     """
-    token = (body.get("reset_token") or "").strip()
-    new_password = (body.get("new_password") or "").strip()
+    token = req.reset_token.strip()
+    new_password = req.new_password.strip()
 
     if not token:
         raise HTTPException(status_code=400, detail="Reset token is missing.")
