@@ -397,8 +397,7 @@ def forgot_password_verify_email(
         raise HTTPException(status_code=400, detail="Email is required.")
 
     student = db.query(Student).filter(
-        (func.lower(Student.college_email) == email) |
-        (func.lower(Student.personal_email) == email)
+        func.lower(Student.college_email) == email
     ).first()
 
     if not student:

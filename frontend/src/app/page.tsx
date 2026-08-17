@@ -159,25 +159,21 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API = process.env.NEXT_PUBLIC_API_URL || '';
 
   const handleVerifyEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/auth/forgot-password/verify-email`, {
+      const data = await apiRequest('/api/auth/forgot-password/verify-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Email verification failed.');
       setResetToken(data.reset_token);
       setStudentName(data.name);
       setStep('reset');
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Email verification failed.');
     } finally {
       setLoading(false);
     }
@@ -190,16 +186,13 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
     if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/auth/forgot-password/reset`, {
+      await apiRequest('/api/auth/forgot-password/reset', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reset_token: resetToken, new_password: newPassword }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Password reset failed.');
       setStep('done');
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Password reset failed.');
     } finally {
       setLoading(false);
     }
