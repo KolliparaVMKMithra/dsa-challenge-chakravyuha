@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trophy, Calendar, Sparkles, CheckCircle2, ChevronRight, Loader2, ShieldAlert, X, Flame, Timer, Clock, User, Mail, Phone, BookOpen, AlertCircle } from 'lucide-react';
+import { Trophy, Calendar, Sparkles, CheckCircle2, ChevronRight, Loader2, ShieldAlert, X, Flame, Timer, Clock, User, Mail, Phone, BookOpen, AlertCircle, Download } from 'lucide-react';
 import { apiRequest, getAuthToken } from '@/utils/api';
 
 interface EventData {
@@ -204,7 +204,7 @@ function SihRegistrationModal({ open, onClose, onSuccess, isEdit = false }: {
   onSuccess: () => void;
   isEdit?: boolean;
 }) {
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(120);
   const [timerExpired, setTimerExpired] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -300,7 +300,7 @@ function SihRegistrationModal({ open, onClose, onSuccess, isEdit = false }: {
 
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - parseInt(startTime!, 10)) / 1000);
-      const remaining = 60 - elapsed;
+      const remaining = 120 - elapsed;
       if (remaining <= 0) {
         setTimeLeft(0);
         setTimerExpired(true);
@@ -453,9 +453,38 @@ function SihRegistrationModal({ open, onClose, onSuccess, isEdit = false }: {
           ) : !showForm ? (
             /* Part 1: Rules and Instructions */
             <div className="space-y-6">
+
+              {/* PDF Download Banner */}
+              <div
+                className="rounded-xl p-4 flex items-center gap-4"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(140,112,48,0.05) 100%)',
+                  border: '1px solid rgba(212,175,55,0.35)',
+                }}
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                  📄
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-extrabold text-[#d4af37] uppercase tracking-wider">Step 1 — Download &amp; Read the Official Brochure</p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">You must read the official SIH 2026 Internal Hackathon Instructions document before you begin filling the registration form. The 2-minute timer below will unlock the form after you have had time to go through it.</p>
+                </div>
+                <a
+                  href="/SIH2026_Internal_Hackathon_Instructions.pdf"
+                  download="SIH2026_Internal_Hackathon_Instructions.pdf"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg font-extrabold text-[10px] uppercase tracking-wider text-black transition hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #d4af37, #8c7030)' }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download PDF
+                </a>
+              </div>
+
               <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
                 <h3 className="text-sm font-bold text-[#d4af37] border-b border-zinc-900 pb-2">📋 Internal Selection Guidelines &amp; Rules</h3>
                 <ul className="text-xs text-zinc-400 space-y-2.5 list-disc pl-4 leading-relaxed">
+                  <li><strong className="text-[#d4af37]">Read the Brochure:</strong> Download and thoroughly read the official SIH 2026 Internal Hackathon Instructions PDF above before proceeding. The timer gives you 2 minutes to do so.</li>
                   <li><strong>Team Composition:</strong> A team must consist of exactly <strong>6 members</strong> (1 Team Leader and 5 Teammates). No more, no less.</li>
                   <li><strong>Gender Mandate:</strong> At least <strong>one female member (Woman)</strong> is strictly mandatory to build gender diversity.</li>
                   <li><strong>Same Institution:</strong> All team members must belong to the <strong>exact same college</strong> (email domains must match).</li>
@@ -499,7 +528,7 @@ function SihRegistrationModal({ open, onClose, onSuccess, isEdit = false }: {
                     border: timerExpired && rulesAccepted ? 'none' : '1px solid rgba(255,255,255,0.05)'
                   }}
                 >
-                  {timerExpired ? 'Proceed to Registration' : `Read rules: ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`}
+                  {timerExpired ? 'Proceed to Registration →' : `⏳ Read brochure & rules: ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`}
                 </button>
               </div>
             </div>
