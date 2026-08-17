@@ -1487,9 +1487,18 @@ def get_sih_analytics(
         .group_by(SIHTeamMember.study_year).all()
     )
     
+    # Count all-first-year teams (all 6 members are year 1)
+    non_first_year_team_ids = db.query(SIHTeamMember.team_id).filter(
+        SIHTeamMember.study_year != 1
+    ).distinct().all()
+    excluded_ids = [row[0] for row in non_first_year_team_ids]
+    all_first_year_teams = total_teams - len(excluded_ids)
+
     return {
         "total_teams": total_teams,
         "total_students": total_students,
+        "all_first_year_teams": all_first_year_teams,
+        "all_first_year_teams_cap": 20,
         "gender_breakdown": {
             "Woman": women_count,
             "Man": men_count

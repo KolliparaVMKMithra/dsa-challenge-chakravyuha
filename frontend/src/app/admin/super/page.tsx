@@ -2498,25 +2498,80 @@ export default function SuperAdminPage() {
                     <div className="space-y-6">
                       {/* Analytics cards */}
                       {sihAnalytics && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
-                            <span className="block text-xl font-black text-[#d4af37]">{sihAnalytics.total_teams}</span>
-                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Teams</span>
-                          </div>
-                          
-                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
-                            <span className="block text-xl font-black text-white">{sihAnalytics.total_students}</span>
-                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Students</span>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                              <span className="block text-xl font-black text-[#d4af37]">{sihAnalytics.total_teams}</span>
+                              <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Teams</span>
+                            </div>
+                            
+                            <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                              <span className="block text-xl font-black text-white">{sihAnalytics.total_students}</span>
+                              <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Students</span>
+                            </div>
+
+                            <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                              <span className="block text-xl font-black text-rose-400">{sihAnalytics.gender_breakdown.Woman}</span>
+                              <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Women Participation</span>
+                            </div>
+
+                            <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                              <span className="block text-xl font-black text-blue-400">{sihAnalytics.gender_breakdown.Man}</span>
+                              <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Men Participation</span>
+                            </div>
                           </div>
 
-                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
-                            <span className="block text-xl font-black text-rose-400">{sihAnalytics.gender_breakdown.Woman}</span>
-                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Women Participation</span>
-                          </div>
-
-                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
-                            <span className="block text-xl font-black text-blue-400">{sihAnalytics.gender_breakdown.Man}</span>
-                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Men Participation</span>
+                          {/* All-1st-year teams cap card — full width banner */}
+                          <div
+                            className="rounded-xl border p-4 space-y-3"
+                            style={{
+                              background: sihAnalytics.all_first_year_teams >= 20
+                                ? 'rgba(239,68,68,0.06)'
+                                : 'rgba(212,175,55,0.05)',
+                              borderColor: sihAnalytics.all_first_year_teams >= 20
+                                ? 'rgba(239,68,68,0.35)'
+                                : 'rgba(212,175,55,0.25)',
+                            }}
+                          >
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
+                                  🎓 All-1st-Year Teams Registered
+                                </p>
+                                <p className="text-[10px] text-zinc-500 mt-0.5">
+                                  Teams where every member is a 1st-year student. Max cap: 20.
+                                </p>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <span
+                                  className="text-2xl font-black"
+                                  style={{
+                                    color: sihAnalytics.all_first_year_teams >= 20 ? '#ef4444' : '#d4af37'
+                                  }}
+                                >
+                                  {sihAnalytics.all_first_year_teams}
+                                </span>
+                                <span className="text-sm font-bold text-zinc-500"> / 20</span>
+                                {sihAnalytics.all_first_year_teams >= 20 && (
+                                  <p className="text-[9px] font-extrabold text-red-400 uppercase tracking-widest mt-0.5">Cap Reached</p>
+                                )}
+                              </div>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="w-full h-2 rounded-full bg-zinc-900 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                  width: `${Math.min((sihAnalytics.all_first_year_teams / 20) * 100, 100)}%`,
+                                  background: sihAnalytics.all_first_year_teams >= 20
+                                    ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                                    : 'linear-gradient(90deg, #d4af37, #8c7030)',
+                                }}
+                              />
+                            </div>
+                            <p className="text-[9px] text-zinc-600 text-right">
+                              {Math.max(0, 20 - sihAnalytics.all_first_year_teams)} slot{Math.max(0, 20 - sihAnalytics.all_first_year_teams) !== 1 ? 's' : ''} remaining
+                            </p>
                           </div>
                         </div>
                       )}
