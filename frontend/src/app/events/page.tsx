@@ -203,7 +203,7 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [timeLeft, setTimeLeft] = useState(180);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [timerExpired, setTimerExpired] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -269,7 +269,7 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
 
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - parseInt(startTime!, 10)) / 1000);
-      const remaining = 180 - elapsed;
+      const remaining = 60 - elapsed;
       if (remaining <= 0) {
         setTimeLeft(0);
         setTimerExpired(true);
@@ -427,6 +427,7 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
                   <li><strong>Gender Mandate:</strong> At least <strong>one female member (Woman)</strong> is strictly mandatory to build gender diversity.</li>
                   <li><strong>Same Institution:</strong> All team members must belong to the <strong>exact same college</strong> (email domains must match).</li>
                   <li><strong>One Account Submission:</strong> Only the <strong>Team Leader</strong> must fill this registration form. Team members should not submit.</li>
+                  <li><strong>Website Registration:</strong> Every team member <strong>must be registered on our website</strong> to participate in SIH. You cannot register the team if any member is unregistered.</li>
                   <li><strong>No Double Nominations:</strong> A student cannot be part of multiple registered teams. If a teammate is already registered, submission will fail.</li>
                 </ul>
               </div>
@@ -571,12 +572,10 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
                             className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
                           >
                             <option value="CSE">CSE</option>
-                            <option value="AIE">AIE</option>
-                            <option value="AIDS">AIDS</option>
+                            <option value="CSE-AI">CSE-AI</option>
                             <option value="CCE">CCE</option>
-                            <option value="AEP">AEP</option>
                             <option value="ECE">ECE</option>
-                            <option value="EAC">EAC</option>
+                            <option value="Quantum">Quantum</option>
                           </select>
                         </div>
                       </div>
@@ -685,12 +684,10 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
                             className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
                           >
                             <option value="CSE">CSE</option>
-                            <option value="AIE">AIE</option>
-                            <option value="AIDS">AIDS</option>
+                            <option value="CSE-AI">CSE-AI</option>
                             <option value="CCE">CCE</option>
-                            <option value="AEP">AEP</option>
                             <option value="ECE">ECE</option>
-                            <option value="EAC">EAC</option>
+                            <option value="Quantum">Quantum</option>
                           </select>
                         </div>
                       </div>

@@ -60,7 +60,22 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+    let errMsg = '';
+    if (errorData.detail) {
+      if (typeof errorData.detail === 'string') {
+        errMsg = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        errMsg = errorData.detail.map((err: any) => {
+          const field = err.loc ? err.loc[err.loc.length - 1] : '';
+          return `${field ? field + ': ' : ''}${err.msg}`;
+        }).join(', ');
+      } else {
+        errMsg = JSON.stringify(errorData.detail);
+      }
+    } else {
+      errMsg = `Request failed with status ${response.status}`;
+    }
+    throw new Error(errMsg);
   }
 
   // Handle file streams (like Excel download or images)

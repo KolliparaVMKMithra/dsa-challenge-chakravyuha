@@ -972,6 +972,20 @@ def register_sih_team(
             detail="At least one female member (Woman) is mandatory in the team to nominate for SIH 2026."
         )
 
+    # 5b. Enforce that every member must be registered on the website
+    registered_students = db.query(Student).filter(
+        func.lower(Student.college_email).in_(all_college_emails)
+    ).all()
+    registered_emails = {s.college_email.lower().strip() for s in registered_students}
+
+    for m in all_members:
+        email = m.college_email.lower().strip()
+        if email not in registered_emails:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Teammate '{m.full_name}' ({m.college_email}) is not registered on the Chakravyuha website. All team members must be registered to participate in SIH."
+            )
+
     # 6. Check unique email constraint across all teams (prevent double registration of any member)
     all_college_emails = [m.college_email.lower().strip() for m in all_members]
     all_personal_emails = [m.personal_email.lower().strip() for m in all_members]
@@ -1032,27 +1046,26 @@ def register_sih_team(
 
     db.commit()
 
-    # 10. Auto-register the Team Leader to the SIH event
+    # 10. Auto-register all 6 team members to the SIH event
     sih_event = db.query(Event).filter(Event.name.like("%Smart India Hackathon%")).first()
     if sih_event:
-        existing_reg = db.query(EventRegistration).filter(
-            EventRegistration.student_id == current_user.id,
-            EventRegistration.event_id == sih_event.id
-        ).first()
-        if not existing_reg:
-            reg = EventRegistration(
-                student_id=current_user.id,
-                event_id=sih_event.id
-            )
-            db.add(reg)
-            db.commit()
+        for member_student in registered_students:
+            existing_reg = db.query(EventRegistration).filter(
+                EventRegistration.student_id == member_student.id,
+                EventRegistration.event_id == sih_event.id
+            ).first()
+            if not existing_reg:
+                reg = EventRegistration(
+                    student_id=member_student.id,
+                    event_id=sih_event.id
+                )
+                db.add(reg)
+        db.commit()
 
-    # 11. Send a premium HTML email confirmation
+    # 11. Send a premium HTML email confirmation to EVERY team member
     webhook_url = os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL") or os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL")
     if webhook_url:
         import requests
-        qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={current_user.qr_key}"
-        roll = current_user.roll_number or "N/A"
         
         roster_rows = ""
         for i, m in enumerate(all_members):
@@ -1065,7 +1078,11 @@ def register_sih_team(
             </tr>
             """
 
-        html_body = f"""
+        for s in registered_students:
+            qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={s.qr_key}"
+            roll = s.roll_number or "N/A"
+            
+            html_body = f"""
 <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">
 
   <div style="background:linear-gradient(135deg,#1a1508 0%,#0a0908 50%,#1a1508 100%);padding:40px 30px 30px;text-align:center;border-bottom:2px solid #d4af37;">
@@ -1099,7 +1116,7 @@ def register_sih_team(
   </div>
 
   <div style="text-align:center;padding:0 30px 35px;">
-    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Leader QR Code</p>
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Credentials QR Code</p>
     <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Present this at the check-in scanner</p>
     <div style="display:inline-block;padding:16px;background:#ffffff;border:3px solid #d4af37;border-radius:12px;box-shadow:0 8px 30px rgba(212,175,55,0.15);">
       <img src="{qr_image_url}" alt="Profile QR Code" style="width:180px;height:180px;display:block;" />
@@ -1116,20 +1133,20 @@ def register_sih_team(
 
 </div>
 """
-        subject = f"Successfully registered SIH 2026 Team: {team_data.team_name}"
-        payload = {
-            "email": current_user.college_email,
-            "full_name": current_user.full_name,
-            "roll_number": roll,
-            "qr_key": current_user.qr_key,
-            "qr_image_url": qr_image_url,
-            "subject": subject,
-            "html_body": html_body
-        }
+            subject = f"Successfully registered SIH 2026 Team: {team_data.team_name}"
+            payload = {
+                "email": s.college_email,
+                "full_name": s.full_name,
+                "roll_number": roll,
+                "qr_key": s.qr_key,
+                "qr_image_url": qr_image_url,
+                "subject": subject,
+                "html_body": html_body
+            }
 
-        try:
-            requests.post(webhook_url, json=payload, timeout=10)
-        except Exception:
-            pass
+            try:
+                requests.post(webhook_url, json=payload, timeout=10)
+            except Exception:
+                pass
 
     return {"detail": "Team registered successfully!"}
