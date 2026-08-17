@@ -116,6 +116,21 @@ export default function SuperAdminPage() {
   const [sihTeams, setSihTeams] = useState<any[]>([]);
   const [sihAnalytics, setSihAnalytics] = useState<any | null>(null);
   const [sihExpandedTeamId, setSihExpandedTeamId] = useState<number | null>(null);
+  const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
+  const [editingSihTeamId, setEditingSihTeamId] = useState<number | null>(null);
+  const [editingSihTeamName, setEditingSihTeamName] = useState('');
+  const [editingSihLeader, setEditingSihLeader] = useState<any>({
+    full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: ''
+  });
+  const [editingSihMembers, setEditingSihMembers] = useState<any[]>(
+    Array.from({ length: 5 }, () => ({
+      full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: ''
+    }))
+  );
+  const [editSihActiveTab, setEditSihActiveTab] = useState<number>(0);
+  const [editSihSubmitting, setEditSihSubmitting] = useState(false);
+  const [editSihError, setEditSihError] = useState<string | null>(null);
+  const [editSihSuccess, setEditSihSuccess] = useState<string | null>(null);
   
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -311,6 +326,44 @@ export default function SuperAdminPage() {
     } catch (err: any) {
       setActionError(err.message || 'Failed to delete event.');
     }
+  };
+
+  const handleDeleteTeam = async (teamId: number, teamName: string) => {
+    if (!confirm(`Are you sure you want to delete team "${teamName}"? This will also remove all members from the SIH event.`)) return;
+    try {
+      await apiRequest(`/api/admin/sih/teams/${teamId}`, { method: 'DELETE' });
+      const [teamsData, analyticsData] = await Promise.all([
+        apiRequest('/api/admin/sih/teams'),
+        apiRequest('/api/admin/sih/analytics')
+      ]);
+      setSihTeams(teamsData || []);
+      setSihAnalytics(analyticsData || null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete team.');
+    }
+  };
+
+  const handleStartEditTeam = (team: any) => {
+    setEditingSihTeamId(team.id);
+    setEditingSihTeamName(team.team_name);
+    
+    const leaderData = team.members.find((m: any) => m.is_leader);
+    const teammatesData = team.members.filter((m: any) => !m.is_leader);
+    
+    if (leaderData) {
+      setEditingSihLeader({ ...leaderData });
+    }
+    
+    const paddedTeammates = Array.from({ length: 5 }, (_, i) => {
+      if (teammatesData[i]) return { ...teammatesData[i] };
+      return { full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: '' };
+    });
+    setEditingSihMembers(paddedTeammates);
+    
+    setEditSihActiveTab(0);
+    setEditSihError(null);
+    setEditSihSuccess(null);
+    setEditSihTeamModalOpen(true);
   };
 
   const fetchEventRegistrations = async (eventId: number) => {
@@ -2583,6 +2636,20 @@ export default function SuperAdminPage() {
                                           </tbody>
                                         </table>
                                       </div>
+                                      <div className="flex justify-end gap-3 pt-4 border-t border-zinc-900/60 mt-4">
+                                        <button
+                                          onClick={() => handleStartEditTeam(team)}
+                                          className="px-4 py-2 rounded bg-zinc-900 border border-zinc-800 hover:border-[#d4af37]/65 text-white font-extrabold text-[10px] uppercase tracking-wider transition"
+                                        >
+                                          Edit Team
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteTeam(team.id, team.team_name)}
+                                          className="px-4 py-2 rounded bg-red-950/20 border border-red-900/50 hover:border-red-600 text-red-300 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition"
+                                        >
+                                          Delete Team
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -3113,6 +3180,267 @@ export default function SuperAdminPage() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Edit SIH Team Modal (Super Admin only) */}
+      {editSihTeamModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditSihTeamModalOpen(false); }}
+        >
+          <div
+            className="relative w-full max-w-2xl rounded-2xl overflow-hidden text-xs text-zinc-300"
+            style={{
+              background: 'linear-gradient(160deg, #0e0c00 0%, #060500 100%)',
+              border: '1px solid rgba(212,175,55,0.25)',
+              boxShadow: '0 0 80px rgba(212,175,55,0.08), 0 40px 100px rgba(0,0,0,0.9)',
+            }}
+          >
+            <div className="h-[3px] w-full bg-gradient-to-r from-[#d4af37] via-[#8c7030] to-[#d4af37]" />
+            <button
+              onClick={() => setEditSihTeamModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition z-20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="p-6 space-y-6 max-h-[85vh] overflow-y-auto">
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-white font-serif tracking-wide flex items-center gap-2">
+                  <span>🛠️</span> Edit SIH Team Details
+                </h3>
+                <p className="text-[10px] text-zinc-500">Super Admin Override Console</p>
+              </div>
+
+              {editSihError && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-rose-950 bg-rose-950/20 p-3 text-xs text-rose-300">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{editSihError}</span>
+                </div>
+              )}
+
+              {editSihSuccess && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-emerald-950 bg-emerald-950/20 p-3 text-xs text-emerald-300">
+                  <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{editSihSuccess}</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Team Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Team Name</label>
+                  <input
+                    type="text"
+                    value={editingSihTeamName}
+                    onChange={(e) => setEditingSihTeamName(e.target.value)}
+                    className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
+                  />
+                </div>
+
+                {/* Member Selector Tabs */}
+                <div className="flex flex-wrap gap-1.5 border-b border-zinc-900 pb-3">
+                  <button
+                    onClick={() => setEditSihActiveTab(0)}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition text-[10px] uppercase ${
+                      editSihActiveTab === 0 ? 'bg-[#d4af37] text-black' : 'bg-zinc-900/40 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Team Leader
+                  </button>
+                  {editingSihMembers.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setEditSihActiveTab(i + 1)}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition text-[10px] uppercase ${
+                        editSihActiveTab === i + 1 ? 'bg-[#d4af37] text-black' : 'bg-zinc-900/40 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      Member {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Member Form Fields */}
+                <div className="space-y-4 p-4 rounded-xl border border-zinc-900/60 bg-zinc-950/20">
+                  <h4 className="text-[10px] font-bold text-[#d4af37] uppercase tracking-wider border-b border-zinc-900 pb-1.5">
+                    {editSihActiveTab === 0 ? 'Section 1 – Team Leader Information' : `Section ${editSihActiveTab + 1} – Team Member ${editSihActiveTab} Information`}
+                  </h4>
+
+                  {(() => {
+                    const isLeaderTab = editSihActiveTab === 0;
+                    const data = isLeaderTab ? editingSihLeader : editingSihMembers[editSihActiveTab - 1];
+                    
+                    const handleChange = (field: string, val: any) => {
+                      if (isLeaderTab) {
+                        setEditingSihLeader((prev: any) => ({ ...prev, [field]: val }));
+                      } else {
+                        const updated = [...editingSihMembers];
+                        updated[editSihActiveTab - 1] = { ...updated[editSihActiveTab - 1], [field]: val };
+                        setEditingSihMembers(updated);
+                      }
+                    };
+
+                    if (!data) return null;
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Full Name</label>
+                            <input
+                              type="text"
+                              value={data.full_name || ''}
+                              onChange={(e) => handleChange('full_name', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Roll Number</label>
+                            <input
+                              type="text"
+                              value={data.roll_number || ''}
+                              onChange={(e) => handleChange('roll_number', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">College Email</label>
+                            <input
+                              type="email"
+                              value={data.college_email || ''}
+                              onChange={(e) => handleChange('college_email', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Personal Email</label>
+                            <input
+                              type="email"
+                              value={data.personal_email || ''}
+                              onChange={(e) => handleChange('personal_email', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Phone Number</label>
+                            <input
+                              type="text"
+                              value={data.phone_number || ''}
+                              onChange={(e) => handleChange('phone_number', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Branch</label>
+                            <select
+                              value={data.branch || 'CSE'}
+                              onChange={(e) => handleChange('branch', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            >
+                              <option value="CSE">CSE</option>
+                              <option value="CSE-AI">CSE-AI</option>
+                              <option value="AIDS">AIDS</option>
+                              <option value="CCE">CCE</option>
+                              <option value="ECE">ECE</option>
+                              <option value="Quantum">Quantum</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Study Year</label>
+                            <div className="flex gap-4 items-center h-8">
+                              {[1, 2, 3, 4].map((yr) => (
+                                <label key={yr} className="flex items-center gap-1.5 cursor-pointer text-zinc-400 hover:text-white select-none">
+                                  <input
+                                    type="radio"
+                                    name={`edit-sih-yr-${editSihActiveTab}`}
+                                    checked={data.study_year === yr}
+                                    onChange={() => handleChange('study_year', yr)}
+                                    className="h-3 w-3 text-[#d4af37] focus:ring-0 cursor-pointer"
+                                  />
+                                  <span>{yr}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Gender</label>
+                            <div className="flex gap-4 items-center h-8">
+                              {['Woman', 'Man'].map((gen) => (
+                                <label key={gen} className="flex items-center gap-1.5 cursor-pointer text-zinc-400 hover:text-white select-none">
+                                  <input
+                                    type="radio"
+                                    name={`edit-sih-gen-${editSihActiveTab}`}
+                                    checked={data.gender === gen}
+                                    onChange={() => handleChange('gender', gen)}
+                                    className="h-3 w-3 text-[#d4af37] focus:ring-0 cursor-pointer"
+                                  />
+                                  <span>{gen === 'Woman' ? 'Woman' : 'Man'}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-zinc-900/60">
+                <button
+                  onClick={() => setEditSihTeamModalOpen(false)}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition border border-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={editSihSubmitting}
+                  onClick={async () => {
+                    setEditSihError(null);
+                    setEditSihSuccess(null);
+                    setEditSihSubmitting(true);
+                    try {
+                      await apiRequest(`/api/admin/sih/teams/${editingSihTeamId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                          team_name: editingSihTeamName,
+                          leader: editingSihLeader,
+                          members: editingSihMembers
+                        })
+                      });
+                      setEditSihSuccess('Team details updated successfully!');
+                      const [teamsData, analyticsData] = await Promise.all([
+                        apiRequest('/api/admin/sih/teams'),
+                        apiRequest('/api/admin/sih/analytics')
+                      ]);
+                      setSihTeams(teamsData || []);
+                      setSihAnalytics(analyticsData || null);
+                      setTimeout(() => setEditSihTeamModalOpen(false), 1500);
+                    } catch (err: any) {
+                      setEditSihError(err.message || 'Failed to update team details.');
+                    } finally {
+                      setEditSihSubmitting(false);
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-[#d4af37] text-black hover:bg-[#f6e05e]"
+                >
+                  {editSihSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

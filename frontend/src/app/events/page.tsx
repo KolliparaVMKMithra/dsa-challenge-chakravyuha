@@ -198,10 +198,11 @@ interface MemberState {
   gender: 'Woman' | 'Man' | '';
 }
 
-function SihRegistrationModal({ open, onClose, onSuccess }: {
+function SihRegistrationModal({ open, onClose, onSuccess, isEdit = false }: {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  isEdit?: boolean;
 }) {
   const [timeLeft, setTimeLeft] = useState(60);
   const [timerExpired, setTimerExpired] = useState(false);
@@ -241,8 +242,38 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
 
   useEffect(() => {
     if (!open) return;
-    setErrorMsg(null); setDone(false); setShowForm(false); setRulesAccepted(false);
+    setErrorMsg(null); setDone(false);
+    
+    if (isEdit) {
+      setShowForm(true);
+      setTimerExpired(true);
+      setRulesAccepted(true);
+      setActiveTab(0);
+      setLoadingDetails(true);
+      apiRequest('/api/dsa/events/sih/my-team')
+        .then(data => {
+          setTeamName(data.team_name || '');
+          if (data.leader) setLeader(data.leader);
+          if (data.members && data.members.length === 5) setMembers(data.members);
+        })
+        .catch(err => setErrorMsg(err.message || 'Failed to load existing team details.'))
+        .finally(() => setLoadingDetails(false));
+      return;
+    }
+
+    setShowForm(false); setRulesAccepted(false);
     setActiveTab(0); setLoadingDetails(true);
+    setTeamName('');
+    setMembers(Array.from({ length: 5 }, () => ({
+      full_name: '',
+      college_email: '',
+      personal_email: '',
+      phone_number: '',
+      study_year: 1,
+      branch: 'CSE',
+      roll_number: '',
+      gender: ''
+    })));
 
     // Fetch Team Leader Details
     apiRequest('/api/dsa/events/my-details')
@@ -281,7 +312,7 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [open]);
+  }, [open, isEdit]);
 
   const handleMemberChange = (idx: number, field: keyof MemberState, value: any) => {
     const updated = [...members];
@@ -355,8 +386,10 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
 
     setSubmitting(true);
     try {
-      await apiRequest('/api/dsa/events/sih/register', {
-        method: 'POST',
+      const url = isEdit ? '/api/dsa/events/sih/my-team' : '/api/dsa/events/sih/register';
+      const method = isEdit ? 'PUT' : 'POST';
+      await apiRequest(url, {
+        method: method,
         body: JSON.stringify({
           team_name: teamName,
           leader: leader,
@@ -414,8 +447,8 @@ function SihRegistrationModal({ open, onClose, onSuccess }: {
           {done ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
               <CheckCircle2 className="h-16 w-16 text-emerald-400" />
-              <p className="text-lg font-extrabold text-white">Team Registered Successfully!</p>
-              <p className="text-xs text-zinc-400">A confirmation email has been sent to your Team Leader inbox.</p>
+              <p className="text-lg font-extrabold text-white">{isEdit ? 'Team Updated Successfully!' : 'Team Registered Successfully!'}</p>
+              <p className="text-xs text-zinc-400">{isEdit ? 'Your team details have been successfully updated.' : 'A confirmation email has been sent to your Team Leader inbox.'}</p>
             </div>
           ) : !showForm ? (
             /* Part 1: Rules and Instructions */
@@ -925,6 +958,7 @@ export default function Events() {
   const [registeringId, setRegisteringId] = useState<number | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [sihModalOpen, setSihModalOpen] = useState(false);
+  const [sihModalEditMode, setSihModalEditMode] = useState(false);
   const [confettiActive, setConfettiActive] = useState(false);
   const [orientationModalOpen, setOrientationModalOpen] = useState(false);
   const [orientationEvent, setOrientationEvent] = useState<EventData | null>(null);
@@ -972,14 +1006,18 @@ export default function Events() {
     }
   };
 
-  const openSihModal = () => {
+  const openSihModal = (editMode = false) => {
+    setSihModalEditMode(editMode);
     setSihModalOpen(true);
     setConfettiActive(false);
-    setTimeout(() => setConfettiActive(true), 80);
+    if (!editMode) {
+      setTimeout(() => setConfettiActive(true), 80);
+    }
   };
 
   const closeSihModal = () => {
     setSihModalOpen(false);
+    setSihModalEditMode(false);
     setConfettiActive(false);
   };
 
@@ -1032,7 +1070,7 @@ export default function Events() {
             return (
               <div
                 key={event.id}
-                onClick={isSih ? openSihModal : undefined}
+                onClick={isSih ? () => openSihModal() : undefined}
                 className="rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-md p-6 shadow-xl flex flex-col justify-between hover:border-[#8c7030]/30 transition group relative overflow-hidden"
                 style={{ cursor: isSih ? 'pointer' : 'default' }}
               >
@@ -1087,8 +1125,11 @@ export default function Events() {
 
                   {isSih ? (
                     event.is_registered ? (
-                      <button disabled className="px-4 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-[#d4af37] text-xs font-bold uppercase tracking-wider cursor-not-allowed">
-                        Already Registered
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openSihModal(true); }}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] hover:bg-[#f6e05e] text-black font-extrabold text-xs uppercase rounded tracking-wider transition"
+                      >
+                        Edit Team Details
                       </button>
                     ) : (
                       <button
@@ -1148,7 +1189,7 @@ export default function Events() {
       </div>
 
       {/* SIH Registration Modal */}
-      <SihRegistrationModal open={sihModalOpen} onClose={closeSihModal} onSuccess={() => { fetchEvents(); }} />
+      <SihRegistrationModal open={sihModalOpen} onClose={closeSihModal} onSuccess={() => { fetchEvents(); }} isEdit={sihModalEditMode} />
       <OrientationModal open={orientationModalOpen} onClose={() => setOrientationModalOpen(false)} event={orientationEvent} onSuccess={() => { fetchEvents(); }} />
     </div>
   );

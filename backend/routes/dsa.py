@@ -661,6 +661,196 @@ def get_my_details_for_event(current_user: Student = Depends(get_current_user), 
         "qr_key": current_user.qr_key,
     }
 
+@router.get("/events/sih/my-team")
+def get_my_sih_team(current_user: Student = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Retrieves the SIH team and member details if the student is part of any team."""
+    member = db.query(SIHTeamMember).filter(
+        func.lower(SIHTeamMember.college_email) == current_user.college_email.lower().strip()
+    ).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="You are not registered in any SIH team.")
+    
+    team = db.query(SIHTeam).filter(SIHTeam.id == member.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+        
+    all_m = db.query(SIHTeamMember).filter(SIHTeamMember.team_id == team.id).all()
+    
+    leader = next((m for m in all_m if m.is_leader), None)
+    teammates = [m for m in all_m if not m.is_leader]
+    
+    return {
+        "team_id": team.id,
+        "team_name": team.team_name,
+        "leader": leader,
+        "members": teammates
+    }
+
+@router.put("/events/sih/my-team")
+def update_my_sih_team(
+    team_data: SIHTeamRegistration,
+    current_user: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Updates the SIH team details. Only the Team Leader can perform this action."""
+    member = db.query(SIHTeamMember).filter(
+        func.lower(SIHTeamMember.college_email) == current_user.college_email.lower().strip()
+    ).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="You are not registered in any SIH team.")
+        
+    team = db.query(SIHTeam).filter(SIHTeam.id == member.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    leader_db_member = db.query(SIHTeamMember).filter(
+        SIHTeamMember.team_id == team.id,
+        SIHTeamMember.is_leader == True
+    ).first()
+    if not leader_db_member or current_user.college_email.lower().strip() != leader_db_member.college_email.lower().strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Only the Team Leader can edit the team details."
+        )
+
+    # Check team name uniqueness excluding this team
+    existing_team = db.query(SIHTeam).filter(
+        func.lower(SIHTeam.team_name) == func.lower(team_data.team_name.strip()),
+        SIHTeam.id != team.id
+    ).first()
+    if existing_team:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Team name '{team_data.team_name}' is already taken by another team."
+        )
+
+    if len(team_data.members) != 5:
+        raise HTTPException(
+            status_code=400,
+            detail="A team must consist of exactly 1 Team Leader and 5 teammates (total 6 members)."
+        )
+
+    all_members = [team_data.leader] + team_data.members
+    domains = []
+    for m in all_members:
+        if "@" not in m.college_email:
+            raise HTTPException(status_code=400, detail=f"Invalid college email format: {m.college_email}")
+        domains.append(m.college_email.lower().split("@")[1].strip())
+
+    if len(set(domains)) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="All team members must belong to the exact same college (identical college email domains)."
+        )
+
+    genders = [m.gender for m in all_members]
+    if "Woman" not in genders:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one female member (Woman) is mandatory in the team to nominate for SIH 2026."
+        )
+
+    all_college_emails = [m.college_email.lower().strip() for m in all_members]
+    registered_students = db.query(Student).filter(
+        func.lower(Student.college_email).in_(all_college_emails)
+    ).all()
+    registered_emails = {s.college_email.lower().strip() for s in registered_students}
+
+    for m in all_members:
+        email = m.college_email.lower().strip()
+        if email not in registered_emails:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Teammate '{m.full_name}' ({m.college_email}) is not registered on the Chakravyuha website. All team members must be registered to participate in SIH."
+            )
+
+    all_personal_emails = [m.personal_email.lower().strip() for m in all_members]
+
+    # Query duplicate members not in current team
+    existing_member = db.query(SIHTeamMember).filter(
+        (SIHTeamMember.team_id != team.id) & (
+            (func.lower(SIHTeamMember.college_email).in_(all_college_emails)) |
+            (func.lower(SIHTeamMember.personal_email).in_(all_personal_emails)) |
+            (func.lower(SIHTeamMember.college_email).in_(all_personal_emails)) |
+            (func.lower(SIHTeamMember.personal_email).in_(all_college_emails))
+        )
+    ).first()
+
+    if existing_member:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Member '{existing_member.full_name}' with email '{existing_member.college_email}' is already registered in another SIH team."
+        )
+
+    team.team_name = team_data.team_name.strip()
+
+    # Re-fetch previous members to update event registration
+    db_members = db.query(SIHTeamMember).filter(SIHTeamMember.team_id == team.id).all()
+    db.query(SIHTeamMember).filter(SIHTeamMember.team_id == team.id).delete()
+
+    leader_member = SIHTeamMember(
+        team_id=team.id,
+        is_leader=True,
+        full_name=team_data.leader.full_name,
+        college_email=team_data.leader.college_email.lower().strip(),
+        personal_email=team_data.leader.personal_email.lower().strip(),
+        phone_number=team_data.leader.phone_number,
+        study_year=team_data.leader.study_year,
+        branch=team_data.leader.branch,
+        roll_number=team_data.leader.roll_number.upper().strip(),
+        gender=team_data.leader.gender
+    )
+    db.add(leader_member)
+
+    for tm in team_data.members:
+        teammate = SIHTeamMember(
+            team_id=team.id,
+            is_leader=False,
+            full_name=tm.full_name,
+            college_email=tm.college_email.lower().strip(),
+            personal_email=tm.personal_email.lower().strip(),
+            phone_number=tm.phone_number,
+            study_year=tm.study_year,
+            branch=tm.branch,
+            roll_number=tm.roll_number.upper().strip(),
+            gender=tm.gender
+        )
+        db.add(teammate)
+
+    db.commit()
+
+    sih_event = db.query(Event).filter(Event.name.like("%Smart India Hackathon%")).first()
+    if sih_event:
+        old_college_emails = [m.college_email.lower().strip() for m in db_members]
+        old_students = db.query(Student).filter(
+            func.lower(Student.college_email).in_(old_college_emails)
+        ).all()
+        old_student_ids = {s.id for s in old_students}
+        
+        new_student_ids = {s.id for s in registered_students}
+        
+        to_remove_ids = old_student_ids - new_student_ids
+        if to_remove_ids:
+            db.query(EventRegistration).filter(
+                EventRegistration.event_id == sih_event.id,
+                EventRegistration.student_id.in_(list(to_remove_ids))
+            ).delete(synchronize_session=False)
+            
+        for member_student in registered_students:
+            existing_reg = db.query(EventRegistration).filter(
+                EventRegistration.student_id == member_student.id,
+                EventRegistration.event_id == sih_event.id
+            ).first()
+            if not existing_reg:
+                reg = EventRegistration(
+                    student_id=member_student.id,
+                    event_id=sih_event.id
+                )
+                db.add(reg)
+        db.commit()
+
+    return {"detail": "Team details updated successfully!"}
+
 @router.post("/events/sih/register")
 def register_sih_team(
     team_data: SIHTeamRegistration,
