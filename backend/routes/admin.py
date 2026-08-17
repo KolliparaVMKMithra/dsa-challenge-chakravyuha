@@ -1089,9 +1089,14 @@ def create_event(event_data: EventCreate, current_admin: Student = Depends(get_c
     return event
 
 @router.delete("/events/{event_id}")
-def delete_event(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+def delete_event(event_id: str, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
     """Deletes an event (Super Admin only)."""
-    event = db.query(Event).filter(Event.id == event_id).first()
+    try:
+        parsed_id = int(str(event_id).strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="event_id must be a valid integer")
+        
+    event = db.query(Event).filter(Event.id == parsed_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found.")
         
@@ -1103,13 +1108,18 @@ def delete_event(event_id: int, current_admin: Student = Depends(get_current_sup
     return {"detail": "Event deleted successfully."}
 
 @router.get("/events/{event_id}/registrations")
-def get_event_registrations(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+def get_event_registrations(event_id: str, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
     """Lists all students registered for a specific event with problem and attendance stats."""
-    event = db.query(Event).filter(Event.id == event_id).first()
+    try:
+        parsed_id = int(str(event_id).strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="event_id must be a valid integer")
+        
+    event = db.query(Event).filter(Event.id == parsed_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found.")
         
-    regs = db.query(EventRegistration).filter(EventRegistration.event_id == event_id).all()
+    regs = db.query(EventRegistration).filter(EventRegistration.event_id == parsed_id).all()
     
     # Pre-fetch solved counts and attendance counts to avoid N+1 database queries
     solved_counts = dict(
@@ -1149,13 +1159,18 @@ def get_event_registrations(event_id: int, current_admin: Student = Depends(get_
     }
 
 @router.get("/events/{event_id}/export")
-def export_event_registrations(event_id: int, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
+def export_event_registrations(event_id: str, current_admin: Student = Depends(get_current_super_admin), db: Session = Depends(get_db)):
     """Exports registered students for a specific event to an Excel sheet."""
-    event = db.query(Event).filter(Event.id == event_id).first()
+    try:
+        parsed_id = int(str(event_id).strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="event_id must be a valid integer")
+        
+    event = db.query(Event).filter(Event.id == parsed_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found.")
         
-    regs = db.query(EventRegistration).filter(EventRegistration.event_id == event_id).all()
+    regs = db.query(EventRegistration).filter(EventRegistration.event_id == parsed_id).all()
     
     wb = openpyxl.Workbook()
     ws = wb.active

@@ -314,6 +314,11 @@ export default function SuperAdminPage() {
   };
 
   const fetchEventRegistrations = async (eventId: number) => {
+    const hasVal = eventId !== null && eventId !== undefined && String(eventId) !== '' && String(eventId) !== 'null' && String(eventId) !== 'undefined';
+    if (!hasVal) {
+      setEventRegistrations(null);
+      return;
+    }
     setRegsLoading(true);
     setSelectedEventId(eventId);
     try {

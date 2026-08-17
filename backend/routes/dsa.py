@@ -663,17 +663,22 @@ def get_my_details_for_event(current_user: Student = Depends(get_current_user), 
 
 @router.post("/events/{event_id}/register")
 def register_event(
-    event_id: int,
+    event_id: str,
     current_user: Student = Depends(get_current_user),
     db: Session = Depends(get_db),
     background_tasks: "BackgroundTasks" = None,
 ):
     """Registers the student for a specific event. For orientation events, enforces year restriction and sends confirmation email."""
     from fastapi import BackgroundTasks as BT
+    try:
+        parsed_id = int(str(event_id).strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="event_id must be a valid integer")
+        
     if current_user.is_admin:
         raise HTTPException(status_code=403, detail="Admins cannot register for events.")
         
-    event = db.query(Event).filter(Event.id == event_id).first()
+    event = db.query(Event).filter(Event.id == parsed_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found.")
         
@@ -696,7 +701,7 @@ def register_event(
         
     existing = db.query(EventRegistration).filter(
         EventRegistration.student_id == current_user.id,
-        EventRegistration.event_id == event_id
+        EventRegistration.event_id == parsed_id
     ).first()
     
     if existing:
@@ -704,7 +709,7 @@ def register_event(
         
     reg = EventRegistration(
         student_id=current_user.id,
-        event_id=event_id
+        event_id=parsed_id
     )
     db.add(reg)
     db.commit()
