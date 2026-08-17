@@ -116,6 +116,9 @@ export default function SuperAdminPage() {
   const [sihTeams, setSihTeams] = useState<any[]>([]);
   const [sihAnalytics, setSihAnalytics] = useState<any | null>(null);
   const [sihExpandedTeamId, setSihExpandedTeamId] = useState<number | null>(null);
+  const [sihSearch, setSihSearch] = useState('');
+  const [sihPage, setSihPage] = useState(1);
+  const SIH_PAGE_SIZE = 5;
   const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
   const [editingSihTeamId, setEditingSihTeamId] = useState<number | null>(null);
   const [editingSihTeamName, setEditingSihTeamName] = useState('');
@@ -2613,105 +2616,215 @@ export default function SuperAdminPage() {
 
                       {/* Teams Roster List */}
                       <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
-                        <h4 className="text-sm font-bold text-white font-serif tracking-wide">Registered Teams &amp; Rosters</h4>
-                        
-                        {sihTeams.length === 0 ? (
-                          <p className="text-zinc-500 text-center py-6">No teams registered yet.</p>
-                        ) : (
-                          <div className="space-y-4">
-                            {sihTeams.map((team: any) => {
-                              const isExpanded = sihExpandedTeamId === team.id;
-                              const womanCount = team.members.filter((m: any) => m.gender === 'Woman').length;
-                              return (
-                                <div key={team.id} className="rounded-lg border border-zinc-900 bg-zinc-950 overflow-hidden text-[11px]">
-                                  {/* Header */}
-                                  <div
-                                    onClick={() => setSihExpandedTeamId(isExpanded ? null : team.id)}
-                                    className="flex items-center justify-between p-4 bg-zinc-900/30 hover:bg-zinc-900/50 cursor-pointer transition select-none"
-                                  >
-                                    <div className="space-y-1">
-                                      <h5 className="text-sm font-extrabold text-white">{team.team_name}</h5>
-                                      <p className="text-[10px] text-zinc-500">
-                                        Leader: <span className="text-zinc-300 font-semibold">{team.leader_name}</span> &bull; 
-                                        Registered: <span className="text-zinc-400 font-semibold">{new Date(team.created_at).toLocaleDateString()}</span>
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                      <span className="px-2 py-0.5 rounded border border-emerald-900 bg-emerald-950/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
-                                        {womanCount} Woman Member(s)
-                                      </span>
-                                      <span className="px-2.5 py-1 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[10px] font-bold uppercase tracking-wide">
-                                        {isExpanded ? 'Hide Roster' : 'View Roster'}
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Expanded roster */}
-                                  {isExpanded && (
-                                    <div className="border-t border-zinc-900/60 p-4 bg-zinc-950/40">
-                                      <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse text-xs">
-                                          <thead>
-                                            <tr className="border-b border-zinc-900 text-[9px] uppercase font-bold tracking-wider text-zinc-500">
-                                              <th className="py-2 px-3">Role</th>
-                                              <th className="py-2 px-3">Full Name</th>
-                                              <th className="py-2 px-3">Roll Number</th>
-                                              <th className="py-2 px-3">College Email</th>
-                                              <th className="py-2 px-3">Personal Email</th>
-                                              <th className="py-2 px-3">Phone</th>
-                                              <th className="py-2 px-3">Branch/Year</th>
-                                              <th className="py-2 px-3">Gender</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-zinc-900/40 text-zinc-300">
-                                            {team.members.map((m: any, idx: number) => (
-                                              <tr key={idx} className="hover:bg-zinc-900/10">
-                                                <td className="py-2.5 px-3">
-                                                  {m.is_leader ? (
-                                                    <span className="px-1.5 py-0.5 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[8px] font-bold uppercase">Leader</span>
-                                                  ) : (
-                                                    <span className="text-zinc-500 text-[9px] font-medium uppercase">Teammate {idx}</span>
-                                                  )}
-                                                </td>
-                                                <td className="py-2.5 px-3 font-semibold text-white">{m.full_name}</td>
-                                                <td className="py-2.5 px-3 font-mono">{m.roll_number}</td>
-                                                <td className="py-2.5 px-3">{m.college_email}</td>
-                                                <td className="py-2.5 px-3">{m.personal_email}</td>
-                                                <td className="py-2.5 px-3">{m.phone_number}</td>
-                                                <td className="py-2.5 px-3">{m.branch} - Yr {m.study_year}</td>
-                                                <td className="py-2.5 px-3">
-                                                  {m.gender === 'Woman' ? (
-                                                    <span className="text-rose-400 font-medium">Woman</span>
-                                                  ) : (
-                                                    <span className="text-blue-400 font-medium">Man</span>
-                                                  )}
-                                                </td>
-                                              </tr>
-                                            ))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                      <div className="flex justify-end gap-3 pt-4 border-t border-zinc-900/60 mt-4">
-                                        <button
-                                          onClick={() => handleStartEditTeam(team)}
-                                          className="px-4 py-2 rounded bg-zinc-900 border border-zinc-800 hover:border-[#d4af37]/65 text-white font-extrabold text-[10px] uppercase tracking-wider transition"
-                                        >
-                                          Edit Team
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteTeam(team.id, team.team_name)}
-                                          className="px-4 py-2 rounded bg-red-950/20 border border-red-900/50 hover:border-red-600 text-red-300 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition"
-                                        >
-                                          Delete Team
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                        {/* Header with search */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <h4 className="text-sm font-bold text-white font-serif tracking-wide flex-shrink-0">
+                            Registered Teams &amp; Rosters
+                            <span className="ml-2 text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">
+                              ({sihTeams.filter((t: any) => {
+                                const q = sihSearch.toLowerCase();
+                                return !q || t.team_name?.toLowerCase().includes(q) || t.leader_name?.toLowerCase().includes(q);
+                              }).length} {sihSearch ? 'found' : 'total'})
+                            </span>
+                          </h4>
+                          <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
+                            <input
+                              type="text"
+                              placeholder="Search by team or leader name…"
+                              value={sihSearch}
+                              onChange={(e) => { setSihSearch(e.target.value); setSihPage(1); }}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#d4af37]/50"
+                            />
+                            {sihSearch && (
+                              <button
+                                onClick={() => { setSihSearch(''); setSihPage(1); }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
                           </div>
-                        )}
+                        </div>
+
+                        {(() => {
+                          const q = sihSearch.toLowerCase();
+                          const filtered = sihTeams.filter((t: any) =>
+                            !q || t.team_name?.toLowerCase().includes(q) || t.leader_name?.toLowerCase().includes(q)
+                          );
+                          const totalPages = Math.max(1, Math.ceil(filtered.length / SIH_PAGE_SIZE));
+                          const paginated = filtered.slice((sihPage - 1) * SIH_PAGE_SIZE, sihPage * SIH_PAGE_SIZE);
+
+                          if (filtered.length === 0) {
+                            return (
+                              <p className="text-zinc-500 text-center py-6 text-xs">
+                                {sihSearch ? `No teams match "${sihSearch}".` : 'No teams registered yet.'}
+                              </p>
+                            );
+                          }
+
+                          return (
+                            <>
+                              <div className="space-y-4">
+                                {paginated.map((team: any) => {
+                                  const isExpanded = sihExpandedTeamId === team.id;
+                                  const womanCount = team.members.filter((m: any) => m.gender === 'Woman').length;
+                                  return (
+                                    <div key={team.id} className="rounded-lg border border-zinc-900 bg-zinc-950 overflow-hidden text-[11px]">
+                                      {/* Header */}
+                                      <div
+                                        onClick={() => setSihExpandedTeamId(isExpanded ? null : team.id)}
+                                        className="flex items-center justify-between p-4 bg-zinc-900/30 hover:bg-zinc-900/50 cursor-pointer transition select-none"
+                                      >
+                                        <div className="space-y-1">
+                                          <h5 className="text-sm font-extrabold text-white">{team.team_name}</h5>
+                                          <p className="text-[10px] text-zinc-500">
+                                            Leader: <span className="text-zinc-300 font-semibold">{team.leader_name}</span> &bull; 
+                                            Registered: <span className="text-zinc-400 font-semibold">{new Date(team.created_at).toLocaleDateString()}</span>
+                                          </p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                          <span className="px-2 py-0.5 rounded border border-emerald-900 bg-emerald-950/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
+                                            {womanCount} Woman Member(s)
+                                          </span>
+                                          <span className="px-2.5 py-1 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[10px] font-bold uppercase tracking-wide">
+                                            {isExpanded ? 'Hide Roster' : 'View Roster'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Expanded roster */}
+                                      {isExpanded && (
+                                        <div className="border-t border-zinc-900/60 p-4 bg-zinc-950/40">
+                                          <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse text-xs">
+                                              <thead>
+                                                <tr className="border-b border-zinc-900 text-[9px] uppercase font-bold tracking-wider text-zinc-500">
+                                                  <th className="py-2 px-3">Role</th>
+                                                  <th className="py-2 px-3">Full Name</th>
+                                                  <th className="py-2 px-3">Roll Number</th>
+                                                  <th className="py-2 px-3">College Email</th>
+                                                  <th className="py-2 px-3">Personal Email</th>
+                                                  <th className="py-2 px-3">Phone</th>
+                                                  <th className="py-2 px-3">Branch/Year</th>
+                                                  <th className="py-2 px-3">Gender</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody className="divide-y divide-zinc-900/40 text-zinc-300">
+                                                {team.members.map((m: any, idx: number) => (
+                                                  <tr key={idx} className="hover:bg-zinc-900/10">
+                                                    <td className="py-2.5 px-3">
+                                                      {m.is_leader ? (
+                                                        <span className="px-1.5 py-0.5 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[8px] font-bold uppercase">Leader</span>
+                                                      ) : (
+                                                        <span className="text-zinc-500 text-[9px] font-medium uppercase">Teammate {idx}</span>
+                                                      )}
+                                                    </td>
+                                                    <td className="py-2.5 px-3 font-semibold text-white">{m.full_name}</td>
+                                                    <td className="py-2.5 px-3 font-mono">{m.roll_number}</td>
+                                                    <td className="py-2.5 px-3">{m.college_email}</td>
+                                                    <td className="py-2.5 px-3">{m.personal_email}</td>
+                                                    <td className="py-2.5 px-3">{m.phone_number}</td>
+                                                    <td className="py-2.5 px-3">{m.branch} - Yr {m.study_year}</td>
+                                                    <td className="py-2.5 px-3">
+                                                      {m.gender === 'Woman' ? (
+                                                        <span className="text-rose-400 font-medium">Woman</span>
+                                                      ) : (
+                                                        <span className="text-blue-400 font-medium">Man</span>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                          <div className="flex justify-end gap-3 pt-4 border-t border-zinc-900/60 mt-4">
+                                            <button
+                                              onClick={() => handleStartEditTeam(team)}
+                                              className="px-4 py-2 rounded bg-zinc-900 border border-zinc-800 hover:border-[#d4af37]/65 text-white font-extrabold text-[10px] uppercase tracking-wider transition"
+                                            >
+                                              Edit Team
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteTeam(team.id, team.team_name)}
+                                              className="px-4 py-2 rounded bg-red-950/20 border border-red-900/50 hover:border-red-600 text-red-300 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition"
+                                            >
+                                              Delete Team
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Pagination Controls */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-between pt-4 border-t border-zinc-900/60">
+                                  <p className="text-[10px] text-zinc-500">
+                                    Page <span className="text-white font-bold">{sihPage}</span> of <span className="text-white font-bold">{totalPages}</span>
+                                    &nbsp;&bull;&nbsp;Showing {(sihPage - 1) * SIH_PAGE_SIZE + 1}–{Math.min(sihPage * SIH_PAGE_SIZE, filtered.length)} of {filtered.length}
+                                  </p>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => setSihPage(1)}
+                                      disabled={sihPage === 1}
+                                      className="px-2 py-1 rounded text-[10px] font-bold border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      «
+                                    </button>
+                                    <button
+                                      onClick={() => setSihPage(p => Math.max(1, p - 1))}
+                                      disabled={sihPage === 1}
+                                      className="px-2.5 py-1 rounded text-[10px] font-bold border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      ‹ Prev
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                      .filter(p => p === 1 || p === totalPages || Math.abs(p - sihPage) <= 1)
+                                      .reduce((acc: (number | string)[], p, i, arr) => {
+                                        if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push('…');
+                                        acc.push(p);
+                                        return acc;
+                                      }, [])
+                                      .map((item, i) =>
+                                        item === '…' ? (
+                                          <span key={`ellipsis-${i}`} className="px-1 text-zinc-600 text-[10px]">…</span>
+                                        ) : (
+                                          <button
+                                            key={item}
+                                            onClick={() => setSihPage(item as number)}
+                                            className={`px-2.5 py-1 rounded text-[10px] font-bold border transition ${
+                                              sihPage === item
+                                                ? 'bg-[#d4af37] text-black border-[#d4af37]'
+                                                : 'border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
+                                            }`}
+                                          >
+                                            {item}
+                                          </button>
+                                        )
+                                      )}
+                                    <button
+                                      onClick={() => setSihPage(p => Math.min(totalPages, p + 1))}
+                                      disabled={sihPage === totalPages}
+                                      className="px-2.5 py-1 rounded text-[10px] font-bold border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      Next ›
+                                    </button>
+                                    <button
+                                      onClick={() => setSihPage(totalPages)}
+                                      disabled={sihPage === totalPages}
+                                      className="px-2 py-1 rounded text-[10px] font-bold border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      »
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   );
