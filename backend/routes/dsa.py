@@ -661,6 +661,237 @@ def get_my_details_for_event(current_user: Student = Depends(get_current_user), 
         "qr_key": current_user.qr_key,
     }
 
+@router.post("/events/sih/register")
+def register_sih_team(
+    team_data: SIHTeamRegistration,
+    current_user: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Registers a team of 6 members for the SIH 2026 Internal Hackathon."""
+    # 1. Check if user is Team Leader
+    if current_user.college_email.lower().strip() != team_data.leader.college_email.lower().strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Only the Team Leader can register the team. Your email must match the Team Leader's college email."
+        )
+
+    # 2. Check if team name is unique
+    existing_team = db.query(SIHTeam).filter(func.lower(SIHTeam.team_name) == func.lower(team_data.team_name.strip())).first()
+    if existing_team:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Team name '{team_data.team_name}' is already taken. Please choose a different name."
+        )
+
+    # 3. Check team size
+    if len(team_data.members) != 5:
+        raise HTTPException(
+            status_code=400,
+            detail="A team must consist of exactly 1 Team Leader and 5 teammates (total 6 members)."
+        )
+
+    # 4. Check college domain matching (same college rule)
+    all_members = [team_data.leader] + team_data.members
+    domains = []
+    for m in all_members:
+        if "@" not in m.college_email:
+            raise HTTPException(status_code=400, detail=f"Invalid college email format: {m.college_email}")
+        domains.append(m.college_email.lower().split("@")[1].strip())
+
+    if len(set(domains)) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="All team members must belong to the exact same college (identical college email domains)."
+        )
+
+    # 5. Check female member requirement
+    genders = [m.gender for m in all_members]
+    if "Woman" not in genders:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one female member (Woman) is mandatory in the team to nominate for SIH 2026."
+        )
+
+    # 5b. Enforce that every member must be registered on the website
+    all_college_emails = [m.college_email.lower().strip() for m in all_members]
+    registered_students = db.query(Student).filter(
+        func.lower(Student.college_email).in_(all_college_emails)
+    ).all()
+    registered_emails = {s.college_email.lower().strip() for s in registered_students}
+
+    for m in all_members:
+        email = m.college_email.lower().strip()
+        if email not in registered_emails:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Teammate '{m.full_name}' ({m.college_email}) is not registered on the Chakravyuha website. All team members must be registered to participate in SIH."
+            )
+
+    # 6. Check unique email constraint across all teams (prevent double registration of any member)
+    all_personal_emails = [m.personal_email.lower().strip() for m in all_members]
+
+    # Query duplicate members
+    existing_member = db.query(SIHTeamMember).filter(
+        (func.lower(SIHTeamMember.college_email).in_(all_college_emails)) |
+        (func.lower(SIHTeamMember.personal_email).in_(all_personal_emails)) |
+        (func.lower(SIHTeamMember.college_email).in_(all_personal_emails)) |
+        (func.lower(SIHTeamMember.personal_email).in_(all_college_emails))
+    ).first()
+
+    if existing_member:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Member '{existing_member.full_name}' with email '{existing_member.college_email}' is already registered in another SIH team."
+        )
+
+    # 7. Create team
+    team = SIHTeam(
+        team_name=team_data.team_name.strip(),
+        leader_student_id=current_user.id
+    )
+    db.add(team)
+    db.commit()
+    db.refresh(team)
+
+    # 8. Save leader member
+    leader_member = SIHTeamMember(
+        team_id=team.id,
+        is_leader=True,
+        full_name=team_data.leader.full_name,
+        college_email=team_data.leader.college_email.lower().strip(),
+        personal_email=team_data.leader.personal_email.lower().strip(),
+        phone_number=team_data.leader.phone_number,
+        study_year=team_data.leader.study_year,
+        branch=team_data.leader.branch,
+        roll_number=team_data.leader.roll_number.upper().strip(),
+        gender=team_data.leader.gender
+    )
+    db.add(leader_member)
+
+    # 9. Save teammate members
+    for tm in team_data.members:
+        teammate = SIHTeamMember(
+            team_id=team.id,
+            is_leader=False,
+            full_name=tm.full_name,
+            college_email=tm.college_email.lower().strip(),
+            personal_email=tm.personal_email.lower().strip(),
+            phone_number=tm.phone_number,
+            study_year=tm.study_year,
+            branch=tm.branch,
+            roll_number=tm.roll_number.upper().strip(),
+            gender=tm.gender
+        )
+        db.add(teammate)
+
+    db.commit()
+
+    # 10. Auto-register all 6 team members to the SIH event
+    sih_event = db.query(Event).filter(Event.name.like("%Smart India Hackathon%")).first()
+    if sih_event:
+        for member_student in registered_students:
+            existing_reg = db.query(EventRegistration).filter(
+                EventRegistration.student_id == member_student.id,
+                EventRegistration.event_id == sih_event.id
+            ).first()
+            if not existing_reg:
+                reg = EventRegistration(
+                    student_id=member_student.id,
+                    event_id=sih_event.id
+                )
+                db.add(reg)
+        db.commit()
+
+    # 11. Send a premium HTML email confirmation to EVERY team member
+    webhook_url = os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL") or os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL")
+    if webhook_url:
+        import requests
+        
+        roster_rows = ""
+        for i, m in enumerate(all_members):
+            role = "Leader" if i == 0 else f"Member {i}"
+            roster_rows += f"""
+            <tr>
+              <td style="padding:6px 0;font-weight:700;color:#c5a059;">{role}</td>
+              <td style="padding:6px 0;color:#ffffff;">{m.full_name} ({m.roll_number})</td>
+              <td style="padding:6px 0;font-size:12px;color:#a1a1aa;">{m.college_email}</td>
+            </tr>
+            """
+
+        for s in registered_students:
+            qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={s.qr_key}"
+            roll = s.roll_number or "N/A"
+            
+            html_body = f"""
+<div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">
+
+  <div style="background:linear-gradient(135deg,#1a1508 0%,#0a0908 50%,#1a1508 100%);padding:40px 30px 30px;text-align:center;border-bottom:2px solid #d4af37;">
+    <div style="width:60px;height:60px;margin:0 auto 16px;border:2px solid #d4af37;border-radius:50%;line-height:60px;font-size:28px;">🚀</div>
+    <h1 style="color:#d4af37;text-transform:uppercase;letter-spacing:4px;font-family:Georgia,serif;font-size:24px;margin:0 0 4px;">Smart India Hackathon 2026</h1>
+    <p style="font-size:10px;text-transform:uppercase;color:#8c7030;letter-spacing:5px;margin:0;">Chakravyuha Club &bull; Internal Hackathon</p>
+  </div>
+
+  <div style="padding:35px 30px 10px;">
+    <p style="font-size:13px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;font-weight:bold;margin:0 0 12px;">🏆 Team Registration Confirmed</p>
+    <h2 style="font-size:20px;color:#ffffff;margin:0 0 16px;font-weight:700;line-height:1.3;">
+      Congratulations, Team <span style="color:#d4af37;">{team_data.team_name}</span>!
+    </h2>
+    <p style="font-size:14px;color:#d4d4d8;line-height:1.8;margin:0 0 8px;">
+      Your team has been successfully registered for the **Smart India Hackathon 2026 Internal Hackathon**.
+    </p>
+    <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0 0 25px;">
+      All team members must present their permanent attendance QR codes at the hackathon check-in desk on the day of the event.
+    </p>
+  </div>
+
+  <div style="margin:0 30px 30px;background:linear-gradient(135deg,#1c1917,#151310);border:1px solid rgba(212,175,55,0.25);border-radius:10px;overflow:hidden;">
+    <div style="background:rgba(212,175,55,0.08);padding:12px 20px;border-bottom:1px solid rgba(212,175,55,0.15);">
+      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;">👥 Team Roster</p>
+    </div>
+    <div style="padding:20px;">
+      <table style="width:100%;font-size:13px;color:#e4e4e7;border-collapse:collapse;">
+        {roster_rows}
+      </table>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:0 30px 35px;">
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Credentials QR Code</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Present this at the check-in scanner</p>
+    <div style="display:inline-block;padding:16px;background:#ffffff;border:3px solid #d4af37;border-radius:12px;box-shadow:0 8px 30px rgba(212,175,55,0.15);">
+      <img src="{qr_image_url}" alt="Profile QR Code" style="width:180px;height:180px;display:block;" />
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:20px 30px 30px;">
+    <p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">Best of luck in the Hackathon! 🚀</p>
+    <p style="font-size:12px;color:#71717a;margin:0 0 24px;">Build something extraordinary.</p>
+    <div style="border-top:1px solid rgba(212,175,55,0.15);padding-top:20px;">
+      <p style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:2px;margin:0;">Chakravyuha &bull; Official Coding &amp; DSA Club of Amrita &bull; Amaravati</p>
+    </div>
+  </div>
+
+</div>
+"""
+            subject = f"Successfully registered SIH 2026 Team: {team_data.team_name}"
+            payload = {
+                "email": s.college_email,
+                "full_name": s.full_name,
+                "roll_number": roll,
+                "qr_key": s.qr_key,
+                "qr_image_url": qr_image_url,
+                "subject": subject,
+                "html_body": html_body
+            }
+
+            try:
+                requests.post(webhook_url, json=payload, timeout=10)
+            except Exception:
+                pass
+
+    return {"detail": "Team registered successfully!"}
+
+
 @router.post("/events/{event_id}/register")
 def register_event(
     event_id: str,
@@ -926,232 +1157,4 @@ def update_profile(data: ProfileUpdate, current_user: Student = Depends(get_curr
     return {"detail": "Profile updated successfully."}
 
 
-@router.post("/events/sih/register")
-def register_sih_team(
-    team_data: SIHTeamRegistration,
-    current_user: Student = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Registers a team of 6 members for the SIH 2026 Internal Hackathon."""
-    # 1. Check if user is Team Leader
-    if current_user.college_email.lower().strip() != team_data.leader.college_email.lower().strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Only the Team Leader can register the team. Your email must match the Team Leader's college email."
-        )
 
-    # 2. Check if team name is unique
-    existing_team = db.query(SIHTeam).filter(func.lower(SIHTeam.team_name) == func.lower(team_data.team_name.strip())).first()
-    if existing_team:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Team name '{team_data.team_name}' is already taken. Please choose a different name."
-        )
-
-    # 3. Check team size
-    if len(team_data.members) != 5:
-        raise HTTPException(
-            status_code=400,
-            detail="A team must consist of exactly 1 Team Leader and 5 teammates (total 6 members)."
-        )
-
-    # 4. Check college domain matching (same college rule)
-    all_members = [team_data.leader] + team_data.members
-    domains = []
-    for m in all_members:
-        if "@" not in m.college_email:
-            raise HTTPException(status_code=400, detail=f"Invalid college email format: {m.college_email}")
-        domains.append(m.college_email.lower().split("@")[1].strip())
-
-    if len(set(domains)) > 1:
-        raise HTTPException(
-            status_code=400,
-            detail="All team members must belong to the exact same college (identical college email domains)."
-        )
-
-    # 5. Check female member requirement
-    genders = [m.gender for m in all_members]
-    if "Woman" not in genders:
-        raise HTTPException(
-            status_code=400,
-            detail="At least one female member (Woman) is mandatory in the team to nominate for SIH 2026."
-        )
-
-    # 5b. Enforce that every member must be registered on the website
-    registered_students = db.query(Student).filter(
-        func.lower(Student.college_email).in_(all_college_emails)
-    ).all()
-    registered_emails = {s.college_email.lower().strip() for s in registered_students}
-
-    for m in all_members:
-        email = m.college_email.lower().strip()
-        if email not in registered_emails:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Teammate '{m.full_name}' ({m.college_email}) is not registered on the Chakravyuha website. All team members must be registered to participate in SIH."
-            )
-
-    # 6. Check unique email constraint across all teams (prevent double registration of any member)
-    all_college_emails = [m.college_email.lower().strip() for m in all_members]
-    all_personal_emails = [m.personal_email.lower().strip() for m in all_members]
-
-    # Query duplicate members
-    existing_member = db.query(SIHTeamMember).filter(
-        (func.lower(SIHTeamMember.college_email).in_(all_college_emails)) |
-        (func.lower(SIHTeamMember.personal_email).in_(all_personal_emails)) |
-        (func.lower(SIHTeamMember.college_email).in_(all_personal_emails)) |
-        (func.lower(SIHTeamMember.personal_email).in_(all_college_emails))
-    ).first()
-
-    if existing_member:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Member '{existing_member.full_name}' with email '{existing_member.college_email}' is already registered in another SIH team."
-        )
-
-    # 7. Create team
-    team = SIHTeam(
-        team_name=team_data.team_name.strip(),
-        leader_student_id=current_user.id
-    )
-    db.add(team)
-    db.commit()
-    db.refresh(team)
-
-    # 8. Save leader member
-    leader_member = SIHTeamMember(
-        team_id=team.id,
-        is_leader=True,
-        full_name=team_data.leader.full_name,
-        college_email=team_data.leader.college_email.lower().strip(),
-        personal_email=team_data.leader.personal_email.lower().strip(),
-        phone_number=team_data.leader.phone_number,
-        study_year=team_data.leader.study_year,
-        branch=team_data.leader.branch,
-        roll_number=team_data.leader.roll_number.upper().strip(),
-        gender=team_data.leader.gender
-    )
-    db.add(leader_member)
-
-    # 9. Save teammate members
-    for tm in team_data.members:
-        teammate = SIHTeamMember(
-            team_id=team.id,
-            is_leader=False,
-            full_name=tm.full_name,
-            college_email=tm.college_email.lower().strip(),
-            personal_email=tm.personal_email.lower().strip(),
-            phone_number=tm.phone_number,
-            study_year=tm.study_year,
-            branch=tm.branch,
-            roll_number=tm.roll_number.upper().strip(),
-            gender=tm.gender
-        )
-        db.add(teammate)
-
-    db.commit()
-
-    # 10. Auto-register all 6 team members to the SIH event
-    sih_event = db.query(Event).filter(Event.name.like("%Smart India Hackathon%")).first()
-    if sih_event:
-        for member_student in registered_students:
-            existing_reg = db.query(EventRegistration).filter(
-                EventRegistration.student_id == member_student.id,
-                EventRegistration.event_id == sih_event.id
-            ).first()
-            if not existing_reg:
-                reg = EventRegistration(
-                    student_id=member_student.id,
-                    event_id=sih_event.id
-                )
-                db.add(reg)
-        db.commit()
-
-    # 11. Send a premium HTML email confirmation to EVERY team member
-    webhook_url = os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL") or os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL")
-    if webhook_url:
-        import requests
-        
-        roster_rows = ""
-        for i, m in enumerate(all_members):
-            role = "Leader" if i == 0 else f"Member {i}"
-            roster_rows += f"""
-            <tr>
-              <td style="padding:6px 0;font-weight:700;color:#c5a059;">{role}</td>
-              <td style="padding:6px 0;color:#ffffff;">{m.full_name} ({m.roll_number})</td>
-              <td style="padding:6px 0;font-size:12px;color:#a1a1aa;">{m.college_email}</td>
-            </tr>
-            """
-
-        for s in registered_students:
-            qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={s.qr_key}"
-            roll = s.roll_number or "N/A"
-            
-            html_body = f"""
-<div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">
-
-  <div style="background:linear-gradient(135deg,#1a1508 0%,#0a0908 50%,#1a1508 100%);padding:40px 30px 30px;text-align:center;border-bottom:2px solid #d4af37;">
-    <div style="width:60px;height:60px;margin:0 auto 16px;border:2px solid #d4af37;border-radius:50%;line-height:60px;font-size:28px;">🚀</div>
-    <h1 style="color:#d4af37;text-transform:uppercase;letter-spacing:4px;font-family:Georgia,serif;font-size:24px;margin:0 0 4px;">Smart India Hackathon 2026</h1>
-    <p style="font-size:10px;text-transform:uppercase;color:#8c7030;letter-spacing:5px;margin:0;">Chakravyuha Club &bull; Internal Hackathon</p>
-  </div>
-
-  <div style="padding:35px 30px 10px;">
-    <p style="font-size:13px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;font-weight:bold;margin:0 0 12px;">🏆 Team Registration Confirmed</p>
-    <h2 style="font-size:20px;color:#ffffff;margin:0 0 16px;font-weight:700;line-height:1.3;">
-      Congratulations, Team <span style="color:#d4af37;">{team_data.team_name}</span>!
-    </h2>
-    <p style="font-size:14px;color:#d4d4d8;line-height:1.8;margin:0 0 8px;">
-      Your team has been successfully registered for the **Smart India Hackathon 2026 Internal Hackathon**.
-    </p>
-    <p style="font-size:13px;color:#a1a1aa;line-height:1.7;margin:0 0 25px;">
-      All team members must present their permanent attendance QR codes at the hackathon check-in desk on the day of the event.
-    </p>
-  </div>
-
-  <div style="margin:0 30px 30px;background:linear-gradient(135deg,#1c1917,#151310);border:1px solid rgba(212,175,55,0.25);border-radius:10px;overflow:hidden;">
-    <div style="background:rgba(212,175,55,0.08);padding:12px 20px;border-bottom:1px solid rgba(212,175,55,0.15);">
-      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;">👥 Team Roster</p>
-    </div>
-    <div style="padding:20px;">
-      <table style="width:100%;font-size:13px;color:#e4e4e7;border-collapse:collapse;">
-        {roster_rows}
-      </table>
-    </div>
-  </div>
-
-  <div style="text-align:center;padding:0 30px 35px;">
-    <p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:700;margin:0 0 6px;">Your Credentials QR Code</p>
-    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Present this at the check-in scanner</p>
-    <div style="display:inline-block;padding:16px;background:#ffffff;border:3px solid #d4af37;border-radius:12px;box-shadow:0 8px 30px rgba(212,175,55,0.15);">
-      <img src="{qr_image_url}" alt="Profile QR Code" style="width:180px;height:180px;display:block;" />
-    </div>
-  </div>
-
-  <div style="text-align:center;padding:20px 30px 30px;">
-    <p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">Best of luck in the Hackathon! 🚀</p>
-    <p style="font-size:12px;color:#71717a;margin:0 0 24px;">Build something extraordinary.</p>
-    <div style="border-top:1px solid rgba(212,175,55,0.15);padding-top:20px;">
-      <p style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:2px;margin:0;">Chakravyuha &bull; Official Coding &amp; DSA Club of Amrita &bull; Amaravati</p>
-    </div>
-  </div>
-
-</div>
-"""
-            subject = f"Successfully registered SIH 2026 Team: {team_data.team_name}"
-            payload = {
-                "email": s.college_email,
-                "full_name": s.full_name,
-                "roll_number": roll,
-                "qr_key": s.qr_key,
-                "qr_image_url": qr_image_url,
-                "subject": subject,
-                "html_body": html_body
-            }
-
-            try:
-                requests.post(webhook_url, json=payload, timeout=10)
-            except Exception:
-                pass
-
-    return {"detail": "Team registered successfully!"}
