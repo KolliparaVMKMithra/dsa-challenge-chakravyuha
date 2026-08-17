@@ -61,6 +61,7 @@ interface AnalyticsData {
 
 interface StudentDetail {
   student: {
+    id: string;
     name: string;
     roll_number: string;
     email: string;
@@ -110,6 +111,11 @@ export default function SuperAdminPage() {
     description: '',
     status: 'active'
   });
+  
+  // SIH 2026 Specific States
+  const [sihTeams, setSihTeams] = useState<any[]>([]);
+  const [sihAnalytics, setSihAnalytics] = useState<any | null>(null);
+  const [sihExpandedTeamId, setSihExpandedTeamId] = useState<number | null>(null);
   
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -311,6 +317,18 @@ export default function SuperAdminPage() {
     setRegsLoading(true);
     setSelectedEventId(eventId);
     try {
+      const eventObj = events.find(e => e.id === eventId);
+      const isSih = eventObj?.name?.toUpperCase().includes('SMART INDIA HACKATHON');
+      
+      if (isSih) {
+        const [teamsData, analyticsData] = await Promise.all([
+          apiRequest('/api/admin/sih/teams'),
+          apiRequest('/api/admin/sih/analytics')
+        ]);
+        setSihTeams(teamsData || []);
+        setSihAnalytics(analyticsData || null);
+      }
+
       const data = await apiRequest(`/api/admin/events/${eventId}/registrations`);
       setEventRegistrations(data);
     } catch (err: any) {
@@ -2404,7 +2422,9 @@ export default function SuperAdminPage() {
                 </div>
                 
                 <a
-                  href={`/api/admin/events/${selectedEventId}/export`}
+                  href={eventRegistrations.event_name.toUpperCase().includes('SMART INDIA HACKATHON')
+                    ? `/api/admin/sih/export`
+                    : `/api/admin/events/${selectedEventId}/export`}
                   className="flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
                 >
                   <Download className="h-4 w-4" /> Download Excel Report
@@ -2413,6 +2433,163 @@ export default function SuperAdminPage() {
 
               {/* Stats Grid */}
               {(() => {
+                const isSih = eventRegistrations.event_name.toUpperCase().includes('SMART INDIA HACKATHON');
+
+                if (isSih) {
+                  return (
+                    <div className="space-y-6">
+                      {/* Analytics cards */}
+                      {sihAnalytics && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                            <span className="block text-xl font-black text-[#d4af37]">{sihAnalytics.total_teams}</span>
+                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Teams</span>
+                          </div>
+                          
+                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                            <span className="block text-xl font-black text-white">{sihAnalytics.total_students}</span>
+                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Total Students</span>
+                          </div>
+
+                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                            <span className="block text-xl font-black text-rose-400">{sihAnalytics.gender_breakdown.Woman}</span>
+                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Women Participation</span>
+                          </div>
+
+                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
+                            <span className="block text-xl font-black text-blue-400">{sihAnalytics.gender_breakdown.Man}</span>
+                            <span className="text-[9px] uppercase tracking-widest font-extrabold text-zinc-500 block mt-1">Men Participation</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Detailed analytics stats for branches and years */}
+                      {sihAnalytics && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-5 space-y-3">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#d4af37] border-b border-zinc-900 pb-2">Branch Distribution</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-zinc-300">
+                              {Object.entries(sihAnalytics.branch_breakdown).map(([br, count]: any) => (
+                                <div key={br} className="flex justify-between p-1 bg-zinc-900/40 rounded border border-zinc-900">
+                                  <span>{br}</span>
+                                  <span className="font-bold text-white">{count}</span>
+                                </div>
+                              ))}
+                              {Object.keys(sihAnalytics.branch_breakdown).length === 0 && (
+                                <span className="text-zinc-500">No branch data available</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-5 space-y-3">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#d4af37] border-b border-zinc-900 pb-2">Study Year Distribution</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-zinc-300">
+                              {Object.entries(sihAnalytics.year_breakdown).map(([yr, count]: any) => (
+                                <div key={yr} className="flex justify-between p-1 bg-zinc-900/40 rounded border border-zinc-900">
+                                  <span>Year {yr}</span>
+                                  <span className="font-bold text-white">{count}</span>
+                                </div>
+                              ))}
+                              {Object.keys(sihAnalytics.year_breakdown).length === 0 && (
+                                <span className="text-zinc-500">No year data available</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Teams Roster List */}
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
+                        <h4 className="text-sm font-bold text-white font-serif tracking-wide">Registered Teams &amp; Rosters</h4>
+                        
+                        {sihTeams.length === 0 ? (
+                          <p className="text-zinc-500 text-center py-6">No teams registered yet.</p>
+                        ) : (
+                          <div className="space-y-4">
+                            {sihTeams.map((team: any) => {
+                              const isExpanded = sihExpandedTeamId === team.id;
+                              const womanCount = team.members.filter((m: any) => m.gender === 'Woman').length;
+                              return (
+                                <div key={team.id} className="rounded-lg border border-zinc-900 bg-zinc-950 overflow-hidden text-[11px]">
+                                  {/* Header */}
+                                  <div
+                                    onClick={() => setSihExpandedTeamId(isExpanded ? null : team.id)}
+                                    className="flex items-center justify-between p-4 bg-zinc-900/30 hover:bg-zinc-900/50 cursor-pointer transition select-none"
+                                  >
+                                    <div className="space-y-1">
+                                      <h5 className="text-sm font-extrabold text-white">{team.team_name}</h5>
+                                      <p className="text-[10px] text-zinc-500">
+                                        Leader: <span className="text-zinc-300 font-semibold">{team.leader_name}</span> &bull; 
+                                        Registered: <span className="text-zinc-400 font-semibold">{new Date(team.created_at).toLocaleDateString()}</span>
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span className="px-2 py-0.5 rounded border border-emerald-900 bg-emerald-950/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
+                                        {womanCount} Woman Member(s)
+                                      </span>
+                                      <span className="px-2.5 py-1 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[10px] font-bold uppercase tracking-wide">
+                                        {isExpanded ? 'Hide Roster' : 'View Roster'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Expanded roster */}
+                                  {isExpanded && (
+                                    <div className="border-t border-zinc-900/60 p-4 bg-zinc-950/40">
+                                      <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse text-xs">
+                                          <thead>
+                                            <tr className="border-b border-zinc-900 text-[9px] uppercase font-bold tracking-wider text-zinc-500">
+                                              <th className="py-2 px-3">Role</th>
+                                              <th className="py-2 px-3">Full Name</th>
+                                              <th className="py-2 px-3">Roll Number</th>
+                                              <th className="py-2 px-3">College Email</th>
+                                              <th className="py-2 px-3">Personal Email</th>
+                                              <th className="py-2 px-3">Phone</th>
+                                              <th className="py-2 px-3">Branch/Year</th>
+                                              <th className="py-2 px-3">Gender</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-zinc-900/40 text-zinc-300">
+                                            {team.members.map((m: any, idx: number) => (
+                                              <tr key={idx} className="hover:bg-zinc-900/10">
+                                                <td className="py-2.5 px-3">
+                                                  {m.is_leader ? (
+                                                    <span className="px-1.5 py-0.5 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[8px] font-bold uppercase">Leader</span>
+                                                  ) : (
+                                                    <span className="text-zinc-500 text-[9px] font-medium uppercase">Teammate {idx}</span>
+                                                  )}
+                                                </td>
+                                                <td className="py-2.5 px-3 font-semibold text-white">{m.full_name}</td>
+                                                <td className="py-2.5 px-3 font-mono">{m.roll_number}</td>
+                                                <td className="py-2.5 px-3">{m.college_email}</td>
+                                                <td className="py-2.5 px-3">{m.personal_email}</td>
+                                                <td className="py-2.5 px-3">{m.phone_number}</td>
+                                                <td className="py-2.5 px-3">{m.branch} - Yr {m.study_year}</td>
+                                                <td className="py-2.5 px-3">
+                                                  {m.gender === 'Woman' ? (
+                                                    <span className="text-rose-400 font-medium">Woman</span>
+                                                  ) : (
+                                                    <span className="text-blue-400 font-medium">Man</span>
+                                                  )}
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
                 const totalRegs = eventRegistrations?.students?.length || 0;
                 const avgSolved = totalRegs > 0 
                   ? (eventRegistrations.students.reduce((acc: number, curr: any) => acc + (curr.problems_solved || 0), 0) / totalRegs).toFixed(1)

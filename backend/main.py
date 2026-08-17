@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from backend.database import engine, Base
-from backend.models import Student, Problem, CodeChefContest, Feedback, Event, EventRegistration
+from backend.models import Student, Problem, CodeChefContest, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember
 from backend.auth import get_password_hash
 from backend.routes import auth, dsa, admin
 
@@ -302,11 +302,14 @@ def startup_db_init():
             sih_event = Event(
                 name="Smart India Hackathon 2026 Internal Hackathon",
                 description="Chakravyuha Club's internal hackathon to select and nominate teams for SIH 2026.",
-                status="upcoming"
+                status="active"
             )
             db.add(sih_event)
             db.commit()
             db.refresh(sih_event)
+        else:
+            sih_event.status = "active"
+            db.commit()
 
         orientation_event = db.query(Event).filter(Event.name.like("%SIH 2026 Orientation%")).first()
         if not orientation_event:

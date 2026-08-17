@@ -11,7 +11,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember
 from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
@@ -1221,3 +1221,183 @@ def export_event_registrations(event_id: int, current_admin: Student = Depends(g
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+@router.get("/sih/teams")
+def get_sih_teams(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Lists all registered SIH teams and member details (Super Admin only)."""
+    teams = db.query(SIHTeam).order_by(SIHTeam.created_at.desc()).all()
+    
+    result = []
+    for t in teams:
+        members_data = []
+        for m in t.members:
+            members_data.append({
+                "is_leader": m.is_leader,
+                "full_name": m.full_name,
+                "college_email": m.college_email,
+                "personal_email": m.personal_email,
+                "phone_number": m.phone_number,
+                "study_year": m.study_year,
+                "branch": m.branch,
+                "roll_number": m.roll_number,
+                "gender": m.gender
+            })
+            
+        # Try to find the leader name in Student table
+        leader_name = t.leader.full_name if t.leader else "Unknown"
+        
+        result.append({
+            "id": t.id,
+            "team_name": t.team_name,
+            "created_at": t.created_at.isoformat() + "Z",
+            "leader_student_id": t.leader_student_id,
+            "leader_name": leader_name,
+            "members": members_data
+        })
+        
+    return result
+
+
+@router.get("/sih/analytics")
+def get_sih_analytics(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Computes SIH 2026 registration analytics (Super Admin only)."""
+    total_teams = db.query(SIHTeam).count()
+    total_students = db.query(SIHTeamMember).count()
+    
+    women_count = db.query(SIHTeamMember).filter(SIHTeamMember.gender == "Woman").count()
+    men_count = db.query(SIHTeamMember).filter(SIHTeamMember.gender == "Man").count()
+    
+    branch_counts = dict(
+        db.query(SIHTeamMember.branch, func.count(SIHTeamMember.id))
+        .group_by(SIHTeamMember.branch).all()
+    )
+    
+    year_counts = dict(
+        db.query(SIHTeamMember.study_year, func.count(SIHTeamMember.id))
+        .group_by(SIHTeamMember.study_year).all()
+    )
+    
+    return {
+        "total_teams": total_teams,
+        "total_students": total_students,
+        "gender_breakdown": {
+            "Woman": women_count,
+            "Man": men_count
+        },
+        "branch_breakdown": branch_counts,
+        "year_breakdown": {str(k): v for k, v in year_counts.items()}
+    }
+
+
+@router.get("/sih/export")
+def export_sih_registrations(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Exports SIH registered teams and rosters to an Excel sheet (Super Admin only)."""
+    teams = db.query(SIHTeam).order_by(SIHTeam.created_at.desc()).all()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SIH 2026 Teams"
+    
+    # Title Banner
+    ws.merge_cells("A1:K1")
+    ws["A1"] = "Smart India Hackathon 2026 — Official Team Registration Roster"
+    ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="1B2A4A", end_color="1B2A4A", fill_type="solid")
+    ws.row_dimensions[1].height = 45
+    
+    headers = [
+        "Team Name", "Role", "Full Name", "Roll Number", 
+        "College Email", "Personal Email", "Phone Number", 
+        "Study Year", "Branch", "Gender", "Registration Date"
+    ]
+    ws.append([]) # Row 2 blank
+    ws.append(headers) # Row 3
+    
+    header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC')
+    )
+    
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+    
+    ws.row_dimensions[3].height = 25
+    
+    row_num = 4
+    for t in teams:
+        # Sort members so leader is first, then members
+        sorted_members = sorted(t.members, key=lambda x: not x.is_leader)
+        
+        for idx, m in enumerate(sorted_members):
+            role_str = "Team Leader" if m.is_leader else f"Member {idx}"
+            row_data = [
+                t.team_name,
+                role_str,
+                m.full_name,
+                m.roll_number,
+                m.college_email,
+                m.personal_email,
+                m.phone_number,
+                f"Year {m.study_year}",
+                m.branch,
+                m.gender,
+                t.created_at.strftime("%d-%m-%Y %I:%M %p")
+            ]
+            ws.append(row_data)
+            
+            # Format row
+            row_fill = PatternFill(start_color="F2F4F4" if row_num % 2 == 0 else "FFFFFF", fill_type="solid")
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_num, column=col)
+                cell.fill = row_fill
+                cell.border = thin_border
+                
+                # Alignments
+                if col in [1, 2, 4, 8, 9, 10, 11]:
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+                else:
+                    cell.alignment = Alignment(horizontal="left", vertical="center")
+                    
+            row_num += 1
+            
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+        
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=SIH_2026_Teams_Roster.xlsx"}
+    )
+

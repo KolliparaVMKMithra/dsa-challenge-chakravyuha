@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, QrCode, Calendar, Sparkles, CheckCircle2, Flame, RefreshCw, Download, ArrowRight, UserCheck, Award, Map, Compass } from 'lucide-react';
+import { Trophy, QrCode, Calendar, Sparkles, CheckCircle2, Flame, RefreshCw, Download, ArrowRight, UserCheck, Award, Map, Compass, X } from 'lucide-react';
 import { apiRequest, getAuthToken, clearAuth } from '@/utils/api';
 
 interface StudentInfo {

@@ -152,3 +152,32 @@ class EventRegistration(Base):
 
     student = relationship("Student", back_populates="event_registrations")
     event = relationship("Event", back_populates="registrations")
+
+class SIHTeam(Base):
+    __tablename__ = "sih_teams"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_name = Column(String(100), unique=True, index=True, nullable=False)
+    leader_student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    leader = relationship("Student")
+    members = relationship("SIHTeamMember", back_populates="team", cascade="all, delete-orphan")
+
+class SIHTeamMember(Base):
+    __tablename__ = "sih_team_members"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id = Column(Integer, ForeignKey("sih_teams.id", ondelete="CASCADE"), nullable=False)
+    is_leader = Column(Boolean, default=False, nullable=False)
+    full_name = Column(String(100), nullable=False)
+    college_email = Column(String(100), nullable=False)
+    personal_email = Column(String(100), nullable=False)
+    phone_number = Column(String(20), nullable=False)
+    study_year = Column(Integer, nullable=False)
+    branch = Column(String(50), nullable=False)
+    roll_number = Column(String(50), nullable=False)
+    gender = Column(String(20), nullable=False) # "Woman" or "Man"
+
+    team = relationship("SIHTeam", back_populates="members")
+

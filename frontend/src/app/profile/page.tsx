@@ -14,6 +14,7 @@ interface ProfileData {
   branch: string;
   year: number;
   is_admin: boolean;
+  admin_role?: string;
   registered_events: Array<{
     id: number;
     name: string;
@@ -184,7 +185,7 @@ export default function Profile() {
                 )}
               </div>
               <p className="text-sm text-zinc-400 font-medium">
-                {profile.is_admin ? `${profile.admin_role.toUpperCase()} ADMIN` : `Chakravyuha Warrior`}
+                {profile.is_admin ? `${(profile.admin_role || 'super').toUpperCase()} ADMIN` : `Chakravyuha Warrior`}
               </p>
             </div>
           </div>

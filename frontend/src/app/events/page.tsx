@@ -186,114 +186,595 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
-// ─── Countdown Modal ───────────────────────────────────────────────────────────
-function CountdownModal({ open, onClose, confettiActive }: {
+// ─── SIH Registration Modal ────────────────────────────────────────────────────
+interface MemberState {
+  full_name: string;
+  college_email: string;
+  personal_email: string;
+  phone_number: string;
+  study_year: number;
+  branch: string;
+  roll_number: string;
+  gender: 'Woman' | 'Man' | '';
+}
+
+function SihRegistrationModal({ open, onClose, onSuccess }: {
   open: boolean;
   onClose: () => void;
-  confettiActive: boolean;
+  onSuccess: () => void;
 }) {
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+  const [timeLeft, setTimeLeft] = useState(180);
+  const [timerExpired, setTimerExpired] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  
+  const [teamName, setTeamName] = useState('');
+  const [leader, setLeader] = useState<MemberState>({
+    full_name: '',
+    college_email: '',
+    personal_email: '',
+    phone_number: '',
+    study_year: 1,
+    branch: 'CSE',
+    roll_number: '',
+    gender: ''
+  });
+  
+  const [members, setMembers] = useState<MemberState[]>(
+    Array.from({ length: 5 }, () => ({
+      full_name: '',
+      college_email: '',
+      personal_email: '',
+      phone_number: '',
+      study_year: 1,
+      branch: 'CSE',
+      roll_number: '',
+      gender: ''
+    }))
+  );
+
+  const [activeTab, setActiveTab] = useState<number>(0); // 0 = Leader, 1..5 = Teammates
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    const iv = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
-    return () => clearInterval(iv);
+    setErrorMsg(null); setDone(false); setShowForm(false); setRulesAccepted(false);
+    setActiveTab(0); setLoadingDetails(true);
+
+    // Fetch Team Leader Details
+    apiRequest('/api/dsa/events/my-details')
+      .then(data => {
+        setLeader(prev => ({
+          ...prev,
+          full_name: data.full_name || '',
+          college_email: data.college_email || '',
+          roll_number: data.roll_number || '',
+          phone_number: data.phone_number || '',
+          branch: data.branch || 'CSE',
+          study_year: data.year || 1
+        }));
+      })
+      .catch(err => console.error('Failed to pre-fill leader data', err))
+      .finally(() => setLoadingDetails(false));
+
+    // Persisted 3-minute Countdown Timer
+    let startTime = localStorage.getItem('sih_timer_start');
+    if (!startTime) {
+      startTime = Date.now().toString();
+      localStorage.setItem('sih_timer_start', startTime);
+    }
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - parseInt(startTime!, 10)) / 1000);
+      const remaining = 180 - elapsed;
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        setTimerExpired(true);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(remaining);
+        setTimerExpired(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [open]);
+
+  const handleMemberChange = (idx: number, field: keyof MemberState, value: any) => {
+    const updated = [...members];
+    updated[idx] = { ...updated[idx], [field]: value };
+    setMembers(updated);
+  };
+
+  const handleLeaderChange = (field: keyof MemberState, value: any) => {
+    setLeader(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNext = () => {
+    setActiveTab(prev => Math.min(prev + 1, 5));
+  };
+
+  const handlePrev = () => {
+    setActiveTab(prev => Math.max(prev - 1, 0));
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    // 1. Client-side Validations
+    if (!teamName.trim()) { setErrorMsg('Team Name is required.'); return; }
+    if (!leader.full_name.trim()) { setErrorMsg('Team Leader Full Name is required.'); return; }
+    if (!leader.personal_email.trim()) { setErrorMsg('Team Leader Personal Email is required.'); return; }
+    if (!leader.phone_number.trim()) { setErrorMsg('Team Leader Phone Number is required.'); return; }
+    if (!leader.roll_number.trim()) { setErrorMsg('Team Leader Roll Number is required.'); return; }
+    if (!leader.gender) { setErrorMsg('Team Leader Gender is required.'); return; }
+
+    for (let i = 0; i < 5; i++) {
+      const m = members[i];
+      const lbl = `Teammate ${i + 1}`;
+      if (!m.full_name.trim()) { setErrorMsg(`${lbl} Full Name is required.`); return; }
+      if (!m.college_email.trim()) { setErrorMsg(`${lbl} College Email is required.`); return; }
+      if (!m.personal_email.trim()) { setErrorMsg(`${lbl} Personal Email is required.`); return; }
+      if (!m.phone_number.trim()) { setErrorMsg(`${lbl} Phone Number is required.`); return; }
+      if (!m.roll_number.trim()) { setErrorMsg(`${lbl} Roll Number is required.`); return; }
+      if (!m.gender) { setErrorMsg(`${lbl} Gender is required.`); return; }
+    }
+
+    // 2. Validate identical college email domains
+    const allEmails = [leader.college_email, ...members.map(m => m.college_email)];
+    const domains = allEmails.map(email => {
+      const parts = email.split('@');
+      return parts.length > 1 ? parts[1].toLowerCase().trim() : '';
+    });
+    if (domains.some(d => !d)) { setErrorMsg('All college emails must be valid.'); return; }
+    if (new Set(domains).size > 1) {
+      setErrorMsg('All members must belong to the same college (identical college email domains).');
+      return;
+    }
+
+    // 3. Validate girl member mandatory
+    const genders = [leader.gender, ...members.map(m => m.gender)];
+    if (!genders.includes('Woman')) {
+      setErrorMsg('At least one female member (Woman) is mandatory in the team.');
+      return;
+    }
+
+    // 4. Validate duplicate details in form
+    const lowerCollege = allEmails.map(e => e.toLowerCase().trim());
+    if (new Set(lowerCollege).size < 6) { setErrorMsg('Each college email must be unique in the team.'); return; }
+
+    const personalEmails = [leader.personal_email, ...members.map(m => m.personal_email)].map(e => e.toLowerCase().trim());
+    if (new Set(personalEmails).size < 6) { setErrorMsg('Each personal email must be unique in the team.'); return; }
+
+    const rolls = [leader.roll_number, ...members.map(m => m.roll_number)].map(r => r.toUpperCase().trim());
+    if (new Set(rolls).size < 6) { setErrorMsg('Each roll number must be unique in the team.'); return; }
+
+    setSubmitting(true);
+    try {
+      await apiRequest('/api/dsa/events/sih/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          team_name: teamName,
+          leader: leader,
+          members: members
+        })
+      });
+      setDone(true);
+      setTimeout(() => {
+        onClose();
+        onSuccess();
+      }, 2500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Submission failed. Please check entries and try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)' }}
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* Fullscreen confetti */}
-      <ConfettiCanvas active={confettiActive} />
-
       <div
-        className="relative w-full max-w-lg rounded-2xl overflow-hidden z-10"
+        className="relative w-full max-w-2xl rounded-2xl overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, #100c00 0%, #060400 100%)',
+          background: 'linear-gradient(160deg, #0e0c00 0%, #060500 100%)',
           border: '1px solid rgba(212,175,55,0.25)',
-          boxShadow: '0 0 80px rgba(212,175,55,0.1), 0 40px 100px rgba(0,0,0,0.8)',
+          boxShadow: '0 0 80px rgba(212,175,55,0.08), 0 40px 100px rgba(0,0,0,0.9)',
         }}
       >
-        {/* Gold top bar */}
         <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #d4af37, #8c7030, #d4af37)' }} />
-
-        {/* Close */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition z-20"
-        >
+        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition z-20">
           <X className="h-4 w-4" />
         </button>
 
-        <div className="p-8 space-y-7 text-center">
-          {/* Top badge */}
-          <div className="flex items-center justify-center gap-2">
-            <Flame className="h-5 w-5 text-[#d4af37]" />
-            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#d4af37]">
-              Smart India Hackathon 2026
-            </span>
-            <Flame className="h-5 w-5 text-[#d4af37]" />
+        <div className="p-7 space-y-6 max-h-[85vh] overflow-y-auto">
+          
+          {/* Header */}
+          <div className="space-y-1 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">🏆 Nominate Your Warriors</p>
+            <h2 className="text-xl font-extrabold font-serif text-white tracking-wide">Smart India Hackathon 2026 Registration</h2>
+            <p className="text-xs text-zinc-500">Form a team of 6 members to nominate your college on the national stage.</p>
           </div>
 
-          {/* Title */}
-          <div className="space-y-1">
-            <h2 className="text-2xl font-extrabold font-serif text-white tracking-wide">Internal Hackathon</h2>
-            <p className="text-sm text-zinc-400">
-              The battle begins on{' '}
-              <span className="text-[#d4af37] font-bold">August 29, 2026</span>
-            </p>
-          </div>
-
-          {/* Countdown grid */}
-          <div className="flex items-start justify-center gap-2 flex-wrap">
-            <CountdownUnit value={timeLeft.days} label="Days" />
-            <div className="text-[#d4af37] font-black text-3xl pt-5 opacity-50">:</div>
-            <CountdownUnit value={timeLeft.hours} label="Hours" />
-            <div className="text-[#d4af37] font-black text-3xl pt-5 opacity-50">:</div>
-            <CountdownUnit value={timeLeft.minutes} label="Minutes" />
-            <div className="text-[#d4af37] font-black text-3xl pt-5 opacity-50">:</div>
-            <CountdownUnit value={timeLeft.seconds} label="Seconds" />
-          </div>
-
-          {/* Divider */}
-          <div className="h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)' }} />
-
-          {/* Registration badge */}
-          <div className="space-y-2">
-            <div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full"
-              style={{
-                background: 'linear-gradient(135deg, rgba(212,175,55,0.08), rgba(140,112,48,0.05))',
-                border: '1px solid rgba(212,175,55,0.2)',
-              }}
-            >
-              <Timer className="h-4 w-4 text-[#d4af37]" />
-              <span className="text-sm font-bold text-[#d4af37] tracking-wider uppercase">
-                Registrations — Coming Soon
-              </span>
+          {errorMsg && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-rose-950 bg-rose-950/20 p-3 text-xs text-rose-300">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" /><span>{errorMsg}</span>
             </div>
-            <p className="text-xs text-zinc-600 font-medium">
-              Stay tuned. Registrations will open before the event date.
-            </p>
-          </div>
+          )}
 
-          {/* Date pill */}
-          <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
-            <Clock className="h-3.5 w-3.5 text-[#d4af37]" />
-            <span>Event Date: <span className="text-zinc-300 font-semibold">29 August 2026</span></span>
-          </div>
+          {done ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <CheckCircle2 className="h-16 w-16 text-emerald-400" />
+              <p className="text-lg font-extrabold text-white">Team Registered Successfully!</p>
+              <p className="text-xs text-zinc-400">A confirmation email has been sent to your Team Leader inbox.</p>
+            </div>
+          ) : !showForm ? (
+            /* Part 1: Rules and Instructions */
+            <div className="space-y-6">
+              <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
+                <h3 className="text-sm font-bold text-[#d4af37] border-b border-zinc-900 pb-2">📋 Internal Selection Guidelines &amp; Rules</h3>
+                <ul className="text-xs text-zinc-400 space-y-2.5 list-disc pl-4 leading-relaxed">
+                  <li><strong>Team Composition:</strong> A team must consist of exactly <strong>6 members</strong> (1 Team Leader and 5 Teammates). No more, no less.</li>
+                  <li><strong>Gender Mandate:</strong> At least <strong>one female member (Woman)</strong> is strictly mandatory to build gender diversity.</li>
+                  <li><strong>Same Institution:</strong> All team members must belong to the <strong>exact same college</strong> (email domains must match).</li>
+                  <li><strong>One Account Submission:</strong> Only the <strong>Team Leader</strong> must fill this registration form. Team members should not submit.</li>
+                  <li><strong>No Double Nominations:</strong> A student cannot be part of multiple registered teams. If a teammate is already registered, submission will fail.</li>
+                </ul>
+              </div>
+
+              <div className="flex items-center gap-3 bg-zinc-900/40 p-4 rounded-xl border border-zinc-900">
+                <input
+                  type="checkbox"
+                  id="sih-accept-rules"
+                  checked={rulesAccepted}
+                  disabled={!timerExpired}
+                  onChange={(e) => setRulesAccepted(e.target.checked)}
+                  className="h-4.5 w-4.5 rounded border-zinc-800 bg-zinc-900 text-[#d4af37] focus:ring-[#d4af37] cursor-pointer disabled:opacity-40"
+                />
+                <label htmlFor="sih-accept-rules" className="text-xs text-zinc-400 leading-normal cursor-pointer select-none">
+                  I certify that I am the Team Leader and agree that all team members belong to the same college and comply with the rules.
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3">
+                <button
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={!timerExpired || !rulesAccepted}
+                  onClick={() => setShowForm(true)}
+                  className="px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-2 transition disabled:opacity-50"
+                  style={{
+                    background: timerExpired && rulesAccepted
+                      ? 'linear-gradient(135deg, #d4af37, #8c7030)'
+                      : 'rgba(255,255,255,0.05)',
+                    color: timerExpired && rulesAccepted ? '#000' : '#888',
+                    border: timerExpired && rulesAccepted ? 'none' : '1px solid rgba(255,255,255,0.05)'
+                  }}
+                >
+                  {timerExpired ? 'Proceed to Registration' : `Read rules: ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Part 2: 6-Section Registration Form */
+            <form onSubmit={handleFormSubmit} className="space-y-6">
+              
+              {/* Team Name Input */}
+              <div className="space-y-1.5 bg-zinc-950/30 p-4 rounded-xl border border-zinc-900">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">Team Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter unique team name (e.g. CyberKnights)"
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-[#d4af37] focus:outline-none"
+                />
+              </div>
+
+              {/* Roster Tabs */}
+              <div className="space-y-4">
+                <div className="flex gap-1.5 border-b border-zinc-900/60 pb-2.5 overflow-x-auto whitespace-nowrap scrollbar-thin">
+                  {['Team Leader', 'Member 1', 'Member 2', 'Member 3', 'Member 4', 'Member 5'].map((name, idx) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => setActiveTab(idx)}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition ${
+                        activeTab === idx
+                          ? 'bg-[#d4af37] text-black'
+                          : 'bg-zinc-900/60 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Content Rendering */}
+                <div className="rounded-xl border border-zinc-900/60 bg-zinc-950/20 p-5 space-y-4">
+                  {activeTab === 0 ? (
+                    /* Section 1: Team Leader Information */
+                    <div className="space-y-4 animate-fade-in">
+                      <p className="text-[11px] font-black text-[#d4af37] uppercase tracking-wider">Section 1 – Team Leader Information</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Full Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={leader.full_name}
+                            onChange={(e) => handleLeaderChange('full_name', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">College Email ID (Disabled)</label>
+                          <input
+                            type="email"
+                            disabled
+                            value={leader.college_email}
+                            className="w-full bg-zinc-900 border border-zinc-900/30 rounded-lg px-3 py-1.5 text-xs text-zinc-500 focus:outline-none cursor-not-allowed"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Personal Email ID</label>
+                          <input
+                            type="email"
+                            required
+                            placeholder="leader.personal@gmail.com"
+                            value={leader.personal_email}
+                            onChange={(e) => handleLeaderChange('personal_email', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Phone Number</label>
+                          <input
+                            type="tel"
+                            required
+                            value={leader.phone_number}
+                            onChange={(e) => handleLeaderChange('phone_number', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Roll Number</label>
+                          <input
+                            type="text"
+                            required
+                            value={leader.roll_number}
+                            onChange={(e) => handleLeaderChange('roll_number', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Branch</label>
+                          <select
+                            value={leader.branch}
+                            onChange={(e) => handleLeaderChange('branch', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          >
+                            <option value="CSE">CSE</option>
+                            <option value="AIE">AIE</option>
+                            <option value="AIDS">AIDS</option>
+                            <option value="CCE">CCE</option>
+                            <option value="AEP">AEP</option>
+                            <option value="ECE">ECE</option>
+                            <option value="EAC">EAC</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase block">Study Year</label>
+                          <div className="flex gap-4">
+                            {[1, 2, 3, 4].map(y => (
+                              <label key={y} className="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer select-none">
+                                <input
+                                  type="radio"
+                                  name="leader-year"
+                                  checked={leader.study_year === y}
+                                  onChange={() => handleLeaderChange('study_year', y)}
+                                  className="text-[#d4af37] focus:ring-[#d4af37]"
+                                />
+                                {y}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase block">Gender</label>
+                          <div className="flex gap-4">
+                            {['Woman', 'Man'].map(g => (
+                              <label key={g} className="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer select-none">
+                                <input
+                                  type="radio"
+                                  name="leader-gender"
+                                  checked={leader.gender === g}
+                                  onChange={() => handleLeaderChange('gender', g as any)}
+                                  className="text-[#d4af37] focus:ring-[#d4af37]"
+                                />
+                                {g}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Sections 2-6: Teammates */
+                    <div className="space-y-4 animate-fade-in">
+                      <p className="text-[11px] font-black text-[#d4af37] uppercase tracking-wider">Section {activeTab + 1} – Team Member {activeTab} Information</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Full Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={members[activeTab - 1].full_name}
+                            onChange={(e) => handleMemberChange(activeTab - 1, 'full_name', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">College Email ID</label>
+                          <input
+                            type="email"
+                            required
+                            placeholder="teammate@college.edu"
+                            value={members[activeTab - 1].college_email}
+                            onChange={(e) => handleMemberChange(activeTab - 1, 'college_email', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Personal Email ID</label>
+                          <input
+                            type="email"
+                            required
+                            placeholder="teammate@gmail.com"
+                            value={members[activeTab - 1].personal_email}
+                            onChange={(e) => handleMemberChange(activeTab - 1, 'personal_email', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Phone Number</label>
+                          <input
+                            type="tel"
+                            required
+                            value={members[activeTab - 1].phone_number}
+                            onChange={(e) => handleMemberChange(activeTab - 1, 'phone_number', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Roll Number</label>
+                          <input
+                            type="text"
+                            required
+                            value={members[activeTab - 1].roll_number}
+                            onChange={(e) => handleMemberChange(activeTab - 1, 'roll_number', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase">Branch</label>
+                          <select
+                            value={members[activeTab - 1].branch}
+                            onChange={(e) => handleMemberChange(activeTab - 1, 'branch', e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                          >
+                            <option value="CSE">CSE</option>
+                            <option value="AIE">AIE</option>
+                            <option value="AIDS">AIDS</option>
+                            <option value="CCE">CCE</option>
+                            <option value="AEP">AEP</option>
+                            <option value="ECE">ECE</option>
+                            <option value="EAC">EAC</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase block">Study Year</label>
+                          <div className="flex gap-4">
+                            {[1, 2, 3, 4].map(y => (
+                              <label key={y} className="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer select-none">
+                                <input
+                                  type="radio"
+                                  name={`member-${activeTab}-year`}
+                                  checked={members[activeTab - 1].study_year === y}
+                                  onChange={() => handleMemberChange(activeTab - 1, 'study_year', y)}
+                                  className="text-[#d4af37] focus:ring-[#d4af37]"
+                                />
+                                {y}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-zinc-500 font-bold uppercase block">Gender</label>
+                          <div className="flex gap-4">
+                            {['Woman', 'Man'].map(g => (
+                              <label key={g} className="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer select-none">
+                                <input
+                                  type="radio"
+                                  name={`member-${activeTab}-gender`}
+                                  checked={members[activeTab - 1].gender === g}
+                                  onChange={() => handleMemberChange(activeTab - 1, 'gender', g as any)}
+                                  className="text-[#d4af37] focus:ring-[#d4af37]"
+                                />
+                                {g}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Navigation Actions */}
+              <div className="flex justify-between items-center pt-2">
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={activeTab === 0}
+                  className="px-4 py-2 border border-zinc-800 bg-zinc-900 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-300 hover:text-white transition disabled:opacity-40"
+                >
+                  &larr; Prev Member
+                </button>
+
+                {activeTab < 5 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-[#d4af37] rounded-lg text-xs font-bold uppercase tracking-wider hover:border-[#d4af37] transition"
+                  >
+                    Next Member &rarr;
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black font-black text-xs uppercase rounded-lg tracking-wider hover:from-[#f6e05e] hover:to-[#d4af37] transition disabled:opacity-60 flex items-center gap-2"
+                  >
+                    {submitting ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Submitting...</> : 'Submit Team Nomination'}
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
         </div>
-
         <div className="h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.12), transparent)' }} />
       </div>
     </div>
   );
 }
+
 
 // ─── Orientation Registration Modal ───────────────────────────────────────────
 function OrientationModal({ open, onClose, event, onSuccess }: {
@@ -606,13 +1087,18 @@ export default function Events() {
                   </div>
 
                   {isSih ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openSihModal(); }}
-                      className="px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition"
-                      style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.22)', color: '#d4af37' }}
-                    >
-                      Coming Soon
-                    </button>
+                    event.is_registered ? (
+                      <button disabled className="px-4 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-[#d4af37] text-xs font-bold uppercase tracking-wider cursor-not-allowed">
+                        Already Registered
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openSihModal(); }}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] text-black font-extrabold text-xs uppercase rounded tracking-wider hover:bg-[#f6e05e] transition"
+                      >
+                        Register Team
+                      </button>
+                    )
                   ) : isOrientation ? (
                     event.is_registered ? (
                       <button disabled className="px-4 py-1.5 rounded bg-zinc-900 border border-zinc-800 text-[#d4af37] text-xs font-bold uppercase tracking-wider cursor-not-allowed">
@@ -662,8 +1148,8 @@ export default function Events() {
 
       </div>
 
-      {/* SIH Countdown Modal */}
-      <CountdownModal open={sihModalOpen} onClose={closeSihModal} confettiActive={confettiActive} />
+      {/* SIH Registration Modal */}
+      <SihRegistrationModal open={sihModalOpen} onClose={closeSihModal} onSuccess={() => { fetchEvents(); }} />
       <OrientationModal open={orientationModalOpen} onClose={() => setOrientationModalOpen(false)} event={orientationEvent} onSuccess={() => { fetchEvents(); }} />
     </div>
   );
