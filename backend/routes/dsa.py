@@ -902,7 +902,34 @@ def register_sih_team(
             detail="At least one female member (Woman) is mandatory in the team to nominate for SIH 2026."
         )
 
-    # 5b. Enforce that every member must be registered on the website
+    # 5b. Enforce 20-team cap for all-1st-year teams
+    # Mixed teams (with at least one 2nd/3rd/4th year) are exempt from this cap.
+    all_first_year = all(m.study_year == 1 for m in all_members)
+    if all_first_year:
+        # Count existing teams where EVERY member is study_year = 1
+        # We get all teams that have at least one member NOT in year 1, then subtract from total
+        # Easier: find all team_ids where any member has study_year != 1, then exclude those
+        non_first_year_team_ids = db.query(SIHTeamMember.team_id).filter(
+            SIHTeamMember.study_year != 1
+        ).distinct().all()
+        excluded_ids = [row[0] for row in non_first_year_team_ids]
+
+        total_teams = db.query(SIHTeam).count()
+        mixed_or_senior_teams = len(excluded_ids)
+        all_first_year_teams_count = total_teams - mixed_or_senior_teams
+
+        if all_first_year_teams_count >= 20:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Registration limit reached: A maximum of 20 teams consisting entirely of 1st-year students "
+                    "are allowed. This cap has been reached. Your team may still register if at least one member "
+                    "is from 2nd, 3rd, or 4th year."
+                )
+            )
+
+    # 5c. Enforce that every member must be registered on the website
+
     all_college_emails = [m.college_email.lower().strip() for m in all_members]
     registered_students = db.query(Student).filter(
         func.lower(Student.college_email).in_(all_college_emails)
