@@ -9,14 +9,14 @@ import {
 } from 'lucide-react';
 import { apiRequest, getAuthToken } from '@/utils/api';
 
-const REGISTRATION_DEADLINE = new Date('2026-08-20T19:35:00+05:30');
+const REGISTRATION_DEADLINE = new Date('2026-08-20T20:00:00+05:30');
 
 const ROADMAP_STEPS = [
   {
     num: 1,
     title: 'Team Registration',
     dates: '13 Aug – 20 Aug 2026',
-    deadline: '20 Aug 2026, 7:35 PM',
+    deadline: '20 Aug 2026, 8:00 PM',
     desc: 'Teams of 6 members register through the Chakravyuha portal. Each team must include at least one woman member.',
     status: 'current',
     icon: 'ICON_1',
