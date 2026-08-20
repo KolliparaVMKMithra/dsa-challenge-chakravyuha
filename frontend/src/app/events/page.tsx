@@ -149,8 +149,8 @@ function ConfettiCanvas({ active }: { active: boolean }) {
 
 // ─── Countdown Timer ───────────────────────────────────────────────────────────
 const SIH_DATE = new Date('2026-08-29T00:00:00');
-// Registration closes at 7PM IST on 20 August 2026
-const REGISTRATION_DEADLINE = new Date('2026-08-20T19:00:00+05:30');
+// Registration closes at 7:35 PM IST on 20 August 2026
+const REGISTRATION_DEADLINE = new Date('2026-08-20T19:35:00+05:30');
 
 function getTimeLeft() {
   const now = new Date();
