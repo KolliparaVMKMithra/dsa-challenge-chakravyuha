@@ -47,7 +47,7 @@ const ROADMAP_STEPS = [
     title: 'National Nomination',
     dates: 'After Round 1',
     deadline: 'Post Evaluation',
-    desc: 'Top 40 teams nominated to represent Amrita Amaravati nationally. 5 additional teams placed on the waitlist.',
+    desc: 'Top 45 teams (5 teams waitlisted) nominated to represent Chakravyuha nationally (Total 50 teams).',
     status: 'upcoming',
     icon: 'ICON_4',
     color: '#fb923c',
@@ -181,7 +181,7 @@ export default function SihDashboard() {
         {/* Hero */}
         <div className="text-center space-y-3">
           <span className="inline-block text-[10px] font-black uppercase tracking-[0.3em] text-[#d4af37] px-3 py-1 rounded-full border border-[#d4af37]/20 bg-[#d4af37]/5">Phase 01: Team Registration — Live</span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white tracking-wide">USAR SIH 2026 Selection Roadmap</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white tracking-wide">Chakravyuha SIH 2026 Selection Roadmap</h1>
           <p className="text-sm text-zinc-400 max-w-2xl mx-auto">Click any milestone to explore details and follow the complete journey to the SIH Grand Finale</p>
         </div>
 
@@ -297,8 +297,12 @@ export default function SihDashboard() {
                     </table>
                   </div>
                   {!registrationClosed && (
-                    <div className="flex justify-end">
-                      <button onClick={() => router.push('/events')} className="px-4 py-2 rounded border border-zinc-800 hover:border-[#d4af37]/40 text-white text-xs font-bold uppercase tracking-wider transition">Edit Team Details</button>
+                    <div className="flex justify-end items-center gap-3">
+                      {teamData.is_leader ? (
+                        <button onClick={() => router.push('/events')} className="px-4 py-2 rounded border border-zinc-800 hover:border-[#d4af37]/40 text-white text-xs font-bold uppercase tracking-wider transition">Edit Team Details</button>
+                      ) : (
+                        <span className="text-[11px] text-zinc-500 italic">🔒 Registered Member (Only Team Leader can edit details)</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -315,7 +319,7 @@ export default function SihDashboard() {
               <h2 className="text-lg font-extrabold font-serif text-white">Chakravyuha SIH Internal Hackathon</h2>
             </div>
             <p className="text-sm text-[#d4af37]/80 leading-relaxed">
-              The University School of Automation &amp; Robotics at Guru Gobind Singh Indraprastha University, East Delhi Campus conducts internal evaluation rounds to identify top software and hardware teams to represent the institution at Smart India Hackathon 2026.
+              Chakravyuha Coding Club conducts internal evaluation rounds to identify top software and hardware teams to represent the institution at Smart India Hackathon 2026.
             </p>
             <div>
               <p className="text-xs font-black uppercase tracking-wider text-white mb-3">Key Evaluation Pillars</p>
@@ -336,6 +340,21 @@ export default function SihDashboard() {
             </div>
             <p className="text-sm text-zinc-400 leading-relaxed">Access official documentation, templates, and guidelines from sih.gov.in:</p>
             <div className="space-y-3">
+              {/* PDF 1: SIH 2026 Guidelines */}
+              <a
+                href="/SIH%202026%20Guidelines.pdf"
+                download="SIH_2026_Guidelines.pdf"
+                className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-white hover:bg-white/5 transition group"
+                style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.04)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                  <span className="text-left text-xs">Download Official SIH 2026 Guidelines (PDF)</span>
+                </div>
+                <Download className="h-3.5 w-3.5 text-zinc-500 group-hover:text-[#d4af37] transition flex-shrink-0" />
+              </a>
+
+              {/* PDF 2: SIH 2026 Internal Hackathon Instructions */}
               <a
                 href="/SIH2026_Internal_Hackathon_Instructions.pdf"
                 download="SIH2026_Internal_Hackathon_Instructions.pdf"
@@ -343,14 +362,16 @@ export default function SihDashboard() {
                 style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
-                  <span className="text-left text-xs">Download Official SIH 2026 Instructions (PDF)</span>
+                  <FileText className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  <span className="text-left text-xs">Download Internal Hackathon Instructions (PDF)</span>
                 </div>
-                <Download className="h-3.5 w-3.5 text-zinc-500 group-hover:text-[#d4af37] transition flex-shrink-0" />
+                <Download className="h-3.5 w-3.5 text-zinc-500 group-hover:text-emerald-400 transition flex-shrink-0" />
               </a>
+
+              {/* PPT 1: SIH 2026 Idea Presentation Format */}
               <a
-                href="/SIH2026_Idea_Presentation_Template.pptx"
-                download="SIH2026_Idea_Presentation_Template.pptx"
+                href="/SIH2026-IDEA-Presentation-Format.pptx"
+                download="SIH2026-IDEA-Presentation-Format.pptx"
                 className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-white hover:bg-white/5 transition group"
                 style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
               >
@@ -360,6 +381,8 @@ export default function SihDashboard() {
                 </div>
                 <Download className="h-3.5 w-3.5 text-zinc-500 group-hover:text-purple-400 transition flex-shrink-0" />
               </a>
+
+              {/* External Portal Link */}
               <a
                 href="https://sih.gov.in"
                 target="_blank"
@@ -396,7 +419,7 @@ export default function SihDashboard() {
         </section>
 
         <div className="text-center pb-4">
-          <p className="text-[11px] text-zinc-600">SIH 2026 Internal Selection · Chakravyuha Coding Club · USAR, GGSIPU</p>
+          <p className="text-[11px] text-zinc-600">SIH 2026 Internal Selection · Chakravyuha Coding Club</p>
         </div>
       </div>
 

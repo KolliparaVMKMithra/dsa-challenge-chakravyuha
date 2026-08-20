@@ -679,11 +679,17 @@ def get_my_sih_team(current_user: Student = Depends(get_current_user), db: Sessi
     leader = next((m for m in all_m if m.is_leader), None)
     teammates = [m for m in all_m if not m.is_leader]
     
+    is_leader = False
+    if leader and leader.college_email.lower().strip() == current_user.college_email.lower().strip():
+        is_leader = True
+    
     return {
         "team_id": team.id,
         "team_name": team.team_name,
         "leader": leader,
-        "members": teammates
+        "members": teammates,
+        "is_leader": is_leader,
+        "created_at": team.created_at
     }
 
 @router.put("/events/sih/my-team")

@@ -994,7 +994,7 @@ export default function Events() {
   const [orientationModalOpen, setOrientationModalOpen] = useState(false);
   const [orientationEvent, setOrientationEvent] = useState<EventData | null>(null);
   const [studentYear, setStudentYear] = useState<number | null>(null);
-
+  const [isSihLeader, setIsSihLeader] = useState<boolean>(false);
 
   const fetchEvents = async () => {
     try {
@@ -1003,12 +1003,18 @@ export default function Events() {
       // Identify orientation event (year restricted to 1st year)
       const orient = data.find((e: EventData) => e.year_restricted === 1);
       if (orient) setOrientationEvent(orient);
-      // After events, fetch student year if not yet fetched
+      // Fetch student year & SIH leader status
       try {
         const details = await apiRequest('/api/dsa/events/my-details');
         setStudentYear(details.year);
       } catch (err) {
         console.warn('Could not fetch student details for year');
+      }
+      try {
+        const sihTeam = await apiRequest('/api/dsa/events/sih/my-team');
+        setIsSihLeader(sihTeam.is_leader === true);
+      } catch (err) {
+        setIsSihLeader(false);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load events.');
@@ -1164,12 +1170,14 @@ export default function Events() {
                         >
                           View Dashboard
                         </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openSihModal(true); }}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-[#d4af37]/50 text-white font-extrabold text-xs uppercase rounded tracking-wider transition"
-                        >
-                          Edit Team
-                        </button>
+                        {isSihLeader && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openSihModal(true); }}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-[#d4af37]/50 text-white font-extrabold text-xs uppercase rounded tracking-wider transition"
+                          >
+                            Edit Team
+                          </button>
+                        )}
                       </div>
                     ) : registrationClosed ? (
                       <button disabled className="px-4 py-2 rounded bg-red-950/20 border border-red-900/40 text-red-400 text-xs font-bold uppercase tracking-wider cursor-not-allowed">
