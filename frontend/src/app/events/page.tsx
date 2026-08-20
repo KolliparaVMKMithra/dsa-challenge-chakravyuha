@@ -149,6 +149,8 @@ function ConfettiCanvas({ active }: { active: boolean }) {
 
 // ─── Countdown Timer ───────────────────────────────────────────────────────────
 const SIH_DATE = new Date('2026-08-29T00:00:00');
+// Registration closes at 7PM IST on 20 August 2026
+const REGISTRATION_DEADLINE = new Date('2026-08-20T19:00:00+05:30');
 
 function getTimeLeft() {
   const now = new Date();
@@ -1095,11 +1097,12 @@ export default function Events() {
             const isSih = event.name.toUpperCase().includes('SMART INDIA HACKATHON');
             const isOrientation = event.year_restricted === 1;
             const isUpcoming = event.status === 'upcoming';
+            const registrationClosed = isSih && new Date() >= REGISTRATION_DEADLINE;
 
             return (
               <div
                 key={event.id}
-                onClick={isSih ? () => openSihModal() : undefined}
+                onClick={isSih ? (event.is_registered ? () => router.push('/events/sih-dashboard') : (!registrationClosed ? () => openSihModal() : undefined)) : undefined}
                 className="rounded-2xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-md p-6 shadow-xl flex flex-col justify-between hover:border-[#8c7030]/30 transition group relative overflow-hidden"
                 style={{ cursor: isSih ? 'pointer' : 'default' }}
               >
@@ -1154,11 +1157,23 @@ export default function Events() {
 
                   {isSih ? (
                     event.is_registered ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openSihModal(true); }}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] hover:bg-[#f6e05e] text-black font-extrabold text-xs uppercase rounded tracking-wider transition"
-                      >
-                        Edit Team Details
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push('/events/sih-dashboard'); }}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] hover:bg-[#f6e05e] text-black font-extrabold text-xs uppercase rounded tracking-wider transition"
+                        >
+                          View Dashboard
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openSihModal(true); }}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-800 hover:border-[#d4af37]/50 text-white font-extrabold text-xs uppercase rounded tracking-wider transition"
+                        >
+                          Edit Team
+                        </button>
+                      </div>
+                    ) : registrationClosed ? (
+                      <button disabled className="px-4 py-2 rounded bg-red-950/20 border border-red-900/40 text-red-400 text-xs font-bold uppercase tracking-wider cursor-not-allowed">
+                        Registrations Closed
                       </button>
                     ) : (
                       <button

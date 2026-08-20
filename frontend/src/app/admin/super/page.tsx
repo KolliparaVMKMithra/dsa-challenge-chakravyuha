@@ -707,6 +707,40 @@ export default function SuperAdminPage() {
     }
   };
 
+  // --- SIH TEAMS EXPORT (authenticated) ---
+  const handleExportSihTeams = async () => {
+    try {
+      const blob = await apiRequest('/api/admin/sih/export');
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `SIH2026_Teams_Roster.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export SIH teams.');
+    }
+  };
+
+  // --- PER-EVENT EXPORT (authenticated) ---
+  const handleExportEventRegistrations = async (eventId: number, eventName: string) => {
+    try {
+      const blob = await apiRequest(`/api/admin/events/${eventId}/export`);
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `${eventName.replace(/\s+/g, '_')}_report.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export event registrations.');
+    }
+  };
+
   // --- CRUD ACTIONS ---
 
   const handleCreateProblem = async (e: React.FormEvent) => {
@@ -2482,14 +2516,16 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
                 
-                <a
-                  href={eventRegistrations.event_name.toUpperCase().includes('SMART INDIA HACKATHON')
-                    ? `/api/admin/sih/export`
-                    : `/api/admin/events/${selectedEventId}/export`}
+                <button
+                  onClick={
+                    eventRegistrations.event_name.toUpperCase().includes('SMART INDIA HACKATHON')
+                      ? handleExportSihTeams
+                      : () => handleExportEventRegistrations(selectedEventId!, eventRegistrations.event_name)
+                  }
                   className="flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
                 >
                   <Download className="h-4 w-4" /> Download Excel Report
-                </a>
+                </button>
               </div>
 
               {/* Stats Grid */}
@@ -3112,12 +3148,12 @@ export default function SuperAdminPage() {
                               >
                                 View Registrations
                               </button>
-                              <a
-                                href={`/api/admin/events/${evt.id}/export`}
+                              <button
+                                onClick={() => handleExportEventRegistrations(evt.id, evt.name)}
                                 className="text-emerald-400 hover:underline font-bold uppercase tracking-wider text-[9px] flex items-center gap-0.5"
                               >
                                 <Download className="h-3 w-3" /> Report Excel
-                              </a>
+                              </button>
                               {!evt.name.toUpperCase().includes('YUKTI') && (
                                 <button
                                   onClick={() => handleDeleteEvent(evt.id, evt.name)}
