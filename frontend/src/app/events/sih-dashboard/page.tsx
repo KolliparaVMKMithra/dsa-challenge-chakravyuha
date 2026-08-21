@@ -11,37 +11,38 @@ import {
 import { apiRequest, getAuthToken } from '@/utils/api';
 
 const REGISTRATION_DEADLINE = new Date('2026-08-20T20:20:00+05:30');
+const PS_SELECTION_DEADLINE = new Date('2026-08-24T19:00:00+05:30'); // 24 Aug 2026, 7:00 PM IST
 
 const ROADMAP_STEPS = [
   {
-    num: 1, title: 'Team Registration', dates: '13 Aug \u2013 20 Aug 2026',
+    num: 1, title: 'Team Registration', dates: '13 Aug – 20 Aug 2026',
     deadline: '20 Aug 2026, 8:20 PM',
     desc: 'Teams of 6 members register through the Chakravyuha portal. Each team must include at least one woman member.',
-    status: 'done', icon: '\ud83d\udccb', color: '#d4af37',
+    status: 'done', icon: '📋', color: '#d4af37',
   },
   {
     num: 2, title: 'Problem Statement Selection', dates: 'By 24 Aug 2026',
     deadline: '24 Aug 2026',
     desc: 'Registered teams choose their preferred problem statements from the available PS list.',
-    status: 'current', icon: '\ud83c\udfaf', color: '#818cf8',
+    status: 'current', icon: '🎯', color: '#818cf8',
   },
   {
-    num: 3, title: 'Round 1 \u2014 PPT Evaluation', dates: '29 Aug 2026',
+    num: 3, title: 'Round 1 — PPT Evaluation', dates: '29 Aug 2026',
     deadline: '29 Aug 2026',
     desc: 'Internal hackathon. Teams present their solution through a structured PPT presentation to a panel of evaluators.',
-    status: 'upcoming', icon: '\ud83d\udda5\ufe0f', color: '#34d399',
+    status: 'upcoming', icon: '🖥️', color: '#34d399',
   },
   {
     num: 4, title: 'National Nomination', dates: 'After Round 1',
     deadline: 'Post Evaluation',
     desc: 'Top 45 teams (5 teams waitlisted) nominated to represent Chakravyuha nationally (Total 50 teams).',
-    status: 'upcoming', icon: '\ud83c\udfc6', color: '#fb923c',
+    status: 'upcoming', icon: '🏆', color: '#fb923c',
   },
   {
     num: 5, title: 'SIH 2026 Grand Finale', dates: 'Dec 2026',
     deadline: 'National Level',
-    desc: 'Nominated teams participate in the Smart India Hackathon 2026 Grand Finale \u2014 a 36-hour national-level hackathon.',
-    status: 'upcoming', icon: '\ud83d\ude80', color: '#f472b6',
+    desc: 'Nominated teams participate in the Smart India Hackathon 2026 Grand Finale — a 36-hour national-level hackathon.',
+    status: 'upcoming', icon: '🚀', color: '#f472b6',
   },
 ];
 
@@ -57,6 +58,69 @@ type PSItem = {
 };
 
 type ActiveTab = 'home' | 'ps';
+
+function PSSelectionCountdown() {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calc = () => {
+      const diff = PS_SELECTION_DEADLINE.getTime() - new Date().getTime();
+      if (diff <= 0) {
+        setIsExpired(true);
+        setTimeLeft(null);
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      setTimeLeft({ days, hours, minutes, seconds });
+      setIsExpired(false);
+    };
+
+    calc();
+    const interval = setInterval(calc, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-indigo-900/30 bg-indigo-950/20 p-5 text-center max-w-2xl mx-auto space-y-2 relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#818cf8] to-transparent animate-pulse" />
+      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#818cf8]">
+        Smart India Hackathon 2026 — Problem Statement Selection Deadline
+      </p>
+      {isExpired ? (
+        <p className="text-xl font-black text-rose-500 tracking-wider">PS SELECTION CLOSED</p>
+      ) : timeLeft ? (
+        <div className="flex items-center justify-center gap-4 text-white">
+          <div className="text-center">
+            <span className="text-2xl font-black font-mono">{timeLeft.days}</span>
+            <span className="block text-[8px] font-bold text-zinc-500 uppercase">Days</span>
+          </div>
+          <span className="text-xl font-bold text-zinc-600">:</span>
+          <div className="text-center">
+            <span className="text-2xl font-black font-mono">{timeLeft.hours.toString().padStart(2, '0')}</span>
+            <span className="block text-[8px] font-bold text-zinc-500 uppercase">Hours</span>
+          </div>
+          <span className="text-xl font-bold text-zinc-600">:</span>
+          <div className="text-center">
+            <span className="text-2xl font-black font-mono">{timeLeft.minutes.toString().padStart(2, '0')}</span>
+            <span className="block text-[8px] font-bold text-zinc-500 uppercase">Mins</span>
+          </div>
+          <span className="text-xl font-bold text-zinc-600">:</span>
+          <div className="text-center">
+            <span className="text-2xl font-black font-mono">{timeLeft.seconds.toString().padStart(2, '0')}</span>
+            <span className="block text-[8px] font-bold text-zinc-500 uppercase">Secs</span>
+          </div>
+        </div>
+      ) : (
+        <div className="animate-pulse text-zinc-500 text-sm">Calculating...</div>
+      )}
+      <p className="text-[10px] text-zinc-500">Closes on 24 Aug 2026, 7:00 PM IST</p>
+    </div>
+  );
+}
 
 function ComingSoonModal({ title, onClose }: { title: string; onClose: () => void }) {
   return (
@@ -74,7 +138,7 @@ function ComingSoonModal({ title, onClose }: { title: string; onClose: () => voi
           <X className="h-4 w-4" />
         </button>
         <div className="p-8 text-center space-y-4">
-          <div className="text-5xl">\ud83d\udd12</div>
+          <div className="text-5xl">🔒</div>
           <h2 className="text-lg font-extrabold font-serif text-white">{title}</h2>
           <p className="text-sm text-zinc-400">This section will be unlocked soon. Check back after PS selection closes on 24 Aug 2026.</p>
           <button onClick={onClose} className="mt-2 px-6 py-2 rounded-lg border border-[#d4af37]/30 text-[#d4af37] text-xs font-bold uppercase tracking-wider hover:bg-[#d4af37]/10 transition">Got it</button>
@@ -91,7 +155,7 @@ function ConfirmPSModal({ ps, onConfirm, onCancel, loading }: { ps: PSItem; onCo
         <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#d4af37,#8c7030,#d4af37)' }} />
         <div className="p-7 space-y-5">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0 bg-amber-950/30 border border-[#d4af37]/30">\u26a0\ufe0f</div>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0 bg-amber-950/30 border border-[#d4af37]/30">⚠️</div>
             <div>
               <h2 className="text-base font-extrabold text-white">Confirm Problem Statement</h2>
               <p className="text-xs text-zinc-400 mt-1">This action <strong className="text-red-400">cannot be undone</strong>. Your team&apos;s PS selection will be permanently locked.</p>
@@ -147,6 +211,9 @@ function PSTab({ teamData }: { teamData: any }) {
   const LIMIT = 15;
   const isLeader = teamData?.is_leader === true;
 
+  // Deadline check: 24 Aug 2026, 7:00 PM IST
+  const isDeadlinePassed = new Date() >= PS_SELECTION_DEADLINE;
+
   const fetchMyPS = useCallback(() => {
     apiRequest('/api/dsa/events/sih/my-ps')
       .then((data: any) => setMyPS(data.selection))
@@ -157,12 +224,13 @@ function PSTab({ teamData }: { teamData: any }) {
 
   useEffect(() => {
     if (myPS !== undefined && myPS !== null) return;
+    if (isDeadlinePassed) return; // Don't load choices if closed
     setLoadingPS(true);
     apiRequest(`/api/dsa/events/sih/ps-list?search=${encodeURIComponent(search)}&page=${page}&limit=${LIMIT}`)
       .then((data: any) => { setPsList(data.items); setTotal(data.total); })
       .catch((err: any) => setError(err.message))
       .finally(() => setLoadingPS(false));
-  }, [search, page, myPS]);
+  }, [search, page, myPS, isDeadlinePassed]);
 
   const handleSearch = () => { setSearch(searchInput.trim()); setPage(1); };
 
@@ -175,7 +243,7 @@ function PSTab({ teamData }: { teamData: any }) {
         method: 'POST',
         body: JSON.stringify({ problem_statement_id: selectedPS.id }),
       });
-      setSuccessMsg(`\u2705 ${selectedPS.ps_number} confirmed successfully!`);
+      setSuccessMsg(`✅ ${selectedPS.ps_number} confirmed successfully!`);
       setConfirmModal(false);
       fetchMyPS();
     } catch (err: any) {
@@ -190,6 +258,7 @@ function PSTab({ teamData }: { teamData: any }) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-[#d4af37] animate-spin" /></div>;
   }
 
+  // Confirmed PS view
   if (myPS !== null) {
     return (
       <div className="space-y-6">
@@ -204,8 +273,16 @@ function PSTab({ teamData }: { teamData: any }) {
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">PS Confirmed & Locked</p>
                 <p className="text-sm font-extrabold text-white">Your team&apos;s Problem Statement</p>
               </div>
-              <span className="ml-auto px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/40 text-emerald-400">\u2713 Confirmed</span>
+              <span className="ml-auto px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/40 text-emerald-400">✓ Confirmed</span>
             </div>
+            
+            <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/10 p-4">
+              <p className="text-xs text-emerald-300 font-bold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                Your team has successfully confirmed a Problem Statement and is eligible for the Internal Hackathon.
+              </p>
+            </div>
+
             <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/10 p-5 space-y-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">{myPS.ps_number}</p>
               <p className="text-base font-extrabold text-white leading-snug">{myPS.title}</p>
@@ -233,7 +310,25 @@ function PSTab({ teamData }: { teamData: any }) {
             </div>
           </div>
         </div>
-        <p className="text-xs text-zinc-600 text-center">\ud83d\udd12 PS selection is final and cannot be changed. Contact admin if there&apos;s an issue.</p>
+        <p className="text-xs text-zinc-600 text-center">🔒 PS selection is final and cannot be changed. Contact admin if there&apos;s an issue.</p>
+      </div>
+    );
+  }
+
+  // Deadline passed and NO PS selected
+  if (isDeadlinePassed && myPS === null) {
+    return (
+      <div className="rounded-2xl border border-rose-950 bg-rose-950/20 p-8 text-center space-y-4 max-w-2xl mx-auto">
+        <div className="text-5xl text-rose-500">❌</div>
+        <h2 className="text-lg font-extrabold text-white font-serif">Selection Closed — Not Eligible</h2>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          The Problem Statement selection deadline (24 Aug 2026, 7:00 PM IST) has passed. 
+          Your team did not select or confirm a Problem Statement in time. 
+          Therefore, your team is <strong className="text-rose-400">NOT eligible</strong> to participate in the Internal Hackathon.
+        </p>
+        <div className="pt-2">
+          <span className="px-4 py-2 rounded-xl text-xs font-black uppercase bg-rose-950/50 border border-rose-900/40 text-rose-400">Not Eligible</span>
+        </div>
       </div>
     );
   }
@@ -434,7 +529,7 @@ export default function SihDashboard() {
                 </button>
               ))}
               <button
-                onClick={() => setComingSoonModal('Internal Hackathon \u2014 Panel & Room Allocation')}
+                onClick={() => setComingSoonModal('Internal Hackathon — Panel & Room Allocation')}
                 className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition"
               >
                 Internal Hackathon
@@ -459,10 +554,14 @@ export default function SihDashboard() {
         </div>
       </nav>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 relative z-10">
+        
+        {/* Countdown Banner */}
+        <PSSelectionCountdown />
+
         {activeTab === 'home' && (
           <>
             <div className="text-center space-y-3">
-              <span className="inline-block text-[10px] font-black uppercase tracking-[0.3em] text-[#818cf8] px-3 py-1 rounded-full border border-[#818cf8]/20 bg-[#818cf8]/5">Phase 02: PS Selection \u2014 Active</span>
+              <span className="inline-block text-[10px] font-black uppercase tracking-[0.3em] text-[#818cf8] px-3 py-1 rounded-full border border-[#818cf8]/20 bg-[#818cf8]/5">Phase 02: PS Selection — Active</span>
               <h1 className="text-3xl sm:text-4xl font-extrabold font-serif text-white tracking-wide">Chakravyuha SIH 2026 Selection Roadmap</h1>
               <p className="text-sm text-zinc-400 max-w-2xl mx-auto">Follow the complete journey from team registration to the SIH Grand Finale</p>
             </div>
@@ -474,7 +573,7 @@ export default function SihDashboard() {
                   <div key={step.num} className="rounded-xl overflow-hidden transition-all" style={{ border: `1px solid ${isOpen ? step.color + '40' : isDone ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.05)'}`, background: isOpen ? 'rgba(20,16,0,0.6)' : isDone ? 'rgba(5,20,10,0.4)' : 'rgba(10,10,10,0.4)' }}>
                     <button onClick={() => setExpandedStep(isOpen ? null : step.num)} className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-white/[0.02] transition">
                       <div className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl" style={{ background: step.color + '18', border: `1px solid ${step.color}40` }}>
-                        {isDone ? '\u2705' : step.icon}
+                        {isDone ? '✅' : step.icon}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -503,7 +602,7 @@ export default function SihDashboard() {
                             {step.status === 'current' && (
                               <button onClick={() => setActiveTab('ps')} className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-950/40 border border-indigo-800/40 text-indigo-300 hover:bg-indigo-900/40 transition">
                                 <BookOpen className="h-3 w-3" />
-                                Select Problem Statement \u2192
+                                Select Problem Statement →
                               </button>
                             )}
                           </div>
@@ -561,7 +660,7 @@ export default function SihDashboard() {
                                 <td className="py-2.5 px-3">{m.is_leader ? <span className="px-1.5 py-0.5 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[8px] font-black uppercase">Leader</span> : <span className="text-zinc-500 text-[9px] font-medium">Member</span>}</td>
                                 <td className="py-2.5 px-3 font-semibold text-white">{m.full_name}</td>
                                 <td className="py-2.5 px-3 font-mono text-zinc-400">{m.roll_number}</td>
-                                <td className="py-2.5 px-3">{m.branch} \u2014 Yr {m.study_year}</td>
+                                <td className="py-2.5 px-3">{m.branch} — Yr {m.study_year}</td>
                                 <td className="py-2.5 px-3">{m.gender === 'Woman' ? <span className="text-rose-400 font-semibold">Woman</span> : <span className="text-blue-400 font-semibold">Man</span>}</td>
                               </tr>
                             ))}
@@ -573,7 +672,7 @@ export default function SihDashboard() {
                           {teamData.is_leader ? (
                             <button onClick={() => router.push('/events')} className="px-4 py-2 rounded border border-zinc-800 hover:border-[#d4af37]/40 text-white text-xs font-bold uppercase tracking-wider transition">Edit Team Details</button>
                           ) : (
-                            <span className="text-[11px] text-zinc-500 italic">\ud83d\udd12 Only Team Leader can edit details</span>
+                            <span className="text-[11px] text-zinc-500 italic">🔒 Only Team Leader can edit details</span>
                           )}
                         </div>
                       )}
@@ -627,22 +726,22 @@ export default function SihDashboard() {
             <section className="md:hidden grid grid-cols-2 gap-4">
               <button onClick={() => setActiveTab('ps')} className="flex flex-col items-center gap-3 p-5 rounded-xl border border-indigo-900/40 bg-indigo-950/10 hover:border-indigo-700 transition">
                 <BookOpen className="h-6 w-6 text-indigo-400" />
-                <div className="text-center"><p className="text-xs font-black text-white uppercase tracking-wider">Problem Statements</p><p className="text-[10px] text-indigo-400 mt-0.5">Select Now \u2192</p></div>
+                <div className="text-center"><p className="text-xs font-black text-white uppercase tracking-wider">Problem Statements</p><p className="text-[10px] text-indigo-400 mt-0.5">Select Now →</p></div>
               </button>
-              <button onClick={() => setComingSoonModal('Internal Hackathon \u2014 Panel & Room Allocation')} className="flex flex-col items-center gap-3 p-5 rounded-xl border border-zinc-900 bg-zinc-950/40 hover:border-zinc-700 transition">
+              <button onClick={() => setComingSoonModal('Internal Hackathon — Panel & Room Allocation')} className="flex flex-col items-center gap-3 p-5 rounded-xl border border-zinc-900 bg-zinc-950/40 hover:border-zinc-700 transition">
                 <MapPin className="h-6 w-6 text-purple-400" />
-                <div className="text-center"><p className="text-xs font-black text-white uppercase tracking-wider">Internal Hackathon</p><p className="text-[10px] text-zinc-500 mt-0.5">Panel & Room \u2014 Soon</p></div>
+                <div className="text-center"><p className="text-xs font-black text-white uppercase tracking-wider">Internal Hackathon</p><p className="text-[10px] text-zinc-500 mt-0.5">Panel & Room — Soon</p></div>
               </button>
             </section>
-            <div className="text-center pb-4"><p className="text-[11px] text-zinc-600">SIH 2026 Internal Selection \u00b7 Chakravyuha Coding Club</p></div>
+            <div className="text-center pb-4"><p className="text-[11px] text-zinc-600">SIH 2026 Internal Selection · Chakravyuha Coding Club</p></div>
           </>
         )}
         {activeTab === 'ps' && (
           <div className="space-y-6">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#818cf8]">Phase 02 \u00b7 Active</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#818cf8]">Phase 02 · Active</p>
               <h1 className="text-2xl font-extrabold font-serif text-white mt-1">Problem Statement Selection</h1>
-              <p className="text-sm text-zinc-400 mt-1">Browse all official SIH 2026 problem statements. {teamData?.is_leader ? 'Select one and confirm \u2014 this cannot be changed.' : 'Only the Team Leader can confirm a selection.'}</p>
+              <p className="text-sm text-zinc-400 mt-1">Browse all official SIH 2026 problem statements. {teamData?.is_leader ? 'Select one and confirm — this cannot be changed.' : 'Only the Team Leader can confirm a selection.'}</p>
             </div>
             <PSTab teamData={teamData} />
           </div>

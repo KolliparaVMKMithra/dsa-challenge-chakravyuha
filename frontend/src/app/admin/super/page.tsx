@@ -90,6 +90,38 @@ interface StudentDetail {
     date: string;
   }[];
 }
+function AdminPSSelectionCountdown() {
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calc = () => {
+      const deadline = new Date('2026-08-24T19:00:00+05:30');
+      const diff = deadline.getTime() - new Date().getTime();
+      if (diff <= 0) {
+        setTimeLeft('PS SELECTION CLOSED');
+        setIsExpired(true);
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      setTimeLeft(`${days}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`);
+      setIsExpired(false);
+    };
+    calc();
+    const interval = setInterval(calc, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-indigo-800/40 bg-indigo-950/30 text-xs">
+      <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px]">PS Selection Countdown:</span>
+      <span className={`font-black font-mono ${isExpired ? 'text-rose-400' : 'text-[#d4af37]'}`}>{timeLeft}</span>
+    </div>
+  );
+}
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -153,6 +185,25 @@ export default function SuperAdminPage() {
   const [psOverrideSubmitting, setPsOverrideSubmitting] = useState(false);
   const [psOverrideMsg, setPsOverrideMsg] = useState<string | null>(null);
   const PS_TEAMS_PAGE_SIZE = 10;
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    apiRequest('/api/admin/sih/ps-analytics')
+      .then((d: any) => setPsAnalytics(d))
+      .catch((err) => console.error('Error fetching PS analytics:', err));
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    setPsTeamsLoading(true);
+    apiRequest(`/api/admin/sih/teams-with-ps?ps_filter=${psFilter}&search=${encodeURIComponent(psTeamsSearch)}&page=${psTeamsPage}&limit=${PS_TEAMS_PAGE_SIZE}`)
+      .then((d: any) => {
+        setPsTeams(d.items || []);
+        setPsTeamsTotal(d.total || 0);
+      })
+      .catch((err) => console.error('Error fetching PS teams list:', err))
+      .finally(() => setPsTeamsLoading(false));
+  }, [isAdmin, psFilter, psTeamsPage, psTeamsSearch]);
 
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -2671,43 +2722,38 @@ export default function SuperAdminPage() {
 
                       {/* ── PS Selection Analytics ── */}
                       <div className="rounded-xl border border-indigo-900/30 bg-indigo-950/10 p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <h4 className="text-sm font-bold text-white font-serif">Problem Statement Selection Analytics</h4>
-                          <button
-                            onClick={() => {
-                              apiRequest('/api/admin/sih/ps-analytics').then((d: any) => setPsAnalytics(d)).catch(() => {});
-                              setPsTeamsLoading(true);
-                              apiRequest(`/api/admin/sih/teams-with-ps?ps_filter=${psFilter}&search=${encodeURIComponent(psTeamsSearch)}&page=${psTeamsPage}&limit=${PS_TEAMS_PAGE_SIZE}`)
-                                .then((d: any) => { setPsTeams(d.items); setPsTeamsTotal(d.total); }).catch(() => {}).finally(() => setPsTeamsLoading(false));
-                            }}
-                            className="px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-800/40 bg-indigo-950/30 text-indigo-300 hover:bg-indigo-900/40 transition"
-                          >
-                            Refresh PS Data
-                          </button>
+                          <AdminPSSelectionCountdown />
                         </div>
 
                         {/* Analytics Cards */}
                         {psAnalytics && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/10 p-4 text-center">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/10 p-4 text-center flex flex-col justify-center">
                               <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400 mb-1">PS Confirmed</p>
                               <span className="text-2xl font-black text-emerald-400">{psAnalytics.confirmed}</span>
                               <p className="text-[10px] text-zinc-500 mt-1">of {psAnalytics.total_teams} teams</p>
                             </div>
-                            <div className="rounded-xl border border-rose-900/40 bg-rose-950/10 p-4 text-center">
+                            <div className="rounded-xl border border-rose-900/40 bg-rose-950/10 p-4 text-center flex flex-col justify-center">
                               <p className="text-[10px] font-black uppercase tracking-wider text-rose-400 mb-1">Not Selected</p>
                               <span className="text-2xl font-black text-rose-400">{psAnalytics.not_confirmed}</span>
                               <p className="text-[10px] text-zinc-500 mt-1">pending selection</p>
                             </div>
-                            <div className="col-span-2 sm:col-span-1 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/5 p-4">
-                              <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] mb-2">Top PS Choices</p>
-                              {psAnalytics.ps_distribution.slice(0, 5).map((row: any, idx: number) => (
-                                <div key={idx} className="flex items-center justify-between gap-2 text-xs py-0.5">
-                                  <span className="text-zinc-300 font-mono">{row.ps_number}</span>
-                                  <span className="text-[#d4af37] font-black">{row.team_count} team{row.team_count !== 1 ? 's' : ''}</span>
-                                </div>
-                              ))}
-                              {psAnalytics.ps_distribution.length === 0 && <p className="text-xs text-zinc-600">No selections yet</p>}
+                            <div className="rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/5 p-4 flex flex-col max-h-[140px]">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] mb-2 flex-shrink-0">PS Choice Distribution (All Chose Counts)</p>
+                              <div className="flex-1 overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
+                                {psAnalytics.ps_distribution.map((row: any, idx: number) => (
+                                  <div key={idx} className="flex items-center justify-between gap-2 text-xs py-1 border-b border-zinc-900 last:border-0">
+                                    <div className="min-w-0">
+                                      <p className="text-zinc-300 font-mono font-semibold">{row.ps_number}</p>
+                                      <p className="text-[9px] text-zinc-500 truncate" title={row.title}>{row.title}</p>
+                                    </div>
+                                    <span className="text-[#d4af37] font-black flex-shrink-0 ml-2">{row.team_count} team{row.team_count !== 1 ? 's' : ''}</span>
+                                  </div>
+                                ))}
+                                {psAnalytics.ps_distribution.length === 0 && <p className="text-xs text-zinc-600">No selections yet</p>}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -2745,13 +2791,14 @@ export default function SuperAdminPage() {
                         {psTeamsLoading ? (
                           <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-400"></div></div>
                         ) : psTeams.length === 0 ? (
-                          <p className="text-sm text-zinc-500 text-center py-6">No data loaded yet. Click &quot;Refresh PS Data&quot; to load.</p>
+                          <p className="text-sm text-zinc-500 text-center py-6">No teams match the filter.</p>
                         ) : (
                           <div className="space-y-2">
                             {psTeams.map((team: any) => (
                               <div key={team.id} className="rounded-xl border border-zinc-900/60 bg-zinc-950/30 p-4 flex items-start gap-4 flex-wrap">
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-black text-white">{team.team_name}</p>
+                                  <p className="text-[10px] text-zinc-400 mt-0.5">Leader: {team.leader_name}</p>
                                   <p className="text-[10px] text-zinc-500 mt-0.5">Registered: {new Date(team.created_at).toLocaleDateString('en-IN')}</p>
                                 </div>
                                 {team.ps_selection ? (

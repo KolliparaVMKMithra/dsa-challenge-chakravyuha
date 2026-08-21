@@ -1694,9 +1694,14 @@ def get_sih_teams_with_ps(
                 "selected_at": sel.selected_at.isoformat() + "Z",
                 "last_edited_by_admin": sel.last_edited_by_admin,
             }
+        # Find leader name
+        leader_m = next((m for m in t.members if m.is_leader), None)
+        leader_name = leader_m.full_name if leader_m else "Unknown"
+
         result.append({
             "id": t.id,
             "team_name": t.team_name,
+            "leader_name": leader_name,
             "created_at": t.created_at.isoformat() + "Z",
             "ps_selection": ps_info,
         })
