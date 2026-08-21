@@ -194,41 +194,81 @@ function ConfirmPSModal({ ps, onConfirm, onCancel, loading }: { ps: PSItem; onCo
   );
 }function formatDescription(text: string) {
   if (!text) return null;
-  
+
   const keywords = [
-    'Background:', 
-    'Description:', 
-    'Scope:', 
-    'Expected Solution:', 
-    'Key features:', 
-    'Expected Outcomes:', 
-    'Impact:', 
-    'Objectives:', 
+    'Background:',
+    'Description:',
+    'Scope:',
+    'Expected Solution:',
+    'Key features:',
+    'Expected Outcomes:',
+    'Impact:',
+    'Objectives:',
     'Potential Solution:',
     'Domain:',
     'Category:'
   ];
-  
-  let html = text;
-  keywords.forEach(kw => {
-    const regex = new RegExp(`(${kw})`, 'g');
-    html = html.replace(regex, '<strong class="text-[#d4af37] font-extrabold text-[10px] block mt-4 mb-1.5 uppercase tracking-widest">$1</strong>');
-  });
 
-  // Clean bullet points
-  html = html.replace(/•/g, '<span class="block pl-5 text-zinc-300 relative before:content-[\'•\'] before:absolute before:left-1 before:text-[#d4af37] my-1.5">');
-  
-  // Style a. b. c. items
-  for (let char of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']) {
-    const regex = new RegExp(`\\s(${char}\\.\\s)`, 'g');
-    html = html.replace(regex, '<span class="block pl-5 text-zinc-300 relative before:content-[\'$1\'] before:absolute before:left-1 before:text-[#818cf8] my-1.5 font-medium">');
-  }
+  const lines = text.split('\n');
 
   return (
-    <div 
-      dangerouslySetInnerHTML={{ __html: html }} 
-      className="text-xs text-zinc-300 leading-relaxed space-y-2.5 pr-1"
-    />
+    <div className="text-xs text-zinc-300 leading-relaxed space-y-3 pr-1">
+      {lines.map((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) return null;
+
+        // Check if list item
+        const isBullet = trimmed.startsWith('•') || trimmed.startsWith('*');
+        const isAlphaList = /^[a-j]\.\s/.test(trimmed);
+
+        let content = trimmed;
+        if (isBullet) {
+          content = trimmed.substring(1).trim();
+        } else if (isAlphaList) {
+          content = trimmed.substring(2).trim();
+        }
+
+        // Check for keyword match at start
+        const matchedKeyword = keywords.find(kw => trimmed.startsWith(kw));
+        if (matchedKeyword) {
+          const rest = trimmed.substring(matchedKeyword.length).trim();
+          return (
+            <div key={index} className="mt-4 first:mt-0 space-y-1">
+              <span className="text-[#d4af37] font-black text-[10px] block uppercase tracking-widest">
+                {matchedKeyword}
+              </span>
+              {rest && <p className="text-zinc-300 font-medium">{rest}</p>}
+            </div>
+          );
+        }
+
+        if (isBullet) {
+          return (
+            <div key={index} className="flex items-start gap-2 pl-4 my-1">
+              <span className="text-[#d4af37] flex-shrink-0 mt-1.5 text-[8px]">•</span>
+              <span className="text-zinc-300 font-medium">{content}</span>
+            </div>
+          );
+        }
+
+        if (isAlphaList) {
+          const match = trimmed.match(/^([a-j]\.)/);
+          const prefix = match ? match[1] : '';
+          return (
+            <div key={index} className="flex items-start gap-2 pl-4 my-1">
+              <span className="text-[#818cf8] font-bold flex-shrink-0 text-xs">{prefix}</span>
+              <span className="text-zinc-300 font-medium">{content}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={index} className="text-zinc-300 font-medium">
+            {trimmed}
+          </p>
+        );
+      })}
+    </div>
   );
 }
 
