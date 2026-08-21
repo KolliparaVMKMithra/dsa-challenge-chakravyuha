@@ -342,6 +342,14 @@ def startup_db_init():
             db.bulk_save_objects(new_registrations)
             db.commit()
             logger.info(f"Registered {len(new_registrations)} existing students for YUKTI event.")
+
+        # Seed SIH Problem Statements on startup automatically
+        try:
+            logger.info("Automatically seeding SIH 2026 Problem Statements on startup...")
+            from backend.seed_ps import seed as seed_sih_problem_statements
+            seed_sih_problem_statements()
+        except Exception as ps_err:
+            logger.error(f"Error automatically seeding SIH problem statements: {ps_err}")
             
     except Exception as e:
         logger.error(f"Error seeding database: {e}")

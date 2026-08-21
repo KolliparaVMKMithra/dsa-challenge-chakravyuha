@@ -654,16 +654,36 @@ export default function SihDashboard() {
                               <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Gender</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-zinc-900/40 text-zinc-300">
-                            {teamData.members?.map((m: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-zinc-900/10">
-                                <td className="py-2.5 px-3">{m.is_leader ? <span className="px-1.5 py-0.5 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[8px] font-black uppercase">Leader</span> : <span className="text-zinc-500 text-[9px] font-medium">Member</span>}</td>
-                                <td className="py-2.5 px-3 font-semibold text-white">{m.full_name}</td>
-                                <td className="py-2.5 px-3 font-mono text-zinc-400">{m.roll_number}</td>
-                                <td className="py-2.5 px-3">{m.branch} — Yr {m.study_year}</td>
-                                <td className="py-2.5 px-3">{m.gender === 'Woman' ? <span className="text-rose-400 font-semibold">Woman</span> : <span className="text-blue-400 font-semibold">Man</span>}</td>
-                              </tr>
-                            ))}
+                           <tbody className="divide-y divide-zinc-900/40 text-zinc-300">
+                            {(() => {
+                              const allMembers = [
+                                ...(teamData.leader ? [{ ...teamData.leader, is_leader: true }] : []),
+                                ...(teamData.members || []).map((m: any) => ({ ...m, is_leader: false }))
+                              ];
+                              return allMembers.map((m: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-zinc-900/10">
+                                  <td className="py-2.5 px-3">
+                                    {m.is_leader ? (
+                                      <span className="px-1.5 py-0.5 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] text-[8px] font-black uppercase">
+                                        Leader
+                                      </span>
+                                    ) : (
+                                      <span className="text-zinc-500 text-[9px] font-medium">Member</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 px-3 font-semibold text-white">{m.full_name}</td>
+                                  <td className="py-2.5 px-3 font-mono text-zinc-400">{m.roll_number}</td>
+                                  <td className="py-2.5 px-3">{m.branch} — Yr {m.study_year}</td>
+                                  <td className="py-2.5 px-3">
+                                    {m.gender === 'Woman' ? (
+                                      <span className="text-rose-400 font-semibold">Woman</span>
+                                    ) : (
+                                      <span className="text-blue-400 font-semibold">Man</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ));
+                            })()}
                           </tbody>
                         </table>
                       </div>
