@@ -131,6 +131,15 @@ def startup_db_init():
                 logger.info("Successfully dropped NOT NULL constraint on students.roll_number.")
         except Exception as e:
             logger.warning(f"Failed to drop NOT NULL constraint on roll_number (this is normal if already dropped): {e}")
+
+        # Run migration: alter description column to TEXT in sih_problem_statements
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE sih_problem_statements ALTER COLUMN description TYPE TEXT;"))
+                conn.commit()
+                logger.info("Successfully altered sih_problem_statements.description column type to TEXT.")
+        except Exception as e:
+            logger.warning(f"Failed to alter sih_problem_statements.description (this is normal if already TEXT): {e}")
             
     if engine.name == 'sqlite':
         try:

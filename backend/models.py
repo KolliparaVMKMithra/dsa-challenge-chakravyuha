@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, Date, ForeignKey, Table, UniqueConstraint
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, Date, ForeignKey, Table, UniqueConstraint, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from backend.database import Base
@@ -193,7 +193,7 @@ class SIHProblemStatement(Base):
     organization = Column(String(300), nullable=False)
     category     = Column(String(50), nullable=True)   # Software / Hardware
     theme        = Column(String(200), nullable=True)
-    description  = Column(String(10000), nullable=True)
+    description  = Column(Text, nullable=True)
 
     selections = relationship("SIHPSSelection", back_populates="problem_statement")
 
