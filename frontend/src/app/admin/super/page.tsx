@@ -2815,19 +2815,46 @@ export default function SuperAdminPage() {
                                 ) : (
                                   <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-rose-950/30 border border-rose-900/30 text-rose-400">Not Selected</span>
                                 )}
-                                <button
-                                  onClick={() => {
-                                    setPsOverrideTeamId(team.id);
-                                    setPsOverrideTeamName(team.team_name);
-                                    setPsOverrideSelected(null);
-                                    setPsOverrideSearch('');
-                                    setPsOverrideList([]);
-                                    setPsOverrideMsg(null);
-                                  }}
-                                  className="flex-shrink-0 px-2.5 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition"
-                                >
-                                  Edit PS
-                                </button>
+                                <div className="flex gap-2 flex-shrink-0">
+                                  {team.ps_selection && (
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(`Are you sure you want to remove the selected Problem Statement for team "${team.team_name}"?`)) {
+                                          try {
+                                            await apiRequest(`/api/admin/sih/teams/${team.id}/ps`, { method: 'DELETE' });
+                                            alert('PS selection removed successfully!');
+                                            
+                                            // Refresh ps teams list
+                                            const d: any = await apiRequest(`/api/admin/sih/teams-with-ps?ps_filter=${psFilter}&search=${encodeURIComponent(psTeamsSearch)}&page=${psTeamsPage}&limit=${PS_TEAMS_PAGE_SIZE}`);
+                                            setPsTeams(d.items); 
+                                            setPsTeamsTotal(d.total);
+                                            
+                                            const a: any = await apiRequest('/api/admin/sih/ps-analytics');
+                                            setPsAnalytics(a);
+                                          } catch (err: any) {
+                                            alert(err.message || 'Failed to remove PS selection.');
+                                          }
+                                        }
+                                      }}
+                                      className="px-2.5 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border border-rose-900/40 bg-rose-950/15 text-rose-400 hover:bg-rose-950/30 hover:border-rose-700 transition"
+                                    >
+                                      Remove PS
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setPsOverrideTeamId(team.id);
+                                      setPsOverrideTeamName(team.team_name);
+                                      setPsOverrideSelected(null);
+                                      setPsOverrideSearch('');
+                                      setPsOverrideList([]);
+                                      setPsOverrideMsg(null);
+                                    }}
+                                    className="px-2.5 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition"
+                                  >
+                                    Edit PS
+                                  </button>
+                                </div>
                               </div>
                             ))}
                             {/* PS Teams Pagination */}

@@ -192,6 +192,44 @@ function ConfirmPSModal({ ps, onConfirm, onCancel, loading }: { ps: PSItem; onCo
       </div>
     </div>
   );
+}function formatDescription(text: string) {
+  if (!text) return null;
+  
+  const keywords = [
+    'Background:', 
+    'Description:', 
+    'Scope:', 
+    'Expected Solution:', 
+    'Key features:', 
+    'Expected Outcomes:', 
+    'Impact:', 
+    'Objectives:', 
+    'Potential Solution:',
+    'Domain:',
+    'Category:'
+  ];
+  
+  let html = text;
+  keywords.forEach(kw => {
+    const regex = new RegExp(`(${kw})`, 'g');
+    html = html.replace(regex, '<strong class="text-[#d4af37] font-extrabold text-[10px] block mt-4 mb-1.5 uppercase tracking-widest">$1</strong>');
+  });
+
+  // Clean bullet points
+  html = html.replace(/•/g, '<span class="block pl-5 text-zinc-300 relative before:content-[\'•\'] before:absolute before:left-1 before:text-[#d4af37] my-1.5">');
+  
+  // Style a. b. c. items
+  for (let char of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']) {
+    const regex = new RegExp(`\\s(${char}\\.\\s)`, 'g');
+    html = html.replace(regex, '<span class="block pl-5 text-zinc-300 relative before:content-[\'$1\'] before:absolute before:left-1 before:text-[#818cf8] my-1.5 font-medium">');
+  }
+
+  return (
+    <div 
+      dangerouslySetInnerHTML={{ __html: html }} 
+      className="text-xs text-zinc-300 leading-relaxed space-y-2.5 pr-1"
+    />
+  );
 }
 
 function PSTab({ teamData }: { teamData: any }) {
@@ -303,10 +341,8 @@ function PSTab({ teamData }: { teamData: any }) {
             {myPS.description && (
               <div className="space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Problem Description</p>
-                <div className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/20 p-4 rounded-xl border border-zinc-900/60 max-h-80 overflow-y-auto pr-2 scrollbar-thin">
-                  {myPS.description.split('\n').map((para: string, pIdx: number) => (
-                    <p key={pIdx} className={pIdx > 0 ? 'mt-2' : ''}>{para}</p>
-                  ))}
+                <div className="bg-zinc-950/20 p-5 rounded-xl border border-zinc-900/60 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                  {formatDescription(myPS.description)}
                 </div>
               </div>
             )}
@@ -450,11 +486,9 @@ function PSTab({ teamData }: { teamData: any }) {
                     </p>
                     
                     {isExpanded && ps.description && (
-                      <div className="text-xs text-zinc-300 leading-relaxed mt-4 bg-zinc-950/30 p-4 rounded-xl border border-zinc-900/60 shadow-inner max-h-96 overflow-y-auto pr-2 scrollbar-thin">
+                      <div className="text-xs text-zinc-300 leading-relaxed mt-4 bg-zinc-950/30 p-5 rounded-xl border border-zinc-900/60 shadow-inner max-h-96 overflow-y-auto pr-2 scrollbar-thin">
                         <p className="text-[9px] font-black uppercase tracking-wider text-zinc-500 mb-2">Detailed Description</p>
-                        {ps.description.split('\n').map((para: string, pIdx: number) => (
-                          <p key={pIdx} className={pIdx > 0 ? 'mt-2' : ''}>{para}</p>
-                        ))}
+                        {formatDescription(ps.description)}
                       </div>
                     )}
                   </div>

@@ -1743,6 +1743,21 @@ def admin_override_ps(
     return {"detail": f"PS updated to {ps.ps_number} for team '{team.team_name}' by admin."}
 
 
+@router.delete("/sih/teams/{team_id}/ps")
+def delete_team_ps(
+    team_id: int,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Admin deletes/removes a team's PS selection (resetting it to not selected)."""
+    selection = db.query(SIHPSSelection).filter(SIHPSSelection.team_id == team_id).first()
+    if not selection:
+        raise HTTPException(status_code=404, detail="No PS selection found for this team.")
+    db.delete(selection)
+    db.commit()
+    return {"detail": "PS selection removed successfully."}
+
+
 @router.get("/sih/ps-list")
 def admin_get_ps_list(
     search: str = "",
