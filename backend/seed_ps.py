@@ -1,4 +1,4 @@
-﻿"""
+"""
 Seeder: Populates sih_problem_statements table from ps sih 2026.xlsx.
 Run once (idempotent): python -m backend.seed_ps
 """
@@ -15,7 +15,7 @@ from backend.models import SIHProblemStatement
 # Auto-create tables (safe: uses CREATE TABLE IF NOT EXISTS via SQLAlchemy)
 Base.metadata.create_all(bind=engine)
 
-EXCEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'ps sih 2026.xlsx')
+EXCEL_PATH = os.path.join(os.path.dirname(__file__), 'ps sih 2026.xlsx')
 
 def seed():
     db = SessionLocal()
