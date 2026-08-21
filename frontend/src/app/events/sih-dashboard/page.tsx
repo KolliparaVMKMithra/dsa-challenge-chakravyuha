@@ -596,12 +596,20 @@ export default function SihDashboard() {
   const [comingSoonModal, setComingSoonModal] = useState<string | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(2);
   const [registrationClosed] = useState(new Date() >= REGISTRATION_DEADLINE);
+  const [myPS, setMyPS] = useState<any | null>(null);
 
   useEffect(() => {
     const token = getAuthToken();
     if (!token) { router.push('/'); return; }
-    apiRequest('/api/dsa/events/sih/my-team')
-      .then((data: any) => setTeamData(data))
+    
+    Promise.all([
+      apiRequest('/api/dsa/events/sih/my-team'),
+      apiRequest('/api/dsa/events/sih/my-ps').catch(() => ({ selection: null }))
+    ])
+      .then(([teamRes, psRes]: [any, any]) => {
+        setTeamData(teamRes);
+        setMyPS(psRes?.selection || null);
+      })
       .catch((err: any) => {
         const msg = (err.message || '').toLowerCase();
         if (msg.includes('not found') || msg.includes('no team') || msg.includes('not registered') || msg.includes('404')) {
@@ -735,6 +743,58 @@ export default function SihDashboard() {
                 );
               })}
             </section>
+            
+            {/* Selected Problem Statement Status */}
+            <section className="space-y-4">
+              {myPS ? (
+                <div className="rounded-2xl overflow-hidden shadow-2xl transition-all duration-300" style={{ border: '1px solid rgba(212,175,55,0.25)', background: 'linear-gradient(135deg, rgba(20,16,0,0.85), rgba(10,8,0,0.95))' }}>
+                  <div className="p-6 sm:p-8 space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">Selected Problem Statement</p>
+                        <h2 className="text-xl font-black text-white mt-0.5">{myPS.ps_number}</h2>
+                      </div>
+                      <span className="px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/30 text-emerald-400 shadow-md">✓ Eligible for Hackathon</span>
+                    </div>
+                    <div className="border-t border-zinc-900/60 pt-4 space-y-2">
+                      <h3 className="text-base font-extrabold text-white leading-snug">{myPS.title}</h3>
+                      <p className="text-xs text-zinc-400 flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-[#d4af37] flex-shrink-0" />
+                        <span className="font-semibold text-zinc-300">{myPS.organization}</span>
+                      </p>
+                      <div className="flex gap-2 flex-wrap pt-1">
+                        {myPS.category && (
+                          <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${myPS.category === 'Software' ? 'bg-sky-950/60 border border-sky-900/40 text-sky-400' : 'bg-purple-950/60 border border-purple-900/40 text-purple-400'}`}>
+                            {myPS.category}
+                          </span>
+                        )}
+                        {myPS.theme && (
+                          <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-800/60 border border-zinc-700/40 text-zinc-300">
+                            {myPS.theme}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-zinc-900/60 bg-zinc-950/40 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#818cf8]">Status: Pending Selection</p>
+                    <h3 className="text-base font-extrabold text-white">No Problem Statement Selected Yet</h3>
+                    <p className="text-xs text-zinc-500">Select and confirm your problem statement before the deadline to become eligible.</p>
+                  </div>
+                  {teamData?.is_leader ? (
+                    <button onClick={() => setActiveTab('ps')} className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:scale-105 active:scale-95 duration-200 transition" style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)', color: '#000' }}>
+                      Choose PS Now →
+                    </button>
+                  ) : (
+                    <span className="text-xs text-zinc-500 italic flex-shrink-0">🔒 Waiting for Team Leader to select PS</span>
+                  )}
+                </div>
+              )}
+            </section>
+
             <section>
               <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'linear-gradient(135deg, rgba(20,16,0,0.8), rgba(10,8,0,0.9))' }}>
                 <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#d4af37,#8c7030,#d4af37)' }} />
