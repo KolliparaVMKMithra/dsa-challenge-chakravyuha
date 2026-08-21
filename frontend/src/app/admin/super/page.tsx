@@ -134,7 +134,26 @@ export default function SuperAdminPage() {
   const [editSihSubmitting, setEditSihSubmitting] = useState(false);
   const [editSihError, setEditSihError] = useState<string | null>(null);
   const [editSihSuccess, setEditSihSuccess] = useState<string | null>(null);
-  
+
+  // PS Selection Analytics States
+  const [psAnalytics, setPsAnalytics] = useState<any | null>(null);
+  const [psTeams, setPsTeams] = useState<any[]>([]);
+  const [psTeamsTotal, setPsTeamsTotal] = useState(0);
+  const [psFilter, setPsFilter] = useState<'all' | 'confirmed' | 'not_confirmed'>('all');
+  const [psTeamsPage, setPsTeamsPage] = useState(1);
+  const [psTeamsSearch, setPsTeamsSearch] = useState('');
+  const [psTeamsSearchInput, setPsTeamsSearchInput] = useState('');
+  const [psTeamsLoading, setPsTeamsLoading] = useState(false);
+  const [psOverrideTeamId, setPsOverrideTeamId] = useState<number | null>(null);
+  const [psOverrideTeamName, setPsOverrideTeamName] = useState('');
+  const [psOverrideSearch, setPsOverrideSearch] = useState('');
+  const [psOverrideList, setPsOverrideList] = useState<any[]>([]);
+  const [psOverrideLoading, setPsOverrideLoading] = useState(false);
+  const [psOverrideSelected, setPsOverrideSelected] = useState<any | null>(null);
+  const [psOverrideSubmitting, setPsOverrideSubmitting] = useState(false);
+  const [psOverrideMsg, setPsOverrideMsg] = useState<string | null>(null);
+  const PS_TEAMS_PAGE_SIZE = 10;
+
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
@@ -2645,6 +2664,236 @@ export default function SuperAdminPage() {
                               {Object.keys(sihAnalytics.year_breakdown).length === 0 && (
                                 <span className="text-zinc-500">No year data available</span>
                               )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── PS Selection Analytics ── */}
+                      <div className="rounded-xl border border-indigo-900/30 bg-indigo-950/10 p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-bold text-white font-serif">Problem Statement Selection Analytics</h4>
+                          <button
+                            onClick={() => {
+                              apiRequest('/api/admin/sih/ps-analytics').then((d: any) => setPsAnalytics(d)).catch(() => {});
+                              setPsTeamsLoading(true);
+                              apiRequest(`/api/admin/sih/teams-with-ps?ps_filter=${psFilter}&search=${encodeURIComponent(psTeamsSearch)}&page=${psTeamsPage}&limit=${PS_TEAMS_PAGE_SIZE}`)
+                                .then((d: any) => { setPsTeams(d.items); setPsTeamsTotal(d.total); }).catch(() => {}).finally(() => setPsTeamsLoading(false));
+                            }}
+                            className="px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-800/40 bg-indigo-950/30 text-indigo-300 hover:bg-indigo-900/40 transition"
+                          >
+                            Refresh PS Data
+                          </button>
+                        </div>
+
+                        {/* Analytics Cards */}
+                        {psAnalytics && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/10 p-4 text-center">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400 mb-1">PS Confirmed</p>
+                              <span className="text-2xl font-black text-emerald-400">{psAnalytics.confirmed}</span>
+                              <p className="text-[10px] text-zinc-500 mt-1">of {psAnalytics.total_teams} teams</p>
+                            </div>
+                            <div className="rounded-xl border border-rose-900/40 bg-rose-950/10 p-4 text-center">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-rose-400 mb-1">Not Selected</p>
+                              <span className="text-2xl font-black text-rose-400">{psAnalytics.not_confirmed}</span>
+                              <p className="text-[10px] text-zinc-500 mt-1">pending selection</p>
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/5 p-4">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] mb-2">Top PS Choices</p>
+                              {psAnalytics.ps_distribution.slice(0, 5).map((row: any, idx: number) => (
+                                <div key={idx} className="flex items-center justify-between gap-2 text-xs py-0.5">
+                                  <span className="text-zinc-300 font-mono">{row.ps_number}</span>
+                                  <span className="text-[#d4af37] font-black">{row.team_count} team{row.team_count !== 1 ? 's' : ''}</span>
+                                </div>
+                              ))}
+                              {psAnalytics.ps_distribution.length === 0 && <p className="text-xs text-zinc-600">No selections yet</p>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Filter Tabs */}
+                        <div className="flex gap-2 flex-wrap">
+                          {(['all', 'confirmed', 'not_confirmed'] as const).map(f => (
+                            <button
+                              key={f}
+                              onClick={() => { setPsFilter(f); setPsTeamsPage(1); }}
+                              className={`px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition ${
+                                psFilter === f
+                                  ? f === 'confirmed' ? 'bg-emerald-950/40 border border-emerald-900/40 text-emerald-300'
+                                  : f === 'not_confirmed' ? 'bg-rose-950/40 border border-rose-900/40 text-rose-300'
+                                  : 'bg-indigo-950/40 border border-indigo-800/40 text-indigo-300'
+                                  : 'border border-zinc-800 text-zinc-500 hover:text-white'
+                              }`}
+                            >
+                              {f === 'all' ? 'All Teams' : f === 'confirmed' ? '✓ PS Confirmed' : '✗ Not Confirmed'}
+                            </button>
+                          ))}
+                          <div className="relative ml-auto">
+                            <input
+                              type="text"
+                              placeholder="Search team..."
+                              value={psTeamsSearchInput}
+                              onChange={e => setPsTeamsSearchInput(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') { setPsTeamsSearch(psTeamsSearchInput); setPsTeamsPage(1); } }}
+                              className="w-40 bg-zinc-900 border border-zinc-800 rounded-lg pl-3 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-600/50"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Teams with PS table */}
+                        {psTeamsLoading ? (
+                          <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-400"></div></div>
+                        ) : psTeams.length === 0 ? (
+                          <p className="text-sm text-zinc-500 text-center py-6">No data loaded yet. Click &quot;Refresh PS Data&quot; to load.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {psTeams.map((team: any) => (
+                              <div key={team.id} className="rounded-xl border border-zinc-900/60 bg-zinc-950/30 p-4 flex items-start gap-4 flex-wrap">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-black text-white">{team.team_name}</p>
+                                  <p className="text-[10px] text-zinc-500 mt-0.5">Registered: {new Date(team.created_at).toLocaleDateString('en-IN')}</p>
+                                </div>
+                                {team.ps_selection ? (
+                                  <div className="text-right space-y-0.5 flex-shrink-0">
+                                    <div className="flex items-center gap-2 justify-end">
+                                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-950/40 border border-emerald-900/30 text-emerald-400">✓ Confirmed</span>
+                                      <span className="text-[10px] font-black text-[#d4af37] font-mono">{team.ps_selection.ps_number}</span>
+                                      {team.ps_selection.last_edited_by_admin && (
+                                        <span className="text-[8px] font-bold uppercase px-1 py-0.5 rounded bg-blue-950/40 border border-blue-800/40 text-blue-400">Admin Edited</span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400 text-right">{team.ps_selection.title?.slice(0, 60)}{team.ps_selection.title?.length > 60 ? '...' : ''}</p>
+                                  </div>
+                                ) : (
+                                  <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-rose-950/30 border border-rose-900/30 text-rose-400">Not Selected</span>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setPsOverrideTeamId(team.id);
+                                    setPsOverrideTeamName(team.team_name);
+                                    setPsOverrideSelected(null);
+                                    setPsOverrideSearch('');
+                                    setPsOverrideList([]);
+                                    setPsOverrideMsg(null);
+                                  }}
+                                  className="flex-shrink-0 px-2.5 py-1.5 rounded text-[9px] font-black uppercase tracking-wider border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition"
+                                >
+                                  Edit PS
+                                </button>
+                              </div>
+                            ))}
+                            {/* PS Teams Pagination */}
+                            {psTeamsTotal > PS_TEAMS_PAGE_SIZE && (
+                              <div className="flex items-center justify-center gap-3 pt-2">
+                                <button onClick={() => setPsTeamsPage(p => Math.max(1, p - 1))} disabled={psTeamsPage === 1} className="p-1.5 rounded border border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-30 transition">
+                                  <ChevronLeft className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="text-xs text-zinc-500">Page {psTeamsPage} of {Math.ceil(psTeamsTotal / PS_TEAMS_PAGE_SIZE)}</span>
+                                <button onClick={() => setPsTeamsPage(p => p + 1)} disabled={psTeamsPage >= Math.ceil(psTeamsTotal / PS_TEAMS_PAGE_SIZE)} className="p-1.5 rounded border border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-30 transition">
+                                  <ChevronRight className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Admin PS Override Modal */}
+                      {psOverrideTeamId !== null && (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}>
+                          <div className="relative w-full max-w-lg rounded-2xl overflow-hidden" style={{ background: '#0a0900', border: '1px solid rgba(212,175,55,0.3)' }}>
+                            <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#d4af37,#8c7030,#d4af37)' }} />
+                            <button onClick={() => setPsOverrideTeamId(null)} className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition">
+                              <X className="h-4 w-4" />
+                            </button>
+                            <div className="p-6 space-y-4">
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">Admin Override — PS Selection</p>
+                                <h3 className="text-base font-extrabold text-white mt-0.5">{psOverrideTeamName}</h3>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Search PS by number or title..."
+                                  value={psOverrideSearch}
+                                  onChange={e => setPsOverrideSearch(e.target.value)}
+                                  onKeyDown={async (e) => {
+                                    if (e.key === 'Enter') {
+                                      setPsOverrideLoading(true);
+                                      try {
+                                        const d: any = await apiRequest(`/api/admin/sih/ps-list?search=${encodeURIComponent(psOverrideSearch)}&limit=20`);
+                                        setPsOverrideList(d.items);
+                                      } finally { setPsOverrideLoading(false); }
+                                    }
+                                  }}
+                                  className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#d4af37]/40"
+                                />
+                                <button
+                                  onClick={async () => {
+                                    setPsOverrideLoading(true);
+                                    try {
+                                      const d: any = await apiRequest(`/api/admin/sih/ps-list?search=${encodeURIComponent(psOverrideSearch)}&limit=20`);
+                                      setPsOverrideList(d.items);
+                                    } finally { setPsOverrideLoading(false); }
+                                  }}
+                                  className="px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 text-xs font-bold hover:border-[#d4af37]/40 transition"
+                                >
+                                  Search
+                                </button>
+                              </div>
+                              {psOverrideLoading && <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#d4af37]"></div></div>}
+                              <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+                                {psOverrideList.map((ps: any) => (
+                                  <div
+                                    key={ps.id}
+                                    onClick={() => setPsOverrideSelected(psOverrideSelected?.id === ps.id ? null : ps)}
+                                    className="rounded-lg p-3 cursor-pointer transition"
+                                    style={{
+                                      border: `1px solid ${psOverrideSelected?.id === ps.id ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.05)'}`,
+                                      background: psOverrideSelected?.id === ps.id ? 'rgba(20,16,0,0.7)' : 'rgba(10,10,10,0.4)',
+                                    }}
+                                  >
+                                    <p className="text-[9px] font-black uppercase text-[#d4af37]">{ps.ps_number}</p>
+                                    <p className="text-xs font-semibold text-white mt-0.5">{ps.title}</p>
+                                  </div>
+                                ))}
+                                {psOverrideList.length === 0 && !psOverrideLoading && <p className="text-xs text-zinc-600 text-center py-4">Search for a PS to display results.</p>}
+                              </div>
+                              {psOverrideMsg && (
+                                <p className={`text-xs font-semibold ${psOverrideMsg.startsWith('✅') ? 'text-emerald-400' : 'text-rose-400'}`}>{psOverrideMsg}</p>
+                              )}
+                              <div className="flex gap-3">
+                                <button onClick={() => setPsOverrideTeamId(null)} className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-wider hover:text-white transition">Close</button>
+                                <button
+                                  disabled={!psOverrideSelected || psOverrideSubmitting}
+                                  onClick={async () => {
+                                    if (!psOverrideSelected || psOverrideTeamId === null) return;
+                                    setPsOverrideSubmitting(true);
+                                    setPsOverrideMsg(null);
+                                    try {
+                                      await apiRequest(`/api/admin/sih/teams/${psOverrideTeamId}/ps`, {
+                                        method: 'PUT',
+                                        body: JSON.stringify({ problem_statement_id: psOverrideSelected.id }),
+                                      });
+                                      setPsOverrideMsg(`✅ PS updated to ${psOverrideSelected.ps_number}`);
+                                      // Refresh ps teams list
+                                      const d: any = await apiRequest(`/api/admin/sih/teams-with-ps?ps_filter=${psFilter}&search=${encodeURIComponent(psTeamsSearch)}&page=${psTeamsPage}&limit=${PS_TEAMS_PAGE_SIZE}`);
+                                      setPsTeams(d.items); setPsTeamsTotal(d.total);
+                                      const a: any = await apiRequest('/api/admin/sih/ps-analytics');
+                                      setPsAnalytics(a);
+                                    } catch (err: any) {
+                                      setPsOverrideMsg('❌ ' + (err.message || 'Failed to update PS.'));
+                                    } finally {
+                                      setPsOverrideSubmitting(false);
+                                    }
+                                  }}
+                                  className="flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition disabled:opacity-40 flex items-center justify-center gap-2"
+                                  style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)', color: '#000' }}
+                                >
+                                  {psOverrideSubmitting ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div> Saving...</> : '→ Override PS'}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>

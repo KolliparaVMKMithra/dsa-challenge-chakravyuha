@@ -240,3 +240,14 @@ class ForgotPasswordVerifyEmail(BaseModel):
 class ForgotPasswordReset(BaseModel):
     reset_token: str
     new_password: str
+
+
+# ── PS Selection Schemas ──────────────────────────────────────────────────────
+
+class PSSelectRequest(BaseModel):
+    """Team leader submits a PS selection."""
+    problem_statement_id: int
+
+class AdminPSOverrideRequest(BaseModel):
+    """Admin overrides a team's PS selection."""
+    problem_statement_id: int

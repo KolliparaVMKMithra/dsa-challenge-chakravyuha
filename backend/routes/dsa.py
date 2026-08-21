@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember
-from backend.schemas import SubmissionCreate, SubmissionResponse, CodeChefParticipationResponse, FeedbackCreate, SIHTeamRegistration
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection
+from backend.schemas import SubmissionCreate, SubmissionResponse, CodeChefParticipationResponse, FeedbackCreate, SIHTeamRegistration, PSSelectRequest
 from backend.auth import get_current_active_student, get_current_user
 
 router = APIRouter(prefix="/api/dsa", tags=["dsa"])
@@ -1380,4 +1380,127 @@ def update_profile(data: ProfileUpdate, current_user: Student = Depends(get_curr
     return {"detail": "Profile updated successfully."}
 
 
+# ── SIH Problem Statement Endpoints ──────────────────────────────────────────
 
+@router.get("/events/sih/ps-list")
+def get_ps_list(
+    search: str = "",
+    page: int = 1,
+    limit: int = 20,
+    current_user: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Returns paginated, searchable list of SIH 2026 problem statements."""
+    query = db.query(SIHProblemStatement)
+    if search.strip():
+        s = f"%{search.strip().lower()}%"
+        query = query.filter(
+            func.lower(SIHProblemStatement.ps_number).like(s) |
+            func.lower(SIHProblemStatement.title).like(s) |
+            func.lower(SIHProblemStatement.organization).like(s) |
+            func.lower(SIHProblemStatement.theme).like(s)
+        )
+    total = query.count()
+    offset = (page - 1) * limit
+    items = query.order_by(SIHProblemStatement.ps_id).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "items": [
+            {
+                "id": ps.id,
+                "ps_id": ps.ps_id,
+                "ps_number": ps.ps_number,
+                "title": ps.title,
+                "organization": ps.organization,
+                "category": ps.category,
+                "theme": ps.theme,
+                "description": ps.description,
+            }
+            for ps in items
+        ]
+    }
+
+
+@router.get("/events/sih/my-ps")
+def get_my_ps(
+    current_user: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Returns the current user's team's confirmed PS selection, or null."""
+    member = db.query(SIHTeamMember).filter(
+        func.lower(SIHTeamMember.college_email) == current_user.college_email.lower().strip()
+    ).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Not registered in any SIH team.")
+    
+    selection = db.query(SIHPSSelection).filter(SIHPSSelection.team_id == member.team_id).first()
+    if not selection:
+        return {"selection": None}
+    
+    ps = selection.problem_statement
+    return {
+        "selection": {
+            "id": selection.id,
+            "problem_statement_id": selection.problem_statement_id,
+            "ps_id": ps.ps_id,
+            "ps_number": ps.ps_number,
+            "title": ps.title,
+            "organization": ps.organization,
+            "category": ps.category,
+            "theme": ps.theme,
+            "description": ps.description,
+            "selected_at": selection.selected_at.isoformat() + "Z",
+            "last_edited_by_admin": selection.last_edited_by_admin,
+        }
+    }
+
+
+@router.post("/events/sih/ps-select")
+def select_ps(
+    payload: PSSelectRequest,
+    current_user: Student = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Team leader confirms a PS selection for their team. One-time and irreversible."""
+    # Must be a registered team member
+    member = db.query(SIHTeamMember).filter(
+        func.lower(SIHTeamMember.college_email) == current_user.college_email.lower().strip()
+    ).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="You are not registered in any SIH team.")
+
+    # Must be team leader
+    if not member.is_leader:
+        raise HTTPException(status_code=403, detail="Only the Team Leader can select the Problem Statement.")
+
+    # Check if already selected (irreversible)
+    existing = db.query(SIHPSSelection).filter(SIHPSSelection.team_id == member.team_id).first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Your team has already confirmed a Problem Statement. This cannot be changed."
+        )
+
+    # Validate PS exists
+    ps = db.query(SIHProblemStatement).filter(SIHProblemStatement.id == payload.problem_statement_id).first()
+    if not ps:
+        raise HTTPException(status_code=404, detail="Problem Statement not found.")
+
+    # Save selection
+    selection = SIHPSSelection(
+        team_id=member.team_id,
+        problem_statement_id=ps.id,
+        selected_at=datetime.datetime.utcnow(),
+        last_edited_by_admin=False
+    )
+    db.add(selection)
+    db.commit()
+    db.refresh(selection)
+
+    return {
+        "detail": "Problem Statement confirmed successfully!",
+        "ps_number": ps.ps_number,
+        "title": ps.title,
+    }

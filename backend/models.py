@@ -181,3 +181,32 @@ class SIHTeamMember(Base):
 
     team = relationship("SIHTeam", back_populates="members")
 
+
+class SIHProblemStatement(Base):
+    """Stores all 999 SIH 2026 problem statements seeded from the official Excel."""
+    __tablename__ = "sih_problem_statements"
+
+    id           = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    ps_id        = Column(Integer, unique=True, index=True, nullable=False)   # e.g. 26001
+    ps_number    = Column(String(20), unique=True, index=True, nullable=False) # e.g. SIH26001
+    title        = Column(String(500), nullable=False)
+    organization = Column(String(300), nullable=False)
+    category     = Column(String(50), nullable=True)   # Software / Hardware
+    theme        = Column(String(200), nullable=True)
+    description  = Column(String(10000), nullable=True)
+
+    selections = relationship("SIHPSSelection", back_populates="problem_statement")
+
+
+class SIHPSSelection(Base):
+    """Records a team's confirmed PS selection (one per team, irreversible by team)."""
+    __tablename__ = "sih_ps_selections"
+
+    id                   = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id              = Column(Integer, ForeignKey("sih_teams.id", ondelete="CASCADE"), unique=True, nullable=False)
+    problem_statement_id = Column(Integer, ForeignKey("sih_problem_statements.id", ondelete="CASCADE"), nullable=False)
+    selected_at          = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    last_edited_by_admin = Column(Boolean, default=False, nullable=False)
+
+    team             = relationship("SIHTeam")
+    problem_statement = relationship("SIHProblemStatement", back_populates="selections")

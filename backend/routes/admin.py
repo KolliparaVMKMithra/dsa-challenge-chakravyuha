@@ -11,8 +11,8 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember
-from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse, SIHTeamRegistration
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection
+from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse, SIHTeamRegistration, AdminPSOverrideRequest
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -1613,3 +1613,150 @@ def export_sih_registrations(
         headers={"Content-Disposition": "attachment; filename=SIH_2026_Teams_Roster.xlsx"}
     )
 
+
+# ── Admin SIH Problem Statement Endpoints ──────────────────────────────────────
+
+@router.get("/sih/ps-analytics")
+def get_sih_ps_analytics(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Returns PS selection analytics for the admin dashboard."""
+    total_teams = db.query(SIHTeam).count()
+    confirmed_team_ids = db.query(SIHPSSelection.team_id).all()
+    confirmed_count = len(confirmed_team_ids)
+    not_confirmed_count = total_teams - confirmed_count
+
+    # Count by PS (how many teams chose each PS)
+    ps_counts_raw = (
+        db.query(SIHProblemStatement.ps_number, SIHProblemStatement.title, func.count(SIHPSSelection.id))
+        .join(SIHPSSelection, SIHPSSelection.problem_statement_id == SIHProblemStatement.id)
+        .group_by(SIHProblemStatement.id, SIHProblemStatement.ps_number, SIHProblemStatement.title)
+        .order_by(func.count(SIHPSSelection.id).desc())
+        .all()
+    )
+
+    ps_distribution = [
+        {"ps_number": row[0], "title": row[1], "team_count": row[2]}
+        for row in ps_counts_raw
+    ]
+
+    return {
+        "total_teams": total_teams,
+        "confirmed": confirmed_count,
+        "not_confirmed": not_confirmed_count,
+        "ps_distribution": ps_distribution,
+    }
+
+
+@router.get("/sih/teams-with-ps")
+def get_sih_teams_with_ps(
+    ps_filter: str = "all",   # "all" | "confirmed" | "not_confirmed"
+    search: str = "",
+    page: int = 1,
+    limit: int = 20,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Returns paginated SIH teams with PS selection info and filter support."""
+    query = db.query(SIHTeam)
+    if search.strip():
+        query = query.filter(func.lower(SIHTeam.team_name).like(f"%{search.strip().lower()}%"))
+
+    confirmed_team_ids_set = {row[0] for row in db.query(SIHPSSelection.team_id).all()}
+
+    if ps_filter == "confirmed":
+        query = query.filter(SIHTeam.id.in_(confirmed_team_ids_set))
+    elif ps_filter == "not_confirmed":
+        query = query.filter(~SIHTeam.id.in_(confirmed_team_ids_set))
+
+    total = query.count()
+    offset = (page - 1) * limit
+    teams = query.order_by(SIHTeam.created_at.desc()).offset(offset).limit(limit).all()
+
+    # Build PS selection map
+    sel_map = {}
+    for sel in db.query(SIHPSSelection).all():
+        sel_map[sel.team_id] = sel
+
+    result = []
+    for t in teams:
+        sel = sel_map.get(t.id)
+        ps_info = None
+        if sel:
+            ps = sel.problem_statement
+            ps_info = {
+                "ps_number": ps.ps_number,
+                "ps_id": ps.ps_id,
+                "title": ps.title,
+                "organization": ps.organization,
+                "theme": ps.theme,
+                "selected_at": sel.selected_at.isoformat() + "Z",
+                "last_edited_by_admin": sel.last_edited_by_admin,
+            }
+        result.append({
+            "id": t.id,
+            "team_name": t.team_name,
+            "created_at": t.created_at.isoformat() + "Z",
+            "ps_selection": ps_info,
+        })
+
+    return {"total": total, "page": page, "limit": limit, "items": result}
+
+
+@router.put("/sih/teams/{team_id}/ps")
+def admin_override_ps(
+    team_id: int,
+    payload: AdminPSOverrideRequest,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Admin overrides a team's PS selection (can edit even after confirmation)."""
+    team = db.query(SIHTeam).filter(SIHTeam.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    ps = db.query(SIHProblemStatement).filter(SIHProblemStatement.id == payload.problem_statement_id).first()
+    if not ps:
+        raise HTTPException(status_code=404, detail="Problem Statement not found.")
+
+    existing = db.query(SIHPSSelection).filter(SIHPSSelection.team_id == team_id).first()
+    if existing:
+        existing.problem_statement_id = ps.id
+        existing.selected_at = datetime.datetime.utcnow()
+        existing.last_edited_by_admin = True
+    else:
+        selection = SIHPSSelection(
+            team_id=team_id,
+            problem_statement_id=ps.id,
+            selected_at=datetime.datetime.utcnow(),
+            last_edited_by_admin=True
+        )
+        db.add(selection)
+
+    db.commit()
+    return {"detail": f"PS updated to {ps.ps_number} for team '{team.team_name}' by admin."}
+
+
+@router.get("/sih/ps-list")
+def admin_get_ps_list(
+    search: str = "",
+    page: int = 1,
+    limit: int = 50,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Admin-accessible full PS list for override dropdowns."""
+    query = db.query(SIHProblemStatement)
+    if search.strip():
+        s = f"%{search.strip().lower()}%"
+        query = query.filter(
+            func.lower(SIHProblemStatement.ps_number).like(s) |
+            func.lower(SIHProblemStatement.title).like(s)
+        )
+    total = query.count()
+    items = query.order_by(SIHProblemStatement.ps_id).offset((page - 1) * limit).limit(limit).all()
+    return {
+        "total": total,
+        "items": [{"id": ps.id, "ps_number": ps.ps_number, "title": ps.title[:100]} for ps in items]
+    }
