@@ -85,7 +85,7 @@ function PSSelectionCountdown() {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-indigo-900/30 bg-indigo-950/20 p-5 text-center max-w-2xl mx-auto space-y-2 relative overflow-hidden">
+    <div className="rounded-2xl border border-indigo-950/30 bg-indigo-950/10 p-5 text-center max-w-2xl mx-auto space-y-2 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#818cf8] to-transparent animate-pulse" />
       <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#818cf8]">
         Smart India Hackathon 2026 — Problem Statement Selection Deadline
@@ -224,7 +224,7 @@ function PSTab({ teamData }: { teamData: any }) {
 
   useEffect(() => {
     if (myPS !== undefined && myPS !== null) return;
-    if (isDeadlinePassed) return; // Don't load choices if closed
+    if (isDeadlinePassed) return;
     setLoadingPS(true);
     apiRequest(`/api/dsa/events/sih/ps-list?search=${encodeURIComponent(search)}&page=${page}&limit=${LIMIT}`)
       .then((data: any) => { setPsList(data.items); setTotal(data.total); })
@@ -262,50 +262,59 @@ function PSTab({ teamData }: { teamData: any }) {
   if (myPS !== null) {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(52,211,153,0.3)', background: 'linear-gradient(135deg,rgba(5,30,20,0.9),rgba(5,20,10,0.95))' }}>
-          <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#34d399,#059669)' }} />
-          <div className="p-6 sm:p-8 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-950/40 border border-emerald-800/40 flex items-center justify-center">
-                <Lock className="h-4 w-4 text-emerald-400" />
+        <div className="rounded-2xl overflow-hidden shadow-2xl transition-all duration-300" style={{ border: '1px solid rgba(52,211,153,0.3)', background: 'linear-gradient(135deg,rgba(5,25,15,0.95),rgba(3,15,8,0.98))' }}>
+          <div className="h-[4px]" style={{ background: 'linear-gradient(90deg,#10b981,#34d399,#10b981)' }} />
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center shadow-lg shadow-emerald-950/50">
+                <Lock className="h-5 w-5 text-emerald-400" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">PS Confirmed & Locked</p>
-                <p className="text-sm font-extrabold text-white">Your team&apos;s Problem Statement</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">PS Confirmed & Locked</p>
+                <p className="text-lg font-black text-white">Your team&apos;s selected Problem Statement</p>
               </div>
-              <span className="ml-auto px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950/40 border border-emerald-900/40 text-emerald-400">✓ Confirmed</span>
+              <span className="ml-auto px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 shadow-md">✓ Confirmed</span>
             </div>
             
-            <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/10 p-4">
-              <p className="text-xs text-emerald-300 font-bold flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                Your team has successfully confirmed a Problem Statement and is eligible for the Internal Hackathon.
+            <div className="rounded-xl border border-emerald-805/20 bg-emerald-950/20 p-4 flex items-start gap-3 shadow-inner">
+              <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-emerald-300 leading-relaxed font-semibold">
+                Your team has successfully confirmed a Problem Statement and is eligible for the Internal Hackathon. Prepare your presentation slide deck using the official format below!
               </p>
             </div>
 
-            <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/10 p-5 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">{myPS.ps_number}</p>
-              <p className="text-base font-extrabold text-white leading-snug">{myPS.title}</p>
-              <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
-                <Building2 className="h-3 w-3 flex-shrink-0" />
-                <span>{myPS.organization}</span>
+            <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/40 p-6 space-y-3 shadow-xl">
+              <span className="inline-block text-[10px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37]">{myPS.ps_number}</span>
+              <h3 className="text-xl font-extrabold text-white leading-snug">{myPS.title}</h3>
+              <div className="flex items-center gap-2 text-xs text-zinc-400 mt-2">
+                <Building2 className="h-4 w-4 text-[#d4af37] flex-shrink-0" />
+                <span className="font-semibold text-zinc-300">{myPS.organization}</span>
               </div>
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {myPS.category && <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-800/60 border border-zinc-700/40 text-zinc-300">{myPS.category}</span>}
-                {myPS.theme && <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-950/40 border border-indigo-800/40 text-indigo-300">{myPS.theme}</span>}
+              <div className="flex gap-2.5 mt-3 flex-wrap">
+                {myPS.category && (
+                  <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded ${myPS.category === 'Software' ? 'bg-sky-950/60 border border-sky-800/40 text-sky-400' : 'bg-purple-950/60 border border-purple-800/40 text-purple-400'}`}>
+                    {myPS.category}
+                  </span>
+                )}
+                {myPS.theme && <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded bg-zinc-800/60 border border-zinc-700/40 text-zinc-300">{myPS.theme}</span>}
               </div>
             </div>
+
             {myPS.description && (
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">Problem Description</p>
-                <p className="text-xs text-zinc-300 leading-relaxed">{myPS.description.slice(0, 600)}{myPS.description.length > 600 ? '...' : ''}</p>
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Problem Description</p>
+                <div className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/20 p-4 rounded-xl border border-zinc-900/60 max-h-80 overflow-y-auto pr-2 scrollbar-thin">
+                  {myPS.description.split('\n').map((para: string, pIdx: number) => (
+                    <p key={pIdx} className={pIdx > 0 ? 'mt-2' : ''}>{para}</p>
+                  ))}
+                </div>
               </div>
             )}
-            <div className="flex items-center gap-2 text-xs text-zinc-500 pt-2 border-t border-zinc-900/60">
-              <Calendar className="h-3 w-3" />
+            <div className="flex items-center gap-2 text-xs text-zinc-500 pt-3 border-t border-zinc-900/80">
+              <Calendar className="h-4 w-4 text-zinc-600" />
               <span>Confirmed on {new Date(myPS.selected_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               {myPS.last_edited_by_admin && (
-                <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-blue-950/40 border border-blue-800/40 text-blue-400">Admin Edited</span>
+                <span className="ml-2 px-2 py-0.5 rounded text-[8px] font-black uppercase bg-blue-950/60 border border-blue-800/40 text-blue-400">Admin Override</span>
               )}
             </div>
           </div>
@@ -318,16 +327,16 @@ function PSTab({ teamData }: { teamData: any }) {
   // Deadline passed and NO PS selected
   if (isDeadlinePassed && myPS === null) {
     return (
-      <div className="rounded-2xl border border-rose-950 bg-rose-950/20 p-8 text-center space-y-4 max-w-2xl mx-auto">
-        <div className="text-5xl text-rose-500">❌</div>
-        <h2 className="text-lg font-extrabold text-white font-serif">Selection Closed — Not Eligible</h2>
-        <p className="text-sm text-zinc-300 leading-relaxed">
+      <div className="rounded-2xl border border-rose-950/50 bg-rose-950/10 p-8 text-center space-y-4 max-w-2xl mx-auto shadow-2xl">
+        <div className="w-16 h-16 rounded-full bg-rose-950/30 border border-rose-900/40 flex items-center justify-center mx-auto text-3xl shadow-lg">❌</div>
+        <h2 className="text-xl font-extrabold text-white font-serif tracking-wide">Selection Window Closed</h2>
+        <p className="text-sm text-zinc-400 leading-relaxed max-w-md mx-auto">
           The Problem Statement selection deadline (24 Aug 2026, 7:00 PM IST) has passed. 
-          Your team did not select or confirm a Problem Statement in time. 
+          Your team did not select a Problem Statement in time. 
           Therefore, your team is <strong className="text-rose-400">NOT eligible</strong> to participate in the Internal Hackathon.
         </p>
         <div className="pt-2">
-          <span className="px-4 py-2 rounded-xl text-xs font-black uppercase bg-rose-950/50 border border-rose-900/40 text-rose-400">Not Eligible</span>
+          <span className="px-4 py-2 rounded-xl text-xs font-black uppercase bg-rose-950/30 border border-rose-900/40 text-rose-400 shadow-md">Not Eligible</span>
         </div>
       </div>
     );
@@ -336,54 +345,67 @@ function PSTab({ teamData }: { teamData: any }) {
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {!isLeader && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-900/30 bg-amber-950/10 p-4">
+        <div className="flex items-start gap-3 rounded-xl border border-amber-900/30 bg-amber-950/15 p-4 shadow-md">
           <AlertCircle className="h-4 w-4 text-[#d4af37] flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-zinc-300">Only the <strong className="text-[#d4af37]">Team Leader</strong> can select the Problem Statement. You can browse the list below.</p>
+          <p className="text-xs text-zinc-400">Only the <strong className="text-[#d4af37]">Team Leader</strong> can select the Problem Statement. You can browse the list below.</p>
         </div>
       )}
       {successMsg && (
-        <div className="flex items-start gap-2 rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-4">
+        <div className="flex items-start gap-2 rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-4 shadow-md">
           <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-emerald-300 font-semibold">{successMsg}</p>
         </div>
       )}
       {error && (
-        <div className="flex items-start gap-2 rounded-xl border border-rose-900/40 bg-rose-950/20 p-4">
+        <div className="flex items-start gap-2 rounded-xl border border-rose-900/40 bg-rose-950/20 p-4 shadow-md">
           <AlertCircle className="h-4 w-4 text-rose-400 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-rose-300">{error}</p>
         </div>
       )}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+
+      {/* Modern Search bar */}
+      <div className="flex gap-3">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-[#d4af37] transition" />
           <input
             type="text"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="Search by PS ID, title, organization or theme..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm bg-zinc-900/60 border border-zinc-800/60 text-white placeholder-zinc-600 focus:outline-none focus:border-[#d4af37]/40 transition"
+            className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-zinc-900/40 border border-zinc-800/50 text-white placeholder-zinc-600 focus:outline-none focus:border-[#d4af37]/60 focus:bg-zinc-900/60 transition shadow-inner"
           />
         </div>
-        <button onClick={handleSearch} className="px-4 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900/60 text-white text-xs font-bold uppercase tracking-wider hover:border-[#d4af37]/40 transition">Search</button>
+        <button
+          onClick={handleSearch}
+          className="px-6 py-3 rounded-xl border border-zinc-700 bg-zinc-900/60 text-white text-xs font-black uppercase tracking-wider hover:border-[#d4af37] hover:bg-[#d4af37]/5 transition shadow-md active:scale-95"
+        >
+          Search
+        </button>
         {search && (
-          <button onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }} className="px-3 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-white transition">
-            <X className="h-3.5 w-3.5" />
+          <button
+            onClick={() => { setSearch(''); setSearchInput(''); setPage(1); }}
+            className="px-3.5 py-3 rounded-xl border border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-white transition hover:border-zinc-500"
+          >
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
-      <div className="flex items-center justify-between text-xs text-zinc-500">
+
+      <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
         <span>{total} problem statements {search && `matching "${search}"`}</span>
         {selectedPS && <span className="text-[#d4af37] font-bold">Selected: {selectedPS.ps_number}</span>}
       </div>
+
+      {/* PS Cards List */}
       {loadingPS ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-7 w-7 text-[#d4af37] animate-spin" /></div>
+        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-[#d4af37] animate-spin" /></div>
       ) : psList.length === 0 ? (
-        <div className="py-12 text-center text-zinc-500 text-sm">No problem statements found.</div>
+        <div className="py-20 text-center text-zinc-500 text-sm border border-zinc-900 rounded-2xl bg-zinc-950/20">No problem statements found.</div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {psList.map(ps => {
             const isSelected = selectedPS?.id === ps.id;
             const isExpanded = expandedPS === ps.id;
@@ -391,43 +413,56 @@ function PSTab({ teamData }: { teamData: any }) {
               <div
                 key={ps.id}
                 onClick={() => isLeader && setSelectedPS(isSelected ? null : ps)}
-                className="rounded-xl overflow-hidden transition-all"
+                className="rounded-2xl transition-all duration-300 relative overflow-hidden"
                 style={{
-                  border: `1px solid ${isSelected ? 'rgba(212,175,55,0.5)' : 'rgba(255,255,255,0.05)'}`,
-                  background: isSelected ? 'rgba(20,16,0,0.7)' : 'rgba(10,10,10,0.4)',
-                  boxShadow: isSelected ? '0 0 20px rgba(212,175,55,0.08)' : 'none',
+                  border: `1px solid ${isSelected ? 'rgba(212,175,55,0.45)' : 'rgba(255,255,255,0.04)'}`,
+                  background: isSelected ? 'linear-gradient(135deg, rgba(25,20,5,0.85), rgba(15,10,0,0.92))' : 'rgba(10,10,10,0.3)',
+                  boxShadow: isSelected ? '0 8px 30px rgba(212,175,55,0.06)' : 'none',
                   cursor: isLeader ? 'pointer' : 'default',
                 }}
               >
-                <div className="p-4 flex items-start gap-3">
+                {isSelected && (
+                  <div className="absolute top-0 left-0 bottom-0 w-[3px]" style={{ background: 'linear-gradient(180deg,#d4af37,#8c7030)' }} />
+                )}
+                <div className="p-5 flex items-start gap-4">
                   {isLeader && (
                     <div
-                      className="flex-shrink-0 mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition"
-                      style={{ borderColor: isSelected ? '#d4af37' : '#52525b', background: isSelected ? '#d4af37' : 'transparent' }}
+                      className="flex-shrink-0 mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 shadow-md"
+                      style={{ borderColor: isSelected ? '#d4af37' : '#3f3f46', background: isSelected ? '#d4af37' : 'transparent' }}
                     >
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-black" />}
                     </div>
                   )}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-[#d4af37]">{ps.ps_number}</span>
-                      {ps.category && <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-zinc-800/60 border border-zinc-700/40 text-zinc-400">{ps.category}</span>}
-                      {ps.theme && <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-950/40 border border-indigo-800/40 text-indigo-300">{ps.theme}</span>}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">{ps.ps_number}</span>
+                      {ps.category && (
+                        <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${ps.category === 'Software' ? 'bg-sky-950/60 border border-sky-900/40 text-sky-400' : 'bg-purple-950/60 border border-purple-900/40 text-purple-400'}`}>
+                          {ps.category}
+                        </span>
+                      )}
+                      {ps.theme && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-zinc-800/40 border border-zinc-700/40 text-zinc-400">{ps.theme}</span>}
                     </div>
-                    <p className="text-sm font-bold text-white leading-snug">{ps.title}</p>
-                    <p className="text-xs text-zinc-500 flex items-center gap-1">
-                      <Building2 className="h-3 w-3 flex-shrink-0" />
-                      {ps.organization}
+                    <p className="text-base font-extrabold text-white leading-snug group-hover:text-[#d4af37] transition">{ps.title}</p>
+                    <p className="text-xs text-zinc-400 flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5 text-[#d4af37] flex-shrink-0" />
+                      <span className="font-semibold">{ps.organization}</span>
                     </p>
+                    
                     {isExpanded && ps.description && (
-                      <p className="text-xs text-zinc-300 leading-relaxed mt-2 pr-2">{ps.description.slice(0, 800)}{ps.description.length > 800 ? '...' : ''}</p>
+                      <div className="text-xs text-zinc-300 leading-relaxed mt-4 bg-zinc-950/30 p-4 rounded-xl border border-zinc-900/60 shadow-inner max-h-96 overflow-y-auto pr-2 scrollbar-thin">
+                        <p className="text-[9px] font-black uppercase tracking-wider text-zinc-500 mb-2">Detailed Description</p>
+                        {ps.description.split('\n').map((para: string, pIdx: number) => (
+                          <p key={pIdx} className={pIdx > 0 ? 'mt-2' : ''}>{para}</p>
+                        ))}
+                      </div>
                     )}
                   </div>
                   <button
                     onClick={e => { e.stopPropagation(); setExpandedPS(isExpanded ? null : ps.id); }}
-                    className="flex-shrink-0 p-1 rounded text-zinc-600 hover:text-zinc-300 transition mt-0.5"
+                    className="flex-shrink-0 p-1.5 rounded-lg border border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800/40 transition-all mt-0.5"
                   >
-                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -435,29 +470,42 @@ function PSTab({ teamData }: { teamData: any }) {
           })}
         </div>
       )}
+
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 disabled:opacity-30 transition">
+        <div className="flex items-center justify-center gap-3 pt-3">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="p-2 rounded-xl border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 disabled:opacity-30 transition shadow-sm bg-zinc-900/20"
+          >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-xs text-zinc-400 font-semibold">Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 disabled:opacity-30 transition">
+          <span className="text-xs text-zinc-400 font-bold font-mono">Page {page} of {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="p-2 rounded-xl border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 disabled:opacity-30 transition shadow-sm bg-zinc-900/20"
+          >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       )}
+
+      {/* Sticky confirm button */}
       {isLeader && selectedPS && (
-        <div className="sticky bottom-4 flex justify-center pt-2">
+        <div className="sticky bottom-6 flex justify-center pt-4 z-20">
           <button
             onClick={() => setConfirmModal(true)}
-            className="flex items-center gap-2 px-8 py-3 rounded-xl font-black text-sm uppercase tracking-wider shadow-2xl transition hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)', color: '#000', boxShadow: '0 8px 40px rgba(212,175,55,0.4)' }}
+            className="flex items-center gap-2.5 px-10 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider shadow-2xl transition hover:scale-105 active:scale-95 duration-200"
+            style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)', color: '#000', boxShadow: '0 10px 40px rgba(212,175,55,0.45)' }}
           >
             <CheckCircle className="h-5 w-5" />
-            Confirm {selectedPS.ps_number}
+            Confirm Selection: {selectedPS.ps_number}
           </button>
         </div>
       )}
+
       {confirmModal && selectedPS && (
         <ConfirmPSModal ps={selectedPS} onConfirm={handleConfirmPS} onCancel={() => setConfirmModal(false)} loading={confirming} />
       )}
