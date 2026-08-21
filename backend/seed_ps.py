@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import openpyxl
 from backend.database import SessionLocal, engine, Base
-from backend.models import SIHProblemStatement
+from backend.models import SIHProblemStatement, SIHPSSelection
 
 # Auto-create tables (safe: uses CREATE TABLE IF NOT EXISTS via SQLAlchemy)
 Base.metadata.create_all(bind=engine)
