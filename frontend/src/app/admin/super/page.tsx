@@ -167,6 +167,17 @@ export default function SuperAdminPage() {
   const [editSihError, setEditSihError] = useState<string | null>(null);
   const [editSihSuccess, setEditSihSuccess] = useState<string | null>(null);
 
+  // Add SIH Team Modal (Super Admin)
+  const [addSihTeamModalOpen, setAddSihTeamModalOpen] = useState(false);
+  const [addSihTeamName, setAddSihTeamName] = useState('');
+  const EMPTY_MEMBER = { full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: 'Woman' };
+  const [addSihLeader, setAddSihLeader] = useState<any>({ ...EMPTY_MEMBER });
+  const [addSihMembers, setAddSihMembers] = useState<any[]>(Array.from({ length: 5 }, () => ({ ...EMPTY_MEMBER })));
+  const [addSihActiveTab, setAddSihActiveTab] = useState<number>(0);
+  const [addSihSubmitting, setAddSihSubmitting] = useState(false);
+  const [addSihError, setAddSihError] = useState<string | null>(null);
+  const [addSihSuccess, setAddSihSuccess] = useState<string | null>(null);
+
   // PS Selection Analytics States
   const [psAnalytics, setPsAnalytics] = useState<any | null>(null);
   const [psTeams, setPsTeams] = useState<any[]>([]);
@@ -3004,6 +3015,22 @@ export default function SuperAdminPage() {
                               </button>
                             )}
                           </div>
+                          {/* Add Team Button */}
+                          <button
+                            onClick={() => {
+                              setAddSihTeamName('');
+                              setAddSihLeader({ full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: 'Woman' });
+                              setAddSihMembers(Array.from({ length: 5 }, () => ({ full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: 'Woman' })));
+                              setAddSihActiveTab(0);
+                              setAddSihError(null);
+                              setAddSihSuccess(null);
+                              setAddSihTeamModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition hover:scale-105 active:scale-95"
+                            style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)', color: '#000' }}
+                          >
+                            <Plus className="h-3.5 w-3.5" /> Add Team
+                          </button>
                         </div>
 
                         {(() => {
@@ -3965,6 +3992,269 @@ export default function SuperAdminPage() {
                   className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-[#d4af37] text-black hover:bg-[#f6e05e]"
                 >
                   {editSihSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add SIH Team Modal (Super Admin only) */}
+      {addSihTeamModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+          onClick={(e) => { if (e.target === e.currentTarget) setAddSihTeamModalOpen(false); }}
+        >
+          <div
+            className="relative w-full max-w-2xl rounded-2xl overflow-hidden text-xs text-zinc-300"
+            style={{
+              background: 'linear-gradient(160deg, #0e0c00 0%, #060500 100%)',
+              border: '1px solid rgba(212,175,55,0.25)',
+              boxShadow: '0 0 80px rgba(212,175,55,0.08), 0 40px 100px rgba(0,0,0,0.9)',
+            }}
+          >
+            <div className="h-[3px] w-full bg-gradient-to-r from-[#d4af37] via-[#8c7030] to-[#d4af37]" />
+            <button
+              onClick={() => setAddSihTeamModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition z-20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="p-6 space-y-6 max-h-[85vh] overflow-y-auto">
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-white font-serif tracking-wide flex items-center gap-2">
+                  <span>➕</span> Add New SIH Team
+                </h3>
+                <p className="text-[10px] text-zinc-500">Super Admin Manual Registration — Bypasses deadline & cap</p>
+              </div>
+
+              {addSihError && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-rose-950 bg-rose-950/20 p-3 text-xs text-rose-300">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{addSihError}</span>
+                </div>
+              )}
+
+              {addSihSuccess && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-emerald-950 bg-emerald-950/20 p-3 text-xs text-emerald-300">
+                  <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{addSihSuccess}</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Team Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Team Name</label>
+                  <input
+                    type="text"
+                    value={addSihTeamName}
+                    onChange={(e) => setAddSihTeamName(e.target.value)}
+                    placeholder="Enter unique team name…"
+                    className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
+                  />
+                </div>
+
+                {/* Member Selector Tabs */}
+                <div className="flex flex-wrap gap-1.5 border-b border-zinc-900 pb-3">
+                  <button
+                    onClick={() => setAddSihActiveTab(0)}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition text-[10px] uppercase ${
+                      addSihActiveTab === 0 ? 'bg-[#d4af37] text-black' : 'bg-zinc-900/40 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Team Leader
+                  </button>
+                  {addSihMembers.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setAddSihActiveTab(i + 1)}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition text-[10px] uppercase ${
+                        addSihActiveTab === i + 1 ? 'bg-[#d4af37] text-black' : 'bg-zinc-900/40 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      Member {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Member Form Fields */}
+                <div className="space-y-4 p-4 rounded-xl border border-zinc-900/60 bg-zinc-950/20">
+                  <h4 className="text-[10px] font-bold text-[#d4af37] uppercase tracking-wider border-b border-zinc-900 pb-1.5">
+                    {addSihActiveTab === 0 ? 'Section 1 – Team Leader Information' : `Section ${addSihActiveTab + 1} – Team Member ${addSihActiveTab} Information`}
+                  </h4>
+
+                  {(() => {
+                    const isLeaderTab = addSihActiveTab === 0;
+                    const data = isLeaderTab ? addSihLeader : addSihMembers[addSihActiveTab - 1];
+
+                    const handleChange = (field: string, val: any) => {
+                      if (isLeaderTab) {
+                        setAddSihLeader((prev: any) => ({ ...prev, [field]: val }));
+                      } else {
+                        const updated = [...addSihMembers];
+                        updated[addSihActiveTab - 1] = { ...updated[addSihActiveTab - 1], [field]: val };
+                        setAddSihMembers(updated);
+                      }
+                    };
+
+                    if (!data) return null;
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Full Name</label>
+                            <input
+                              type="text"
+                              value={data.full_name || ''}
+                              onChange={(e) => handleChange('full_name', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#d4af37]/40"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Roll Number</label>
+                            <input
+                              type="text"
+                              value={data.roll_number || ''}
+                              onChange={(e) => handleChange('roll_number', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#d4af37]/40"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">College Email</label>
+                            <input
+                              type="email"
+                              value={data.college_email || ''}
+                              onChange={(e) => handleChange('college_email', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#d4af37]/40"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Personal Email</label>
+                            <input
+                              type="email"
+                              value={data.personal_email || ''}
+                              onChange={(e) => handleChange('personal_email', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#d4af37]/40"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Phone Number</label>
+                            <input
+                              type="text"
+                              value={data.phone_number || ''}
+                              onChange={(e) => handleChange('phone_number', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#d4af37]/40"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Branch</label>
+                            <select
+                              value={data.branch || 'CSE'}
+                              onChange={(e) => handleChange('branch', e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-900 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
+                            >
+                              <option value="CSE">CSE</option>
+                              <option value="CSE-AI">CSE-AI</option>
+                              <option value="AIDS">AIDS</option>
+                              <option value="CCE">CCE</option>
+                              <option value="ECE">ECE</option>
+                              <option value="Quantum">Quantum</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Study Year</label>
+                            <div className="flex gap-4 items-center h-8">
+                              {[1, 2, 3, 4].map((yr) => (
+                                <label key={yr} className="flex items-center gap-1.5 cursor-pointer text-zinc-400 hover:text-white select-none">
+                                  <input
+                                    type="radio"
+                                    name={`add-sih-yr-${addSihActiveTab}`}
+                                    checked={data.study_year === yr}
+                                    onChange={() => handleChange('study_year', yr)}
+                                    className="h-3 w-3 text-[#d4af37] focus:ring-0 cursor-pointer"
+                                  />
+                                  <span>{yr}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Gender</label>
+                            <div className="flex gap-4 items-center h-8">
+                              {['Woman', 'Man'].map((gen) => (
+                                <label key={gen} className="flex items-center gap-1.5 cursor-pointer text-zinc-400 hover:text-white select-none">
+                                  <input
+                                    type="radio"
+                                    name={`add-sih-gen-${addSihActiveTab}`}
+                                    checked={data.gender === gen}
+                                    onChange={() => handleChange('gender', gen)}
+                                    className="h-3 w-3 text-[#d4af37] focus:ring-0 cursor-pointer"
+                                  />
+                                  <span>{gen}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-zinc-900/60">
+                <button
+                  onClick={() => setAddSihTeamModalOpen(false)}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition border border-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={addSihSubmitting}
+                  onClick={async () => {
+                    setAddSihError(null);
+                    setAddSihSuccess(null);
+                    setAddSihSubmitting(true);
+                    try {
+                      await apiRequest('/api/admin/sih/teams', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          team_name: addSihTeamName,
+                          leader: addSihLeader,
+                          members: addSihMembers
+                        })
+                      });
+                      setAddSihSuccess(`Team "${addSihTeamName}" registered successfully! Confirmation emails are being sent.`);
+                      const [teamsData, analyticsData] = await Promise.all([
+                        apiRequest('/api/admin/sih/teams'),
+                        apiRequest('/api/admin/sih/analytics')
+                      ]);
+                      setSihTeams(teamsData || []);
+                      setSihAnalytics(analyticsData || null);
+                      setTimeout(() => setAddSihTeamModalOpen(false), 2500);
+                    } catch (err: any) {
+                      setAddSihError(err.message || 'Failed to register team.');
+                    } finally {
+                      setAddSihSubmitting(false);
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition"
+                  style={{ background: addSihSubmitting ? '#555' : 'linear-gradient(135deg,#d4af37,#8c7030)', color: '#000' }}
+                >
+                  {addSihSubmitting ? 'Registering...' : 'Register Team & Send Emails'}
                 </button>
               </div>
             </div>
