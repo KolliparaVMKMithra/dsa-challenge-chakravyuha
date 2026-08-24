@@ -11,7 +11,7 @@ import {
 import { apiRequest, getAuthToken } from '@/utils/api';
 
 const REGISTRATION_DEADLINE = new Date('2026-08-20T20:20:00+05:30');
-const PS_SELECTION_DEADLINE = new Date('2026-08-24T19:00:00+05:30'); // 24 Aug 2026, 7:00 PM IST
+const PS_SELECTION_DEADLINE = new Date('2026-08-25T12:00:00+05:30'); // 25 Aug 2026, 12:00 PM IST
 
 const ROADMAP_STEPS = [
   {
@@ -21,8 +21,8 @@ const ROADMAP_STEPS = [
     status: 'done', icon: '📋', color: '#d4af37',
   },
   {
-    num: 2, title: 'Problem Statement Selection', dates: 'By 24 Aug 2026',
-    deadline: '24 Aug 2026',
+    num: 2, title: 'Problem Statement Selection', dates: 'By 25 Aug 2026',
+    deadline: '25 Aug 2026, 12:00 PM',
     desc: 'Registered teams choose their preferred problem statements from the available PS list.',
     status: 'current', icon: '🎯', color: '#818cf8',
   },
@@ -117,7 +117,7 @@ function PSSelectionCountdown() {
       ) : (
         <div className="animate-pulse text-zinc-500 text-sm">Calculating...</div>
       )}
-      <p className="text-[10px] text-zinc-500">Closes on 24 Aug 2026, 7:00 PM IST</p>
+      <p className="text-[10px] text-zinc-500">Closes on 25 Aug 2026, 12:00 PM IST</p>
     </div>
   );
 }
@@ -140,7 +140,7 @@ function ComingSoonModal({ title, onClose }: { title: string; onClose: () => voi
         <div className="p-8 text-center space-y-4">
           <div className="text-5xl">🔒</div>
           <h2 className="text-lg font-extrabold font-serif text-white">{title}</h2>
-          <p className="text-sm text-zinc-400">This section will be unlocked soon. Check back after PS selection closes on 24 Aug 2026.</p>
+          <p className="text-sm text-zinc-400">This section will be unlocked soon. Check back after PS selection closes on 25 Aug 2026.</p>
           <button onClick={onClose} className="mt-2 px-6 py-2 rounded-lg border border-[#d4af37]/30 text-[#d4af37] text-xs font-bold uppercase tracking-wider hover:bg-[#d4af37]/10 transition">Got it</button>
         </div>
       </div>
@@ -289,7 +289,7 @@ function PSTab({ teamData }: { teamData: any }) {
   const LIMIT = 15;
   const isLeader = teamData?.is_leader === true;
 
-  // Deadline check: 24 Aug 2026, 7:00 PM IST
+  // Deadline check: 25 Aug 2026, 12:00 PM IST
   const isDeadlinePassed = new Date() >= PS_SELECTION_DEADLINE;
 
   const fetchMyPS = useCallback(() => {
@@ -407,7 +407,7 @@ function PSTab({ teamData }: { teamData: any }) {
         <div className="w-16 h-16 rounded-full bg-rose-950/30 border border-rose-900/40 flex items-center justify-center mx-auto text-3xl shadow-lg">❌</div>
         <h2 className="text-xl font-extrabold text-white font-serif tracking-wide">Selection Window Closed</h2>
         <p className="text-sm text-zinc-400 leading-relaxed max-w-md mx-auto">
-          The Problem Statement selection deadline (24 Aug 2026, 7:00 PM IST) has passed. 
+          The Problem Statement selection deadline (25 Aug 2026, 12:00 PM IST) has passed. 
           Your team did not select a Problem Statement in time. 
           Therefore, your team is <strong className="text-rose-400">NOT eligible</strong> to participate in the Internal Hackathon.
         </p>

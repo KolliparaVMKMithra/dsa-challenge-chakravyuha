@@ -96,7 +96,7 @@ function AdminPSSelectionCountdown() {
 
   useEffect(() => {
     const calc = () => {
-      const deadline = new Date('2026-08-24T19:00:00+05:30');
+      const deadline = new Date('2026-08-25T12:00:00+05:30');
       const diff = deadline.getTime() - new Date().getTime();
       if (diff <= 0) {
         setTimeLeft('PS SELECTION CLOSED');

@@ -1464,12 +1464,12 @@ def select_ps(
     db: Session = Depends(get_db)
 ):
     """Team leader confirms a PS selection for their team. One-time and irreversible."""
-    # Check deadline: 24-08-2026 7:00 PM IST -> 2026-08-24 13:30:00 UTC
-    deadline = datetime.datetime(2026, 8, 24, 13, 30, 0)
+    # Check deadline: 25-08-2026 12:00 PM IST -> 2026-08-25 06:30:00 UTC
+    deadline = datetime.datetime(2026, 8, 25, 6, 30, 0)
     if datetime.datetime.utcnow() > deadline:
         raise HTTPException(
             status_code=400,
-            detail="The Problem Statement selection deadline (24 Aug 2026, 7:00 PM IST) has passed. You can no longer select a Problem Statement."
+            detail="The Problem Statement selection deadline (25 Aug 2026, 12:00 PM IST) has passed. You can no longer select a Problem Statement."
         )
 
     # Must be a registered team member
