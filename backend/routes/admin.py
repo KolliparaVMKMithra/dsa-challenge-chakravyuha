@@ -1748,27 +1748,38 @@ def export_sih_registrations(
 ):
     """Exports SIH registered teams and rosters to an Excel sheet (Super Admin only)."""
     teams = db.query(SIHTeam).order_by(SIHTeam.created_at.desc()).all()
-    
+
+    # Build a lookup: team_id -> (ps_number, ps_title)
+    ps_lookup: dict = {}
+    selections = (
+        db.query(SIHPSSelection, SIHProblemStatement)
+        .join(SIHProblemStatement, SIHPSSelection.problem_statement_id == SIHProblemStatement.id)
+        .all()
+    )
+    for sel, ps in selections:
+        ps_lookup[sel.team_id] = (ps.ps_number, ps.title)
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "SIH 2026 Teams"
-    
-    # Title Banner
-    ws.merge_cells("A1:K1")
+
+    # Title Banner — now spans 13 columns (A–M)
+    ws.merge_cells("A1:M1")
     ws["A1"] = "Smart India Hackathon 2026 — Official Team Registration Roster"
     ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
     ws["A1"].fill = PatternFill(start_color="1B2A4A", end_color="1B2A4A", fill_type="solid")
     ws.row_dimensions[1].height = 45
-    
+
     headers = [
-        "Team Name", "Role", "Full Name", "Roll Number", 
-        "College Email", "Personal Email", "Phone Number", 
-        "Study Year", "Branch", "Gender", "Registration Date"
+        "Team Name", "Role", "Full Name", "Roll Number",
+        "College Email", "Personal Email", "Phone Number",
+        "Study Year", "Branch", "Gender", "Registration Date",
+        "PS Number", "PS Title"
     ]
-    ws.append([]) # Row 2 blank
-    ws.append(headers) # Row 3
-    
+    ws.append([])       # Row 2 blank
+    ws.append(headers)  # Row 3
+
     header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
     thin_border = Border(
@@ -1777,21 +1788,24 @@ def export_sih_registrations(
         top=Side(style='thin', color='CCCCCC'),
         bottom=Side(style='thin', color='CCCCCC')
     )
-    
+
     for col_idx in range(1, len(headers) + 1):
         cell = ws.cell(row=3, column=col_idx)
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
-    
+
     ws.row_dimensions[3].height = 25
-    
+
     row_num = 4
     for t in teams:
+        # Get PS info for this team (empty strings if not yet selected)
+        ps_number, ps_title = ps_lookup.get(t.id, ("—", "Not Selected"))
+
         # Sort members so leader is first, then members
         sorted_members = sorted(t.members, key=lambda x: not x.is_leader)
-        
+
         for idx, m in enumerate(sorted_members):
             role_str = "Team Leader" if m.is_leader else f"Member {idx}"
             row_data = [
@@ -1805,25 +1819,27 @@ def export_sih_registrations(
                 f"Year {m.study_year}",
                 m.branch,
                 m.gender,
-                t.created_at.strftime("%d-%m-%Y %I:%M %p")
+                t.created_at.strftime("%d-%m-%Y %I:%M %p"),
+                ps_number,
+                ps_title
             ]
             ws.append(row_data)
-            
+
             # Format row
             row_fill = PatternFill(start_color="F2F4F4" if row_num % 2 == 0 else "FFFFFF", fill_type="solid")
             for col in range(1, len(headers) + 1):
                 cell = ws.cell(row=row_num, column=col)
                 cell.fill = row_fill
                 cell.border = thin_border
-                
-                # Alignments
-                if col in [1, 2, 4, 8, 9, 10, 11]:
+
+                # Alignments — centre for cols that are short/categorical
+                if col in [1, 2, 4, 8, 9, 10, 11, 12]:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                 else:
                     cell.alignment = Alignment(horizontal="left", vertical="center")
-                    
+
             row_num += 1
-            
+
     # Auto-adjust column widths
     for col in ws.columns:
         max_len = 0
@@ -1835,11 +1851,11 @@ def export_sih_registrations(
             if len(val) > max_len:
                 max_len = len(val)
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
-        
+
     stream = io.BytesIO()
     wb.save(stream)
     stream.seek(0)
-    
+
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
