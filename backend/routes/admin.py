@@ -2291,6 +2291,20 @@ def export_sih_judging(
     for r_name in sorted_rooms:
         ws = wb.create_sheet(title=r_name)
 
+        j1_name, j2_name = JUDGES_MAP.get(r_name, ("Judge 1", "Judge 2"))
+        j1_label = j1_name.strip() if (j1_name and j1_name.strip()) else "Judge 1"
+        j2_label = j2_name.strip() if (j2_name and j2_name.strip()) else "Judge 2"
+
+        room_headers = [
+            "Room No.", "Judge 1 Name", "Judge 2 Name", "Team Name", "PS Number",
+            f"{j1_label} - Prob. Und. (/10)", f"{j2_label} - Prob. Und. (/10)", "Total Prob. Und. (/20)",
+            f"{j1_label} - Innov. (/10)", f"{j2_label} - Innov. (/10)", "Total Innov. (/20)",
+            f"{j1_label} - Tech. Feas. (/10)", f"{j2_label} - Tech. Feas. (/10)", "Total Tech. Feas. (/20)",
+            f"{j1_label} - Scale. (/10)", f"{j2_label} - Scale. (/10)", "Total Scale. (/20)",
+            f"{j1_label} - Pres. (/10)", f"{j2_label} - Pres. (/10)", "Total Pres. (/20)",
+            "Raw Total (/100)", "Normalized Score"
+        ]
+
         ws.merge_cells("A1:V1")
         title_text = f"Smart India Hackathon 2026 — Team Evaluation & Judging Sheet (Room: {r_name})"
         ws["A1"] = title_text
@@ -2300,9 +2314,9 @@ def export_sih_judging(
         ws.row_dimensions[1].height = 45
 
         ws.append([])
-        ws.append(headers)
+        ws.append(room_headers)
 
-        for col_idx in range(1, len(headers) + 1):
+        for col_idx in range(1, len(room_headers) + 1):
             cell = ws.cell(row=3, column=col_idx)
             cell.fill = header_fill
             cell.font = header_font
@@ -2315,7 +2329,6 @@ def export_sih_judging(
         room_teams = teams_by_room[r_name]
         for t in room_teams:
             ps_number, _ = ps_lookup.get(t.id, ("—", "Not Selected"))
-            j1_name, j2_name = JUDGES_MAP.get(t.room_number or "", ("—", "—"))
 
             score_info = scores_lookup.get(t.id)
             if score_info:
@@ -2351,18 +2364,18 @@ def export_sih_judging(
                     j2_name,
                     t.team_name,
                     ps_number,
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0.0
+                    "", "", "",
+                    "", "", "",
+                    "", "", "",
+                    "", "", "",
+                    "", "", "",
+                    "", ""
                 ]
 
             ws.append(row_data)
 
             row_fill = PatternFill(start_color="F2F4F4" if row_num % 2 == 0 else "FFFFFF", fill_type="solid")
-            for col in range(1, len(headers) + 1):
+            for col in range(1, len(room_headers) + 1):
                 cell = ws.cell(row=row_num, column=col)
                 cell.fill = row_fill
                 cell.border = thin_border
