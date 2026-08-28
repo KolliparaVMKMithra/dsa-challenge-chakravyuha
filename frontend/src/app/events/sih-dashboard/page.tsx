@@ -821,7 +821,7 @@ export default function SihDashboard() {
                           <span className="text-xs text-zinc-400 font-semibold">Your Assigned Room</span>
                         </div>
                         <p className="text-[11px] text-zinc-400">
-                          📅 <span className="font-semibold text-zinc-300">29th August 2026</span> &nbsp;|&nbsp; Report to your room by <span className="font-semibold text-zinc-300">8:00 AM</span>
+                          📅 <span className="font-semibold text-zinc-300">29th August 2026</span> &nbsp;|&nbsp; Report to your room by <span className="font-semibold text-zinc-300">9:00 AM</span>
                         </p>
                       </div>
                       <div
@@ -838,7 +838,7 @@ export default function SihDashboard() {
                     </div>
                     <div className="mt-5 pt-4 border-t border-zinc-900/60">
                       <p className="text-[11px] text-zinc-500 leading-relaxed">
-                        💡 Bring your laptop, charger, and student ID. Hackathon begins at <span className="text-zinc-300 font-semibold">9:00 AM</span>. Judging starts at <span className="text-zinc-300 font-semibold">3:00 PM</span>. All the very best, Team <span className="text-[#d4af37] font-black">{teamData.team_name}</span>! 🎯
+                        💡 Bring your laptop, charger, and student ID. Hackathon begins at <span className="text-zinc-300 font-semibold">9:00 AM</span>. Judging starts at <span className="text-zinc-300 font-semibold">9:30 AM</span>. All the very best, Team <span className="text-[#d4af37] font-black">{teamData.team_name}</span>! 🎯
                       </p>
                     </div>
                   </div>
