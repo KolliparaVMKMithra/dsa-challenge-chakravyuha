@@ -152,6 +152,17 @@ export default function SuperAdminPage() {
   const [sihRoomFilter, setSihRoomFilter] = useState('');
   const [sihPage, setSihPage] = useState(1);
   const SIH_PAGE_SIZE = 5;
+  // Marks sub-section
+  const [sihSubTab, setSihSubTab] = useState<'overview'|'marks'|'leaderboard'>('overview');
+  const [sihMarks, setSihMarks] = useState<any[]>([]);
+  const [sihMarksLoading, setSihMarksLoading] = useState(false);
+  const [marksModalOpen, setMarksModalOpen] = useState(false);
+  const [marksModalTeam, setMarksModalTeam] = useState<any>(null);
+  const [marksForm, setMarksForm] = useState<Record<string,number>>({});
+  const [marksSaving, setMarksSaving] = useState(false);
+  const [marksError, setMarksError] = useState<string|null>(null);
+  const [marksRoomFilter, setMarksRoomFilter] = useState('');
+  const [deleteMarksConfirm, setDeleteMarksConfirm] = useState<number|null>(null);
   const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
   const [editingSihTeamId, setEditingSihTeamId] = useState<number | null>(null);
   const [editingSihTeamName, setEditingSihTeamName] = useState('');
@@ -2617,8 +2628,30 @@ export default function SuperAdminPage() {
                 if (isSih) {
                   return (
                     <div className="space-y-6">
-                      {/* Analytics cards */}
-                      {sihAnalytics && (
+                      {/* Sub-Tab Bar */}
+                      <div className="flex gap-2 border-b border-zinc-900 pb-3">
+                        {(['overview','marks','leaderboard'] as const).map(tab => (
+                          <button
+                            key={tab}
+                            onClick={() => {
+                              setSihSubTab(tab);
+                              if (tab === 'marks' || tab === 'leaderboard') {
+                                setSihMarksLoading(true);
+                                apiRequest('/api/admin/sih/marks')
+                                  .then((d:any) => setSihMarks(d || []))
+                                  .finally(() => setSihMarksLoading(false));
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${sihSubTab===tab ? 'text-black' : 'bg-zinc-900/40 text-zinc-400 hover:text-white'}`}
+                            style={sihSubTab===tab ? {background:'linear-gradient(135deg,#d4af37,#8c7030)'} : {}}
+                          >
+                            {tab === 'overview' ? '📊 Overview' : tab === 'marks' ? '✏️ Marks Entry' : '🏆 Leaderboard'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Analytics cards — shown only in overview tab */}
+                      {sihSubTab === 'overview' && sihAnalytics && (
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-4 shadow-sm text-center">
@@ -2698,7 +2731,7 @@ export default function SuperAdminPage() {
                       )}
 
                       {/* Detailed analytics stats for branches and years */}
-                      {sihAnalytics && (
+                      {sihSubTab === 'overview' && sihAnalytics && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-5 space-y-3">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-[#d4af37] border-b border-zinc-900 pb-2">Branch Distribution</h4>
@@ -2733,6 +2766,7 @@ export default function SuperAdminPage() {
                       )}
 
                       {/* ── PS Selection Analytics ── */}
+                      {sihSubTab === 'overview' && (
                       <div className="rounded-xl border border-indigo-900/30 bg-indigo-950/10 p-5 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <h4 className="text-sm font-bold text-white font-serif">Problem Statement Selection Analytics</h4>
@@ -2884,6 +2918,7 @@ export default function SuperAdminPage() {
                           </div>
                         )}
                       </div>
+                      )}
 
                       {/* Admin PS Override Modal */}
                       {psOverrideTeamId !== null && (
@@ -2986,6 +3021,7 @@ export default function SuperAdminPage() {
                       )}
 
                       {/* Teams Roster List */}
+                      {sihSubTab === 'overview' && (
                       <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
                         {/* Header with search */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -3231,6 +3267,136 @@ export default function SuperAdminPage() {
                           );
                         })()}
                       </div>
+                      )}
+
+                      {/* ── MARKS ENTRY SECTION ─────────────────────── */}
+                      {sihSubTab === 'marks' && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <h4 className="text-sm font-bold text-white font-serif tracking-wide">Marks Entry — By Room</h4>
+                            <select
+                              value={marksRoomFilter}
+                              onChange={e => setMarksRoomFilter(e.target.value)}
+                              className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]/50 w-36"
+                            >
+                              <option value="">All Rooms</option>
+                              {Array.from(new Set(sihTeams.map((t:any)=>t.room_number).filter(Boolean))).sort().map((r:any)=>(
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            {sihTeams
+                              .filter((t:any) => !marksRoomFilter || (t.room_number||'').toLowerCase()===marksRoomFilter.toLowerCase())
+                              .map((team:any) => {
+                                const existingScore = sihMarks.find((m:any)=>m.team_id===team.id);
+                                return (
+                                  <div key={team.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-900 bg-zinc-950 p-3">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold text-white truncate">{team.team_name}</p>
+                                      <p className="text-[10px] text-zinc-500">
+                                        Room: <span className="text-[#d4af37] font-semibold">{team.room_number || '—'}</span>
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {existingScore && (
+                                        <div className="text-right">
+                                          <span className="text-[10px] font-black text-white">{existingScore.raw_total}/100</span>
+                                          <span className="ml-2 text-[10px] font-black" style={{color:'#d4af37'}}>→ {existingScore.normalized_score.toFixed(1)}</span>
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          setMarksModalTeam(team);
+                                          const FIELDS = ['j1_problem_understanding','j1_innovation','j1_technical_feasibility','j1_scalability_impact','j1_presentation_qa','j2_problem_understanding','j2_innovation','j2_technical_feasibility','j2_scalability_impact','j2_presentation_qa'];
+                                          const init: Record<string,number> = {};
+                                          FIELDS.forEach(f => init[f] = existingScore?.[f] ?? 0);
+                                          setMarksForm(init);
+                                          setMarksError(null);
+                                          setMarksModalOpen(true);
+                                        }}
+                                        className="px-2.5 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition hover:scale-105"
+                                        style={{background:'linear-gradient(135deg,#d4af37,#8c7030)',color:'#000'}}
+                                      >
+                                        {existingScore ? 'Edit' : 'Enter'}
+                                      </button>
+                                      {existingScore && (
+                                        deleteMarksConfirm === team.id ? (
+                                          <div className="flex gap-1">
+                                            <button onClick={async()=>{
+                                              await apiRequest(`/api/admin/sih/marks/${team.id}`,{method:'DELETE'});
+                                              setSihMarks(p=>p.filter((m:any)=>m.team_id!==team.id));
+                                              setDeleteMarksConfirm(null);
+                                            }} className="px-2 py-1 rounded text-[9px] font-black bg-red-900/60 border border-red-800 text-red-300 hover:bg-red-900">Yes</button>
+                                            <button onClick={()=>setDeleteMarksConfirm(null)} className="px-2 py-1 rounded text-[9px] font-black bg-zinc-800 text-zinc-400 hover:text-white">No</button>
+                                          </div>
+                                        ) : (
+                                          <button onClick={()=>setDeleteMarksConfirm(team.id)} className="px-2 py-1 rounded text-[9px] bg-red-950/40 border border-red-900/40 text-red-400 hover:bg-red-900/60 transition">🗑</button>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── LEADERBOARD SECTION ─────────────────────── */}
+                      {sihSubTab === 'leaderboard' && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-white font-serif">🏆 Normalized Leaderboard</h4>
+                            <span className="text-[10px] text-zinc-500">{sihMarks.length} teams scored</span>
+                          </div>
+                          {sihMarksLoading ? (
+                            <p className="text-zinc-500 text-xs text-center py-6">Loading…</p>
+                          ) : sihMarks.length === 0 ? (
+                            <p className="text-zinc-600 text-xs text-center py-6">No marks entered yet. Use the Marks Entry tab to add scores.</p>
+                          ) : (
+                            <div className="overflow-x-auto rounded-xl border border-zinc-900">
+                              <table className="w-full text-left text-[11px]">
+                                <thead>
+                                  <tr className="border-b border-zinc-900 bg-zinc-900/40">
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Rank</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Team</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Room</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Raw</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">P.U</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Inn.</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Tech.</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Scale.</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-zinc-500">Pres.</th>
+                                    <th className="py-2.5 px-3 text-[9px] font-black uppercase tracking-wider text-[#d4af37]">Norm. Score</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-900/40">
+                                  {sihMarks.map((row:any, idx:number) => {
+                                    const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':null;
+                                    const rowBg = idx===0?'bg-yellow-950/20':idx===1?'bg-zinc-800/20':idx===2?'bg-orange-950/20':'';
+                                    return (
+                                      <tr key={row.team_id} className={`${rowBg} hover:bg-zinc-900/20 transition`}>
+                                        <td className="py-2.5 px-3 font-black text-center">{medal || `#${idx+1}`}</td>
+                                        <td className="py-2.5 px-3 font-bold text-white">{row.team_name}</td>
+                                        <td className="py-2.5 px-3 text-[#d4af37] font-semibold">{row.room_number}</td>
+                                        <td className="py-2.5 px-3 text-zinc-300">{row.raw_total}/100</td>
+                                        <td className="py-2.5 px-3 text-zinc-400">{row.criterion_problem_understanding}/20</td>
+                                        <td className="py-2.5 px-3 text-zinc-400">{row.criterion_innovation}/20</td>
+                                        <td className="py-2.5 px-3 text-zinc-400">{row.criterion_technical_feasibility}/20</td>
+                                        <td className="py-2.5 px-3 text-zinc-400">{row.criterion_scalability_impact}/20</td>
+                                        <td className="py-2.5 px-3 text-zinc-400">{row.criterion_presentation_qa}/20</td>
+                                        <td className="py-2.5 px-3 font-black text-lg" style={{color: idx<3?'#d4af37':'#a1a1aa'}}>{row.normalized_score.toFixed(2)}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                          <p className="text-[10px] text-zinc-600">📊 Scores are normalized per-room: each room's top scorer = 100. Ensures no cross-room bias.</p>
+                        </div>
+                      )}
+
                     </div>
                   );
                 }
@@ -3756,6 +3922,117 @@ export default function SuperAdminPage() {
           </div>
         </div>
       )}
+
+      {/* ── Marks Entry Modal ── */}
+      {marksModalOpen && marksModalTeam && (() => {
+        const CRITERIA = [
+          { key: 'problem_understanding', label: 'Problem Understanding & Relevance' },
+          { key: 'innovation',            label: 'Innovation / Uniqueness' },
+          { key: 'technical_feasibility', label: 'Technical Feasibility & Approach' },
+          { key: 'scalability_impact',    label: 'Scalability & Impact' },
+          { key: 'presentation_qa',       label: 'Presentation & Q&A Handling' },
+        ];
+        const rawTotal = CRITERIA.reduce((s,c) => s + (marksForm[`j1_${c.key}`]||0) + (marksForm[`j2_${c.key}`]||0), 0);
+        return (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+               onClick={e => { if (e.target === e.currentTarget) setMarksModalOpen(false); }}>
+            <div className="relative w-full max-w-2xl rounded-2xl overflow-hidden text-xs text-zinc-300 max-h-[90vh] overflow-y-auto"
+                 style={{ background: 'linear-gradient(160deg,#0a0800 0%,#050400 100%)', border: '1px solid rgba(212,175,55,0.3)' }}>
+              <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#d4af37,#f6e05e,#d4af37)' }} />
+              <div className="p-6 space-y-5">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">Enter Judging Marks</p>
+                    <h3 className="text-base font-extrabold text-white mt-1">{marksModalTeam.team_name}</h3>
+                    <p className="text-[10px] text-zinc-500">Room: <span className="text-[#d4af37] font-semibold">{marksModalTeam.room_number || '—'}</span></p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Raw Total</p>
+                    <p className="text-2xl font-black" style={{color: rawTotal>=80?'#d4af37':rawTotal>=50?'#a1a1aa':'#ef4444'}}>{rawTotal}<span className="text-sm text-zinc-600">/100</span></p>
+                  </div>
+                </div>
+
+                {marksError && <div className="rounded border border-red-900 bg-red-950/30 p-2 text-red-300 text-[10px]">{marksError}</div>}
+
+                {/* Score Table */}
+                <div className="overflow-x-auto rounded-xl border border-zinc-800">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="border-b border-zinc-800 bg-zinc-900/40">
+                        <th className="py-2 px-3 text-left text-[9px] font-black uppercase tracking-wider text-zinc-500">Criteria (max 20)</th>
+                        <th className="py-2 px-3 text-center text-[9px] font-black uppercase tracking-wider text-blue-400">Judge 1 (0–10)</th>
+                        <th className="py-2 px-3 text-center text-[9px] font-black uppercase tracking-wider text-emerald-400">Judge 2 (0–10)</th>
+                        <th className="py-2 px-3 text-center text-[9px] font-black uppercase tracking-wider text-[#d4af37]">Total /20</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/40">
+                      {CRITERIA.map(c => {
+                        const j1 = marksForm[`j1_${c.key}`] || 0;
+                        const j2 = marksForm[`j2_${c.key}`] || 0;
+                        return (
+                          <tr key={c.key} className="hover:bg-zinc-900/20">
+                            <td className="py-2.5 px-3 text-zinc-300 font-semibold">{c.label}</td>
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="number" min={0} max={10}
+                                value={j1}
+                                onChange={e => setMarksForm(f => ({...f, [`j1_${c.key}`]: Math.min(10, Math.max(0, parseInt(e.target.value)||0))}))}
+                                className="w-16 text-center bg-zinc-900 border border-zinc-700 rounded-lg py-1 text-white focus:outline-none focus:border-blue-500/50 mx-auto block"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="number" min={0} max={10}
+                                value={j2}
+                                onChange={e => setMarksForm(f => ({...f, [`j2_${c.key}`]: Math.min(10, Math.max(0, parseInt(e.target.value)||0))}))}
+                                className="w-16 text-center bg-zinc-900 border border-zinc-700 rounded-lg py-1 text-white focus:outline-none focus:border-emerald-500/50 mx-auto block"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-black text-white">{j1+j2}/20</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button onClick={() => setMarksModalOpen(false)} className="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition">Cancel</button>
+                  <button
+                    disabled={marksSaving}
+                    onClick={async () => {
+                      setMarksSaving(true); setMarksError(null);
+                      try {
+                        const payload: Record<string,any> = { team_id: marksModalTeam.id };
+                        ['problem_understanding','innovation','technical_feasibility','scalability_impact','presentation_qa'].forEach(c => {
+                          payload[`j1_${c}`] = marksForm[`j1_${c}`] || 0;
+                          payload[`j2_${c}`] = marksForm[`j2_${c}`] || 0;
+                        });
+                        const saved = await apiRequest('/api/admin/sih/marks', { method: 'POST', body: JSON.stringify(payload) });
+                        setSihMarks(prev => {
+                          const idx = prev.findIndex((m:any) => m.team_id === marksModalTeam.id);
+                          if (idx >= 0) { const n=[...prev]; n[idx]=saved; return n; }
+                          return [...prev, saved];
+                        });
+                        // Refresh full leaderboard for updated normalization
+                        apiRequest('/api/admin/sih/marks').then((d:any) => setSihMarks(d || []));
+                        setMarksModalOpen(false);
+                      } catch(e:any) {
+                        setMarksError(e.message || 'Failed to save marks.');
+                      } finally { setMarksSaving(false); }
+                    }}
+                    className="px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition hover:scale-105 disabled:opacity-50"
+                    style={{background:'linear-gradient(135deg,#d4af37,#8c7030)',color:'#000'}}
+                  >
+                    {marksSaving ? 'Saving…' : 'Save Marks'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Edit SIH Team Modal (Super Admin only) */}
       {editSihTeamModalOpen && (

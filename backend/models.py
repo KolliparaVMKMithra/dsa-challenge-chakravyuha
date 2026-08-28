@@ -211,3 +211,36 @@ class SIHPSSelection(Base):
 
     team             = relationship("SIHTeam")
     problem_statement = relationship("SIHProblemStatement", back_populates="selections")
+
+
+class SIHJudgingScore(Base):
+    """
+    Stores the judging scores for an SIH team.
+    Two judges each score 5 criteria out of 10.
+    Combined per-criterion max = 20. Total raw max = 100.
+    Normalization (per-room) is done at query time.
+    """
+    __tablename__ = "sih_judging_scores"
+
+    id      = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id = Column(Integer, ForeignKey("sih_teams.id", ondelete="CASCADE"), unique=True, nullable=False)
+
+    # Judge 1 scores (0–10 each)
+    j1_problem_understanding  = Column(Integer, default=0, nullable=False)
+    j1_innovation             = Column(Integer, default=0, nullable=False)
+    j1_technical_feasibility  = Column(Integer, default=0, nullable=False)
+    j1_scalability_impact     = Column(Integer, default=0, nullable=False)
+    j1_presentation_qa        = Column(Integer, default=0, nullable=False)
+
+    # Judge 2 scores (0–10 each)
+    j2_problem_understanding  = Column(Integer, default=0, nullable=False)
+    j2_innovation             = Column(Integer, default=0, nullable=False)
+    j2_technical_feasibility  = Column(Integer, default=0, nullable=False)
+    j2_scalability_impact     = Column(Integer, default=0, nullable=False)
+    j2_presentation_qa        = Column(Integer, default=0, nullable=False)
+
+    entered_by  = Column(String(100), nullable=True)
+    entered_at  = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    updated_at  = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
+
+    team = relationship("SIHTeam")

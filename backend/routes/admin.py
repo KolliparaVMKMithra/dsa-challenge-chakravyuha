@@ -11,7 +11,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection, SIHJudgingScore
 from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse, SIHTeamRegistration, AdminPSOverrideRequest
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
@@ -2034,3 +2034,172 @@ def admin_get_ps_list(
         "total": total,
         "items": [{"id": ps.id, "ps_number": ps.ps_number, "title": ps.title[:100]} for ps in items]
     }
+
+
+# ── SIH Judging / Marks Endpoints ────────────────────────────────────────────
+
+def _raw_total(s: SIHJudgingScore) -> int:
+    return (
+        s.j1_problem_understanding + s.j1_innovation + s.j1_technical_feasibility +
+        s.j1_scalability_impact + s.j1_presentation_qa +
+        s.j2_problem_understanding + s.j2_innovation + s.j2_technical_feasibility +
+        s.j2_scalability_impact + s.j2_presentation_qa
+    )
+
+def _build_score_dict(s: SIHJudgingScore, team: SIHTeam, norm_score: float) -> dict:
+    raw = _raw_total(s)
+    return {
+        "team_id": team.id,
+        "team_name": team.team_name,
+        "room_number": team.room_number or "—",
+        "j1_problem_understanding": s.j1_problem_understanding,
+        "j1_innovation": s.j1_innovation,
+        "j1_technical_feasibility": s.j1_technical_feasibility,
+        "j1_scalability_impact": s.j1_scalability_impact,
+        "j1_presentation_qa": s.j1_presentation_qa,
+        "j2_problem_understanding": s.j2_problem_understanding,
+        "j2_innovation": s.j2_innovation,
+        "j2_technical_feasibility": s.j2_technical_feasibility,
+        "j2_scalability_impact": s.j2_scalability_impact,
+        "j2_presentation_qa": s.j2_presentation_qa,
+        "criterion_problem_understanding": s.j1_problem_understanding + s.j2_problem_understanding,
+        "criterion_innovation": s.j1_innovation + s.j2_innovation,
+        "criterion_technical_feasibility": s.j1_technical_feasibility + s.j2_technical_feasibility,
+        "criterion_scalability_impact": s.j1_scalability_impact + s.j2_scalability_impact,
+        "criterion_presentation_qa": s.j1_presentation_qa + s.j2_presentation_qa,
+        "raw_total": raw,
+        "normalized_score": round(norm_score, 2),
+        "entered_by": s.entered_by,
+        "entered_at": s.entered_at.isoformat() + "Z",
+        "updated_at": s.updated_at.isoformat() + "Z",
+    }
+
+
+def _normalize_scores(scores: list) -> list:
+    """Apply per-room normalization. Returns list of (SIHJudgingScore, SIHTeam, norm_score)."""
+    # Group by room_number
+    from collections import defaultdict
+    room_groups: dict = defaultdict(list)
+    for s, t in scores:
+        room_groups[t.room_number or "UNASSIGNED"].append((s, t))
+
+    result = []
+    for room, entries in room_groups.items():
+        raws = [_raw_total(s) for s, _ in entries]
+        room_max = max(raws) if raws else 1
+        for (s, t), raw in zip(entries, raws):
+            norm = (raw / room_max * 100) if room_max > 0 else 0.0
+            result.append((s, t, norm))
+    return result
+
+
+@router.get("/sih/marks")
+def get_sih_marks(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Returns all judging scores with per-room normalized scores, sorted by normalized score desc."""
+    rows = (
+        db.query(SIHJudgingScore, SIHTeam)
+        .join(SIHTeam, SIHJudgingScore.team_id == SIHTeam.id)
+        .all()
+    )
+    normalized = _normalize_scores(rows)
+    normalized.sort(key=lambda x: x[2], reverse=True)
+    return [_build_score_dict(s, t, n) for s, t, n in normalized]
+
+
+@router.get("/sih/marks/{team_id}")
+def get_sih_marks_team(
+    team_id: int,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Returns the judging score for a specific team with its normalized score."""
+    team = db.query(SIHTeam).filter(SIHTeam.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+    score = db.query(SIHJudgingScore).filter(SIHJudgingScore.team_id == team_id).first()
+    if not score:
+        return None
+
+    # Normalize within room
+    room_scores = (
+        db.query(SIHJudgingScore, SIHTeam)
+        .join(SIHTeam, SIHJudgingScore.team_id == SIHTeam.id)
+        .filter(func.coalesce(SIHTeam.room_number, "UNASSIGNED") == func.coalesce(team.room_number, "UNASSIGNED"))
+        .all()
+    )
+    raws = [_raw_total(s) for s, _ in room_scores]
+    room_max = max(raws) if raws else 1
+    norm = (_raw_total(score) / room_max * 100) if room_max > 0 else 0.0
+    return _build_score_dict(score, team, norm)
+
+
+@router.post("/sih/marks")
+def upsert_sih_marks(
+    payload: dict,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Create or update judging scores for a team. Payload: team_id + 10 score fields (0-10 each)."""
+    team_id = payload.get("team_id")
+    if not team_id:
+        raise HTTPException(status_code=400, detail="team_id is required.")
+    team = db.query(SIHTeam).filter(SIHTeam.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    fields = [
+        "j1_problem_understanding", "j1_innovation", "j1_technical_feasibility",
+        "j1_scalability_impact", "j1_presentation_qa",
+        "j2_problem_understanding", "j2_innovation", "j2_technical_feasibility",
+        "j2_scalability_impact", "j2_presentation_qa",
+    ]
+    for f in fields:
+        val = payload.get(f, 0)
+        if not isinstance(val, int) or val < 0 or val > 10:
+            raise HTTPException(status_code=400, detail=f"'{f}' must be an integer 0–10.")
+
+    score = db.query(SIHJudgingScore).filter(SIHJudgingScore.team_id == team_id).first()
+    if score:
+        for f in fields:
+            setattr(score, f, payload.get(f, 0))
+        score.entered_by = current_admin.college_email
+        score.updated_at = datetime.datetime.utcnow()
+    else:
+        score = SIHJudgingScore(
+            team_id=team_id,
+            entered_by=current_admin.college_email,
+            **{f: payload.get(f, 0) for f in fields}
+        )
+        db.add(score)
+    db.commit()
+    db.refresh(score)
+
+    # Return with normalized score
+    room_scores = (
+        db.query(SIHJudgingScore, SIHTeam)
+        .join(SIHTeam, SIHJudgingScore.team_id == SIHTeam.id)
+        .filter(func.coalesce(SIHTeam.room_number, "UNASSIGNED") == func.coalesce(team.room_number, "UNASSIGNED"))
+        .all()
+    )
+    raws = [_raw_total(s) for s, _ in room_scores]
+    room_max = max(raws) if raws else 1
+    norm = (_raw_total(score) / room_max * 100) if room_max > 0 else 0.0
+    return _build_score_dict(score, team, norm)
+
+
+@router.delete("/sih/marks/{team_id}")
+def delete_sih_marks(
+    team_id: int,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Delete judging scores for a team."""
+    score = db.query(SIHJudgingScore).filter(SIHJudgingScore.team_id == team_id).first()
+    if not score:
+        raise HTTPException(status_code=404, detail="No marks found for this team.")
+    db.delete(score)
+    db.commit()
+    return {"detail": "Marks deleted successfully."}
