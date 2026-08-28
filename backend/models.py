@@ -159,6 +159,7 @@ class SIHTeam(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     team_name = Column(String(100), unique=True, index=True, nullable=False)
     leader_student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    room_number = Column(String(20), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
 
     leader = relationship("Student")

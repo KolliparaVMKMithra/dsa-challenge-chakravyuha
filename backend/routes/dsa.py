@@ -686,6 +686,7 @@ def get_my_sih_team(current_user: Student = Depends(get_current_user), db: Sessi
     return {
         "team_id": team.id,
         "team_name": team.team_name,
+        "room_number": team.room_number or None,
         "leader": leader,
         "members": teammates,
         "is_leader": is_leader,

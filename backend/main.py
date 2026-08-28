@@ -186,7 +186,20 @@ def startup_db_init():
             logger.info("Successfully added 'attended' columns to event_registrations.")
     except Exception as e:
         logger.warning(f"Failed to check or apply event_registrations migration: {e}")
-    
+
+    # Run migration: add room_number column to sih_teams
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        sih_cols = [c['name'] for c in inspector.get_columns('sih_teams')]
+        if 'room_number' not in sih_cols:
+            logger.info("Adding 'room_number' column to sih_teams table...")
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE sih_teams ADD COLUMN room_number VARCHAR(20);"))
+            logger.info("Successfully added 'room_number' column to sih_teams.")
+    except Exception as e:
+        logger.warning(f"Failed to add room_number to sih_teams (may already exist): {e}")
+
     from backend.database import SessionLocal
     db = SessionLocal()
     try:

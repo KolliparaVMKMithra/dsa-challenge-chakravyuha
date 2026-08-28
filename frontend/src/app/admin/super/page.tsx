@@ -149,6 +149,7 @@ export default function SuperAdminPage() {
   const [sihAnalytics, setSihAnalytics] = useState<any | null>(null);
   const [sihExpandedTeamId, setSihExpandedTeamId] = useState<number | null>(null);
   const [sihSearch, setSihSearch] = useState('');
+  const [sihRoomFilter, setSihRoomFilter] = useState('');
   const [sihPage, setSihPage] = useState(1);
   const SIH_PAGE_SIZE = 5;
   const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
@@ -2993,8 +2994,10 @@ export default function SuperAdminPage() {
                             <span className="ml-2 text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">
                               ({sihTeams.filter((t: any) => {
                                 const q = sihSearch.toLowerCase();
-                                return !q || t.team_name?.toLowerCase().includes(q) || t.leader_name?.toLowerCase().includes(q);
-                              }).length} {sihSearch ? 'found' : 'total'})
+                                const matchName = !q || t.team_name?.toLowerCase().includes(q) || t.leader_name?.toLowerCase().includes(q);
+                                const matchRoom = !sihRoomFilter || (t.room_number || '').toLowerCase() === sihRoomFilter.toLowerCase();
+                                return matchName && matchRoom;
+                              }).length} {sihSearch || sihRoomFilter ? 'found' : 'total'})
                             </span>
                           </h4>
                           <div className="relative w-full sm:w-64">
@@ -3015,6 +3018,17 @@ export default function SuperAdminPage() {
                               </button>
                             )}
                           </div>
+                          {/* Room Filter Dropdown */}
+                          <select
+                            value={sihRoomFilter}
+                            onChange={(e) => { setSihRoomFilter(e.target.value); setSihPage(1); }}
+                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-[#d4af37]/50 w-32 flex-shrink-0"
+                          >
+                            <option value="">All Rooms</option>
+                            {Array.from(new Set(sihTeams.map((t: any) => t.room_number).filter(Boolean))).sort().map((room: any) => (
+                              <option key={room} value={room}>{room}</option>
+                            ))}
+                          </select>
                           {/* Add Team Button */}
                           <button
                             onClick={() => {
@@ -3035,9 +3049,11 @@ export default function SuperAdminPage() {
 
                         {(() => {
                           const q = sihSearch.toLowerCase();
-                          const filtered = sihTeams.filter((t: any) =>
-                            !q || t.team_name?.toLowerCase().includes(q) || t.leader_name?.toLowerCase().includes(q)
-                          );
+                          const filtered = sihTeams.filter((t: any) => {
+                            const matchName = !q || t.team_name?.toLowerCase().includes(q) || t.leader_name?.toLowerCase().includes(q);
+                            const matchRoom = !sihRoomFilter || (t.room_number || '').toLowerCase() === sihRoomFilter.toLowerCase();
+                            return matchName && matchRoom;
+                          });
                           const totalPages = Math.max(1, Math.ceil(filtered.length / SIH_PAGE_SIZE));
                           const paginated = filtered.slice((sihPage - 1) * SIH_PAGE_SIZE, sihPage * SIH_PAGE_SIZE);
 
@@ -3067,6 +3083,9 @@ export default function SuperAdminPage() {
                                           <p className="text-[10px] text-zinc-500">
                                             Leader: <span className="text-zinc-300 font-semibold">{team.leader_name}</span> &bull; 
                                             Registered: <span className="text-zinc-400 font-semibold">{new Date(team.created_at).toLocaleDateString()}</span>
+                                            {team.room_number && (
+                                              <> &bull; Room: <span className="text-[#d4af37] font-black">{team.room_number}</span></>
+                                            )}
                                           </p>
                                         </div>
                                         <div className="flex items-center gap-3">

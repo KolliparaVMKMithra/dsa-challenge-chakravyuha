@@ -795,6 +795,65 @@ export default function SihDashboard() {
               )}
             </section>
 
+            {/* ── Room Allocation Card ─────────────────────────────────── */}
+            <section>
+              {teamData?.room_number ? (
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    border: '2px solid rgba(212,175,55,0.5)',
+                    background: 'linear-gradient(135deg, rgba(30,20,0,0.95), rgba(10,8,0,0.98))',
+                    boxShadow: '0 0 40px rgba(212,175,55,0.12), 0 8px 32px rgba(0,0,0,0.6)'
+                  }}
+                >
+                  <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#d4af37,#f6e05e,#d4af37)' }} />
+                  <div className="p-6 sm:p-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d4af37]">🏛️ Room Allocation — SIH 2026</p>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="text-4xl font-black font-mono tracking-widest"
+                            style={{ color: '#f6e05e', textShadow: '0 0 20px rgba(246,224,94,0.4)' }}
+                          >
+                            {teamData.room_number}
+                          </span>
+                          <span className="text-xs text-zinc-400 font-semibold">Your Assigned Room</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          📅 <span className="font-semibold text-zinc-300">29th August 2026</span> &nbsp;|&nbsp; Report to your room by <span className="font-semibold text-zinc-300">8:00 AM</span>
+                        </p>
+                      </div>
+                      <div
+                        className="rounded-xl p-4 text-center flex-shrink-0"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.04))',
+                          border: '1px solid rgba(212,175,55,0.2)'
+                        }}
+                      >
+                        <p className="text-2xl mb-1">🚀</p>
+                        <p className="text-xs font-black text-white tracking-wide">All the Best!</p>
+                        <p className="text-[10px] text-[#d4af37] mt-0.5">Give it your all!</p>
+                      </div>
+                    </div>
+                    <div className="mt-5 pt-4 border-t border-zinc-900/60">
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">
+                        💡 Bring your laptop, charger, and student ID. Hackathon begins at <span className="text-zinc-300 font-semibold">9:00 AM</span>. Judging starts at <span className="text-zinc-300 font-semibold">3:00 PM</span>. All the very best, Team <span className="text-[#d4af37] font-black">{teamData.team_name}</span>! 🎯
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-zinc-900/60 bg-zinc-950/40 p-5 flex items-center gap-4">
+                  <span className="text-2xl">🏛️</span>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Room Allocation</p>
+                    <p className="text-[11px] text-zinc-600 mt-0.5">Room allocation will be announced soon. Check back later!</p>
+                  </div>
+                </div>
+              )}
+            </section>
+
             <section>
               <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'linear-gradient(135deg, rgba(20,16,0,0.8), rgba(10,8,0,0.9))' }}>
                 <div className="h-[3px]" style={{ background: 'linear-gradient(90deg,#d4af37,#8c7030,#d4af37)' }} />

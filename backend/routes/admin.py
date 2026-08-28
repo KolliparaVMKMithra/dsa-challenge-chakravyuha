@@ -1662,11 +1662,15 @@ def update_sih_team_admin(
 @router.get("/sih/teams")
 def get_sih_teams(
     current_admin: Student = Depends(get_current_super_admin),
+    room: str = None,
     db: Session = Depends(get_db)
 ):
-    """Lists all registered SIH teams and member details (Super Admin only)."""
-    teams = db.query(SIHTeam).order_by(SIHTeam.created_at.desc()).all()
-    
+    """Lists all registered SIH teams and member details (Super Admin only). Optionally filter by room number."""
+    query = db.query(SIHTeam).order_by(SIHTeam.created_at.desc())
+    if room:
+        query = query.filter(func.lower(SIHTeam.room_number) == func.lower(room.strip()))
+    teams = query.all()
+
     result = []
     for t in teams:
         members_data = []
@@ -1682,19 +1686,20 @@ def get_sih_teams(
                 "roll_number": m.roll_number,
                 "gender": m.gender
             })
-            
+
         # Try to find the leader name in Student table
         leader_name = t.leader.full_name if t.leader else "Unknown"
-        
+
         result.append({
             "id": t.id,
             "team_name": t.team_name,
             "created_at": t.created_at.isoformat() + "Z",
             "leader_student_id": t.leader_student_id,
             "leader_name": leader_name,
+            "room_number": t.room_number or None,
             "members": members_data
         })
-        
+
     return result
 
 
