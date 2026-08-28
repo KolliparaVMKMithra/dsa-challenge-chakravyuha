@@ -2297,15 +2297,15 @@ def export_sih_judging(
 
         room_headers = [
             "Room No.", "Judge 1 Name", "Judge 2 Name", "Team Name", "PS Number",
-            f"{j1_label} - Prob. Und. (/10)", f"{j2_label} - Prob. Und. (/10)", "Total Prob. Und. (/20)",
-            f"{j1_label} - Innov. (/10)", f"{j2_label} - Innov. (/10)", "Total Innov. (/20)",
-            f"{j1_label} - Tech. Feas. (/10)", f"{j2_label} - Tech. Feas. (/10)", "Total Tech. Feas. (/20)",
-            f"{j1_label} - Scale. (/10)", f"{j2_label} - Scale. (/10)", "Total Scale. (/20)",
-            f"{j1_label} - Pres. (/10)", f"{j2_label} - Pres. (/10)", "Total Pres. (/20)",
-            "Raw Total (/100)", "Normalized Score"
+            f"{j1_label} - Problem Understanding & Relevance (/10)", f"{j2_label} - Problem Understanding & Relevance (/10)",
+            f"{j1_label} - Innovation / Uniqueness (/10)", f"{j2_label} - Innovation / Uniqueness (/10)",
+            f"{j1_label} - Technical Feasibility & Approach (/10)", f"{j2_label} - Technical Feasibility & Approach (/10)",
+            f"{j1_label} - Scalability & Impact (/10)", f"{j2_label} - Scalability & Impact (/10)",
+            f"{j1_label} - Presentation & Q&A Handling (/10)", f"{j2_label} - Presentation & Q&A Handling (/10)",
+            "Total (out of 100)"
         ]
 
-        ws.merge_cells("A1:V1")
+        ws.merge_cells("A1:P1")
         title_text = f"Smart India Hackathon 2026 — Team Evaluation & Judging Sheet (Room: {r_name})"
         ws["A1"] = title_text
         ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
@@ -2332,7 +2332,7 @@ def export_sih_judging(
 
             score_info = scores_lookup.get(t.id)
             if score_info:
-                s, norm = score_info
+                s, _ = score_info
                 row_data = [
                     t.room_number or "—",
                     j1_name,
@@ -2341,21 +2341,15 @@ def export_sih_judging(
                     ps_number,
                     s.j1_problem_understanding,
                     s.j2_problem_understanding,
-                    s.j1_problem_understanding + s.j2_problem_understanding,
                     s.j1_innovation,
                     s.j2_innovation,
-                    s.j1_innovation + s.j2_innovation,
                     s.j1_technical_feasibility,
                     s.j2_technical_feasibility,
-                    s.j1_technical_feasibility + s.j2_technical_feasibility,
                     s.j1_scalability_impact,
                     s.j2_scalability_impact,
-                    s.j1_scalability_impact + s.j2_scalability_impact,
                     s.j1_presentation_qa,
                     s.j2_presentation_qa,
-                    s.j1_presentation_qa + s.j2_presentation_qa,
-                    _raw_total(s),
-                    round(norm, 2)
+                    _raw_total(s)
                 ]
             else:
                 row_data = [
@@ -2364,12 +2358,12 @@ def export_sih_judging(
                     j2_name,
                     t.team_name,
                     ps_number,
-                    "", "", "",
-                    "", "", "",
-                    "", "", "",
-                    "", "", "",
-                    "", "", "",
-                    "", ""
+                    "", "",
+                    "", "",
+                    "", "",
+                    "", "",
+                    "", "",
+                    ""
                 ]
 
             ws.append(row_data)
@@ -2379,7 +2373,7 @@ def export_sih_judging(
                 cell = ws.cell(row=row_num, column=col)
                 cell.fill = row_fill
                 cell.border = thin_border
-                if col in [1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]:
+                if col in [1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                 else:
                     cell.alignment = Alignment(horizontal="left", vertical="center")
