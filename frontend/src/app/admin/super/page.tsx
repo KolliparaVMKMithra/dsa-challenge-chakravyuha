@@ -166,6 +166,7 @@ export default function SuperAdminPage() {
   const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
   const [editingSihTeamId, setEditingSihTeamId] = useState<number | null>(null);
   const [editingSihTeamName, setEditingSihTeamName] = useState('');
+  const [editingSihRoomNumber, setEditingSihRoomNumber] = useState('');
   const [editingSihLeader, setEditingSihLeader] = useState<any>({
     full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: ''
   });
@@ -182,6 +183,7 @@ export default function SuperAdminPage() {
   // Add SIH Team Modal (Super Admin)
   const [addSihTeamModalOpen, setAddSihTeamModalOpen] = useState(false);
   const [addSihTeamName, setAddSihTeamName] = useState('');
+  const [addSihRoomNumber, setAddSihRoomNumber] = useState('');
   const EMPTY_MEMBER = { full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: 'Woman' };
   const [addSihLeader, setAddSihLeader] = useState<any>({ ...EMPTY_MEMBER });
   const [addSihMembers, setAddSihMembers] = useState<any[]>(Array.from({ length: 5 }, () => ({ ...EMPTY_MEMBER })));
@@ -442,6 +444,7 @@ export default function SuperAdminPage() {
   const handleStartEditTeam = (team: any) => {
     setEditingSihTeamId(team.id);
     setEditingSihTeamName(team.team_name);
+    setEditingSihRoomNumber(team.room_number || '');
     
     const leaderData = team.members.find((m: any) => m.is_leader);
     const teammatesData = team.members.filter((m: any) => !m.is_leader);
@@ -814,6 +817,46 @@ export default function SuperAdminPage() {
       window.URL.revokeObjectURL(dlUrl);
     } catch (err: any) {
       alert(err.message || 'Failed to export SIH teams.');
+    }
+  };
+
+  const handleExportSihJudging = async () => {
+    try {
+      let url = '/api/admin/sih/export-judging';
+      if (sihRoomFilter) {
+        url += `?room=${encodeURIComponent(sihRoomFilter)}`;
+      }
+      const blob = await apiRequest(url);
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `SIH2026_Judging_Sheet_${sihRoomFilter || 'All'}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export SIH judging sheet.');
+    }
+  };
+
+  const handleExportSihRooms = async () => {
+    try {
+      let url = '/api/admin/sih/export-rooms';
+      if (sihRoomFilter) {
+        url += `?room=${encodeURIComponent(sihRoomFilter)}`;
+      }
+      const blob = await apiRequest(url);
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `SIH2026_Room_Allocations_${sihRoomFilter || 'All'}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export SIH room allocations.');
     }
   };
 
@@ -2609,16 +2652,37 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
                 
-                <button
-                  onClick={
-                    eventRegistrations.event_name.toUpperCase().includes('SMART INDIA HACKATHON')
-                      ? handleExportSihTeams
-                      : () => handleExportEventRegistrations(selectedEventId!, eventRegistrations.event_name)
-                  }
-                  className="flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
-                >
-                  <Download className="h-4 w-4" /> Download Excel Report
-                </button>
+                {eventRegistrations.event_name.toUpperCase().includes('SMART INDIA HACKATHON') ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleExportSihTeams}
+                      className="flex items-center justify-center gap-1.5 bg-zinc-950/40 text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
+                    >
+                      <Download className="h-4 w-4" /> Roster Report
+                    </button>
+                    <button
+                      onClick={handleExportSihRooms}
+                      className="flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
+                      title={sihRoomFilter ? `Export room allocation for ${sihRoomFilter}` : "Export all room allocations"}
+                    >
+                      <Download className="h-4 w-4" /> Room Allocations {sihRoomFilter ? `(${sihRoomFilter})` : ''}
+                    </button>
+                    <button
+                      onClick={handleExportSihJudging}
+                      className="flex items-center justify-center gap-1.5 bg-blue-950/40 text-blue-400 hover:bg-blue-950/60 border border-blue-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
+                      title={sihRoomFilter ? `Export judging sheets for ${sihRoomFilter}` : "Export all judging sheets"}
+                    >
+                      <Download className="h-4 w-4" /> Judging Sheets {sihRoomFilter ? `(${sihRoomFilter})` : ''}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleExportEventRegistrations(selectedEventId!, eventRegistrations.event_name)}
+                    className="flex items-center justify-center gap-1.5 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-500/20 px-4 py-2 rounded text-[10px] font-extrabold uppercase tracking-wider transition"
+                  >
+                    <Download className="h-4 w-4" /> Download Excel Report
+                  </button>
+                )}
               </div>
 
               {/* Stats Grid */}
@@ -3069,6 +3133,7 @@ export default function SuperAdminPage() {
                           <button
                             onClick={() => {
                               setAddSihTeamName('');
+                              setAddSihRoomNumber('');
                               setAddSihLeader({ full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: 'Woman' });
                               setAddSihMembers(Array.from({ length: 5 }, () => ({ full_name: '', college_email: '', personal_email: '', phone_number: '', study_year: 1, branch: 'CSE', roll_number: '', gender: 'Woman' })));
                               setAddSihActiveTab(0);
@@ -4079,15 +4144,27 @@ export default function SuperAdminPage() {
               )}
 
               <div className="space-y-4">
-                {/* Team Name */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Team Name</label>
-                  <input
-                    type="text"
-                    value={editingSihTeamName}
-                    onChange={(e) => setEditingSihTeamName(e.target.value)}
-                    className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
-                  />
+                {/* Team Name and Room Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Team Name</label>
+                    <input
+                      type="text"
+                      value={editingSihTeamName}
+                      onChange={(e) => setEditingSihTeamName(e.target.value)}
+                      className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Room Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. A009 (Leave blank if not assigned)"
+                      value={editingSihRoomNumber}
+                      onChange={(e) => setEditingSihRoomNumber(e.target.value)}
+                      className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
+                    />
+                  </div>
                 </div>
 
                 {/* Member Selector Tabs */}
@@ -4267,6 +4344,7 @@ export default function SuperAdminPage() {
                         method: 'PUT',
                         body: JSON.stringify({
                           team_name: editingSihTeamName,
+                          room_number: editingSihRoomNumber,
                           leader: editingSihLeader,
                           members: editingSihMembers
                         })
@@ -4340,16 +4418,28 @@ export default function SuperAdminPage() {
               )}
 
               <div className="space-y-4">
-                {/* Team Name */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Team Name</label>
-                  <input
-                    type="text"
-                    value={addSihTeamName}
-                    onChange={(e) => setAddSihTeamName(e.target.value)}
-                    placeholder="Enter unique team name…"
-                    className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
-                  />
+                {/* Team Name & Room Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Team Name</label>
+                    <input
+                      type="text"
+                      value={addSihTeamName}
+                      onChange={(e) => setAddSihTeamName(e.target.value)}
+                      placeholder="Enter unique team name…"
+                      className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Room Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. A009 (Leave blank if not assigned)"
+                      value={addSihRoomNumber}
+                      onChange={(e) => setAddSihRoomNumber(e.target.value)}
+                      className="w-full bg-zinc-900/60 border border-zinc-900 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50"
+                    />
+                  </div>
                 </div>
 
                 {/* Member Selector Tabs */}
@@ -4529,6 +4619,7 @@ export default function SuperAdminPage() {
                         method: 'POST',
                         body: JSON.stringify({
                           team_name: addSihTeamName,
+                          room_number: addSihRoomNumber,
                           leader: addSihLeader,
                           members: addSihMembers
                         })

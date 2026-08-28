@@ -1337,7 +1337,8 @@ def create_sih_team_admin(
     # 8. Create team
     team = SIHTeam(
         team_name=team_data.team_name.strip(),
-        leader_student_id=leader_student.id
+        leader_student_id=leader_student.id,
+        room_number=team_data.room_number.strip() if team_data.room_number and team_data.room_number.strip() else None
     )
     db.add(team)
     db.commit()
@@ -1591,6 +1592,7 @@ def update_sih_team_admin(
         )
 
     team.team_name = team_data.team_name.strip()
+    team.room_number = team_data.room_number.strip() if team_data.room_number and team_data.room_number.strip() else None
 
     # Re-fetch previous members to update event registration
     db_members = db.query(SIHTeamMember).filter(SIHTeamMember.team_id == team.id).all()
@@ -2197,9 +2199,338 @@ def delete_sih_marks(
     db: Session = Depends(get_db)
 ):
     """Delete judging scores for a team."""
-    score = db.query(SIHJudgingScore).filter(SIHJudgingScore.team_id == team_id).first()
-    if not score:
-        raise HTTPException(status_code=404, detail="No marks found for this team.")
     db.delete(score)
     db.commit()
     return {"detail": "Marks deleted successfully."}
+
+
+# ── Export SIH Judging sheet ──────────────────────────────────────────────────
+@router.get("/sih/export-judging")
+def export_sih_judging(
+    room: Optional[str] = None,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Exports SIH judging sheets with raw and normalized marks, split by judge (Super Admin only)."""
+    query = db.query(SIHTeam)
+    if room and room.strip() and room.strip() != "All":
+        query = query.filter(func.lower(SIHTeam.room_number) == func.lower(room.strip()))
+    teams = query.all()
+
+    teams.sort(key=lambda t: (t.room_number or "ZZZ", t.team_name.lower()))
+
+    ps_lookup: dict = {}
+    selections = (
+        db.query(SIHPSSelection, SIHProblemStatement)
+        .join(SIHProblemStatement, SIHPSSelection.problem_statement_id == SIHProblemStatement.id)
+        .all()
+    )
+    for sel, ps in selections:
+        ps_lookup[sel.team_id] = (ps.ps_number, ps.title)
+
+    scores_query = db.query(SIHJudgingScore, SIHTeam).join(SIHTeam, SIHJudgingScore.team_id == SIHTeam.id).all()
+    normalized_list = _normalize_scores(scores_query)
+    scores_lookup = {s.team_id: (s, n) for s, _, n in normalized_list}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SIH Judging Sheet"
+
+    ws.merge_cells("A1:W1")
+    title_text = "Smart India Hackathon 2026 — Team Evaluation & Judging Sheet"
+    if room and room.strip() and room.strip() != "All":
+        title_text += f" (Room: {room.upper()})"
+    ws["A1"] = title_text
+    ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="1B2A4A", end_color="1B2A4A", fill_type="solid")
+    ws.row_dimensions[1].height = 45
+
+    headers = [
+        "Room No.", "Judge 1 Name", "Judge 2 Name", "Team Name", "PS Number", "PS Title",
+        "J1 - Prob. Und. (/10)", "J2 - Prob. Und. (/10)", "Total Prob. Und. (/20)",
+        "J1 - Innov. (/10)", "J2 - Innov. (/10)", "Total Innov. (/20)",
+        "J1 - Tech. Feas. (/10)", "J2 - Tech. Feas. (/10)", "Total Tech. Feas. (/20)",
+        "J1 - Scale. (/10)", "J2 - Scale. (/10)", "Total Scale. (/20)",
+        "J1 - Pres. (/10)", "J2 - Pres. (/10)", "Total Pres. (/20)",
+        "Raw Total (/100)", "Normalized Score"
+    ]
+    ws.append([])
+    ws.append(headers)
+
+    header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC')
+    )
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border
+
+    ws.row_dimensions[3].height = 35
+
+    JUDGES_MAP = {
+        "A009": ("Dr. Balaji I K", "Mr. Goradla Bharadwaja"),
+        "A010": ("Dr. R Satya Rajendra Singh", "Dr. Deepak Kumar Panda"),
+        "A011": ("Dr. Korrapati Sindhu", "Dr. Gowthami Ummadisetti"),
+        "A012": ("Dr. Kurmala Gowri Raghavendra Narayan", "Mr. Cherukuri Naresh"),
+        "A013": ("Dr. K.Ashwini", "Dr. Rashmi Prasad"),
+        "A109": ("Dr. Kamepalli S L Prasanna", "Mr. Kistam Gopi"),
+        "A110": ("Dr. Madhusudana Rao Nalluri", "M/s. Lavanya Goura"),
+        "A111": ("Dr. P N S B S V Prasad V", "M/s. Lakshmi Prasanna M"),
+        "A112": ("Dr. Parvathaneni Naga Srinivasu", "Dr. Anand Kumar"),
+        "A113": ("Dr. Gampa V P Chandra Sekhar Yadav", "Dr. Mohit Kumar Singh"),
+        "A210": ("Dr. Ravishankar Prakash Desai", "Dr. Kesavulu"),
+        "A211": ("Dr. Snehamoy Pramanik", "M/s. Venkata Anusha Kolluru"),
+        "A212": ("Dr. SATHIES T", "M/s Yalamala Baby Sushma"),
+        "A213": ("Dr. Thunugala Bala Krishna", "Mr. Budati Jaya Lakshmi Narayana"),
+        "A310": ("Dr. Mrinalini Bhagawati", "Mr. Dontha MadhuSudhana Rao"),
+        "A311": ("Dr. Suresh Reddy", "Dr. Gayathri Parasa"),
+        "A312": ("Dr. Vikas Rohil", "Mr. Kamjula Lakshmi Kanth Reddy"),
+        "A313": ("Dr. Ravi Sankar Puppala", "Dr. Chaitanya Bathina")
+    }
+
+    row_num = 4
+    for t in teams:
+        ps_number, ps_title = ps_lookup.get(t.id, ("—", "Not Selected"))
+        j1_name, j2_name = JUDGES_MAP.get(t.room_number or "", ("—", "—"))
+
+        score_info = scores_lookup.get(t.id)
+        if score_info:
+            s, norm = score_info
+            row_data = [
+                t.room_number or "—",
+                j1_name,
+                j2_name,
+                t.team_name,
+                ps_number,
+                ps_title,
+                s.j1_problem_understanding,
+                s.j2_problem_understanding,
+                s.j1_problem_understanding + s.j2_problem_understanding,
+                s.j1_innovation,
+                s.j2_innovation,
+                s.j1_innovation + s.j2_innovation,
+                s.j1_technical_feasibility,
+                s.j2_technical_feasibility,
+                s.j1_technical_feasibility + s.j2_technical_feasibility,
+                s.j1_scalability_impact,
+                s.j2_scalability_impact,
+                s.j1_scalability_impact + s.j2_scalability_impact,
+                s.j1_presentation_qa,
+                s.j2_presentation_qa,
+                s.j1_presentation_qa + s.j2_presentation_qa,
+                _raw_total(s),
+                round(norm, 2)
+            ]
+        else:
+            row_data = [
+                t.room_number or "—",
+                j1_name,
+                j2_name,
+                t.team_name,
+                ps_number,
+                ps_title,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0.0
+            ]
+
+        ws.append(row_data)
+
+        row_fill = PatternFill(start_color="F2F4F4" if row_num % 2 == 0 else "FFFFFF", fill_type="solid")
+        for col in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_num, column=col)
+            cell.fill = row_fill
+            cell.border = thin_border
+            if col in [1, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+
+        row_num += 1
+
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    filename = f"SIH_Judging_Sheet_{room.upper() if room else 'All'}.xlsx"
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ── Export SIH Room Allocations ───────────────────────────────────────────────
+@router.get("/sih/export-rooms")
+def export_sih_rooms(
+    room: Optional[str] = None,
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Exports SIH room allocations including judge names and team member details (Super Admin only)."""
+    query = db.query(SIHTeam)
+    if room and room.strip() and room.strip() != "All":
+        query = query.filter(func.lower(SIHTeam.room_number) == func.lower(room.strip()))
+    teams = query.all()
+
+    teams.sort(key=lambda t: (t.room_number or "ZZZ", t.team_name.lower()))
+
+    ps_lookup: dict = {}
+    selections = (
+        db.query(SIHPSSelection, SIHProblemStatement)
+        .join(SIHProblemStatement, SIHPSSelection.problem_statement_id == SIHProblemStatement.id)
+        .all()
+    )
+    for sel, ps in selections:
+        ps_lookup[sel.team_id] = (ps.ps_number, ps.title)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SIH Room Allocations"
+
+    ws.merge_cells("A1:K1")
+    title_text = "Smart India Hackathon 2026 — Team Room Allocations & Judges"
+    if room and room.strip() and room.strip() != "All":
+        title_text += f" (Room: {room.upper()})"
+    ws["A1"] = title_text
+    ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="1B2A4A", end_color="1B2A4A", fill_type="solid")
+    ws.row_dimensions[1].height = 45
+
+    headers = [
+        "S.No", "Room No.", "Team Name", "Leader Name", "Leader Roll",
+        "Leader Email", "Teammates Details", "Judge 1 Name", "Judge 2 Name",
+        "PS Number", "PS Title"
+    ]
+    ws.append([])
+    ws.append(headers)
+
+    header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC')
+    )
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    ws.row_dimensions[3].height = 25
+
+    JUDGES_MAP = {
+        "A009": ("Dr. Balaji I K", "Mr. Goradla Bharadwaja"),
+        "A010": ("Dr. R Satya Rajendra Singh", "Dr. Deepak Kumar Panda"),
+        "A011": ("Dr. Korrapati Sindhu", "Dr. Gowthami Ummadisetti"),
+        "A012": ("Dr. Kurmala Gowri Raghavendra Narayan", "Mr. Cherukuri Naresh"),
+        "A013": ("Dr. K.Ashwini", "Dr. Rashmi Prasad"),
+        "A109": ("Dr. Kamepalli S L Prasanna", "Mr. Kistam Gopi"),
+        "A110": ("Dr. Madhusudana Rao Nalluri", "M/s. Lavanya Goura"),
+        "A111": ("Dr. P N S B S V Prasad V", "M/s. Lakshmi Prasanna M"),
+        "A112": ("Dr. Parvathaneni Naga Srinivasu", "Dr. Anand Kumar"),
+        "A113": ("Dr. Gampa V P Chandra Sekhar Yadav", "Dr. Mohit Kumar Singh"),
+        "A210": ("Dr. Ravishankar Prakash Desai", "Dr. Kesavulu"),
+        "A211": ("Dr. Snehamoy Pramanik", "M/s. Venkata Anusha Kolluru"),
+        "A212": ("Dr. SATHIES T", "M/s Yalamala Baby Sushma"),
+        "A213": ("Dr. Thunugala Bala Krishna", "Mr. Budati Jaya Lakshmi Narayana"),
+        "A310": ("Dr. Mrinalini Bhagawati", "Mr. Dontha MadhuSudhana Rao"),
+        "A311": ("Dr. Suresh Reddy", "Dr. Gayathri Parasa"),
+        "A312": ("Dr. Vikas Rohil", "Mr. Kamjula Lakshmi Kanth Reddy"),
+        "A313": ("Dr. Ravi Sankar Puppala", "Dr. Chaitanya Bathina")
+    }
+
+    row_num = 4
+    for idx, t in enumerate(teams, 1):
+        ps_number, ps_title = ps_lookup.get(t.id, ("—", "Not Selected"))
+        j1_name, j2_name = JUDGES_MAP.get(t.room_number or "", ("—", "—"))
+
+        leader_m = next((m for m in t.members if m.is_leader), None)
+        teammates = [m for m in t.members if not m.is_leader]
+        
+        leader_name = leader_m.full_name if leader_m else "—"
+        leader_roll = leader_m.roll_number if leader_m else "—"
+        leader_email = leader_m.college_email if leader_m else "—"
+
+        teammates_str = ", ".join([f"{m.full_name} ({m.roll_number})" for m in teammates])
+
+        row_data = [
+            idx,
+            t.room_number or "—",
+            t.team_name,
+            leader_name,
+            leader_roll,
+            leader_email,
+            teammates_str,
+            j1_name,
+            j2_name,
+            ps_number,
+            ps_title
+        ]
+        ws.append(row_data)
+
+        row_fill = PatternFill(start_color="F2F4F4" if row_num % 2 == 0 else "FFFFFF", fill_type="solid")
+        for col in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_num, column=col)
+            cell.fill = row_fill
+            cell.border = thin_border
+            if col in [1, 2, 5, 8, 9, 10]:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+
+        row_num += 1
+
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        if col_letter == 'G':
+            ws.column_dimensions[col_letter].width = 40
+        else:
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    filename = f"SIH_Room_Allocations_{room.upper() if room else 'All'}.xlsx"
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+

@@ -228,6 +228,7 @@ class SIHTeamRegistration(BaseModel):
     team_name: str = Field(..., min_length=2, max_length=100)
     leader: SIHTeamMemberCreate
     members: list[SIHTeamMemberCreate]
+    room_number: Optional[str] = None
 
     class Config:
         from_attributes = True
