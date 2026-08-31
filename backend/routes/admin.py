@@ -2472,7 +2472,7 @@ def export_sih_rooms(
 
         leader_m = next((m for m in t.members if m.is_leader), None)
         teammates = [m for m in t.members if not m.is_leader]
-        
+
         leader_name = leader_m.full_name if leader_m else "—"
         leader_roll = leader_m.roll_number if leader_m else "—"
         leader_email = leader_m.college_email if leader_m else "—"
@@ -2521,7 +2521,7 @@ def export_sih_rooms(
     stream = io.BytesIO()
     wb.save(stream)
     stream.seek(0)
-    
+
     filename = f"SIH_Room_Allocations_{room.upper() if room else 'All'}.xlsx"
     return StreamingResponse(
         stream,
@@ -2529,3 +2529,284 @@ def export_sih_rooms(
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+
+# ── Export SIH Full Leaderboard (with all scores) ─────────────────────────────
+@router.get("/sih/export-leaderboard")
+def export_sih_leaderboard(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Exports full SIH leaderboard with all judge scores and normalized scores (Super Admin only)."""
+    rows = (
+        db.query(SIHJudgingScore, SIHTeam)
+        .join(SIHTeam, SIHJudgingScore.team_id == SIHTeam.id)
+        .all()
+    )
+    normalized_list = _normalize_scores(rows)
+    normalized_list.sort(key=lambda x: x[2], reverse=True)
+
+    ps_lookup: dict = {}
+    selections = (
+        db.query(SIHPSSelection, SIHProblemStatement)
+        .join(SIHProblemStatement, SIHPSSelection.problem_statement_id == SIHProblemStatement.id)
+        .all()
+    )
+    for sel, ps in selections:
+        ps_lookup[sel.team_id] = (ps.ps_number, ps.title)
+
+    JUDGES_MAP_LB = {
+        "A009": ("Dr. Balaji I K", "Mr. Goradla Bharadwaja"),
+        "A010": ("Dr. R Satya Rajendra Singh", "Dr. Deepak Kumar Panda"),
+        "A011": ("Dr. Korrapati Sindhu", "Dr. Gowthami Ummadisetti"),
+        "A012": ("Dr. Kurmala Gowri Raghavendra Narayan", "Mr. Cherukuri Naresh"),
+        "A013": ("Dr. K.Ashwini", "Dr. Rashmi Prasad"),
+        "A109": ("Dr. Kamepalli S L Prasanna", "Mr. Kistam Gopi"),
+        "A110": ("Dr. Madhusudana Rao Nalluri", ""),
+        "A111": ("Dr. P N S B S V Prasad V", "M/s. Lakshmi Prasanna M"),
+        "A112": ("Dr. Parvathaneni Naga Srinivasu", "Dr. Anand Kumar"),
+        "A113": ("Dr. Gampa V P Chandra Sekhar Yadav", "Dr. Mohit Kumar Singh"),
+        "A210": ("Dr. Ravishankar Prakash Desai", "Dr. Kesavulu"),
+        "A211": ("Dr. Snehamoy Pramanik", "M/s. Venkata Anusha Kolluru"),
+        "A212": ("Dr. SATHIES T", "M/s Yalamala Baby Sushma"),
+        "A213": ("Dr. Thunugala Bala Krishna", "Mr. Budati Jaya Lakshmi Narayana"),
+        "A310": ("Dr. Mrinalini Bhagawati", "Mr. Dontha MadhuSudhana Rao"),
+        "A311": ("Dr. Suresh Reddy", "Dr. Gayathri Parasa"),
+        "A312": ("Dr. Vikas Rohil", "Mr. Kamjula Lakshmi Kanth Reddy"),
+        "A313": ("Dr. Ravi Sankar Puppala", "Dr. Chaitanya Bathina")
+    }
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SIH Leaderboard"
+
+    headers = [
+        "Rank", "Team Name", "Team Leader", "Room No.", "Judge 1", "Judge 2",
+        "J1 - Problem Understanding (/10)", "J2 - Problem Understanding (/10)",
+        "J1 - Innovation / Uniqueness (/10)", "J2 - Innovation / Uniqueness (/10)",
+        "J1 - Technical Feasibility (/10)", "J2 - Technical Feasibility (/10)",
+        "J1 - Scalability & Impact (/10)", "J2 - Scalability & Impact (/10)",
+        "J1 - Presentation & Q&A (/10)", "J2 - Presentation & Q&A (/10)",
+        "Total Score (/100)", "Normalized Score",
+        "PS Number", "PS Title",
+        "Entered By", "Entered At"
+    ]
+
+    num_cols = len(headers)
+    ws.merge_cells(f"A1:{openpyxl.utils.get_column_letter(num_cols)}1")
+    ws["A1"] = "Smart India Hackathon 2026 — Full Normalized Leaderboard"
+    ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="1B2A4A", end_color="1B2A4A", fill_type="solid")
+    ws.row_dimensions[1].height = 45
+
+    header_fill_lb = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    header_font_lb = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    thin_border_lb = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC')
+    )
+
+    ws.append([])
+    ws.append(headers)
+    for col_idx in range(1, num_cols + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill_lb
+        cell.font = header_font_lb
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border_lb
+    ws.row_dimensions[3].height = 40
+
+    top_fills_lb = [
+        PatternFill(start_color="FFF8E1", end_color="FFF8E1", fill_type="solid"),
+        PatternFill(start_color="F5F5F5", end_color="F5F5F5", fill_type="solid"),
+        PatternFill(start_color="FBE9E7", end_color="FBE9E7", fill_type="solid"),
+    ]
+
+    row_num = 4
+    for rank_0, (s, t, norm) in enumerate(normalized_list):
+        leader_m = next((m for m in t.members if m.is_leader), None)
+        leader_name = leader_m.full_name if leader_m else "—"
+        j1_name, j2_name = JUDGES_MAP_LB.get(t.room_number or "", ("—", "—"))
+        ps_number, ps_title = ps_lookup.get(t.id, ("—", "Not Selected"))
+        rank_label = f"#{rank_0 + 1}"
+        if rank_0 == 0: rank_label = "🥇 #1"
+        elif rank_0 == 1: rank_label = "🥈 #2"
+        elif rank_0 == 2: rank_label = "🥉 #3"
+
+        row_data = [
+            rank_label, t.team_name, leader_name, t.room_number or "—",
+            j1_name, j2_name,
+            s.j1_problem_understanding, s.j2_problem_understanding,
+            s.j1_innovation, s.j2_innovation,
+            s.j1_technical_feasibility, s.j2_technical_feasibility,
+            s.j1_scalability_impact, s.j2_scalability_impact,
+            s.j1_presentation_qa, s.j2_presentation_qa,
+            _raw_total(s), round(norm, 2),
+            ps_number, ps_title,
+            s.entered_by or "—",
+            s.entered_at.strftime("%Y-%m-%d %H:%M") if s.entered_at else "—"
+        ]
+        ws.append(row_data)
+
+        row_fill = top_fills_lb[rank_0] if rank_0 < 3 else PatternFill(
+            start_color="F2F4F4" if row_num % 2 == 0 else "FFFFFF", fill_type="solid"
+        )
+        for col in range(1, num_cols + 1):
+            cell = ws.cell(row=row_num, column=col)
+            cell.fill = row_fill
+            cell.border = thin_border_lb
+            if col in [1, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+        ws.cell(row=row_num, column=1).font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=row_num, column=18).font = Font(
+            name="Calibri", size=11, bold=True,
+            color="B8860B" if rank_0 < 3 else "444444"
+        )
+        row_num += 1
+
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        if col_letter in ['B', 'C', 'E', 'F', 'T']:
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 28)
+        else:
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=SIH2026_Full_Leaderboard.xlsx"}
+    )
+
+
+# ── Export SIH Top-50 Shortlist (no scores) ───────────────────────────────────
+@router.get("/sih/export-shortlist")
+def export_sih_shortlist(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Exports top-50 shortlisted teams (45 selected + 5 waitlist) with team details and PS info, no scores (Super Admin only)."""
+    rows = (
+        db.query(SIHJudgingScore, SIHTeam)
+        .join(SIHTeam, SIHJudgingScore.team_id == SIHTeam.id)
+        .all()
+    )
+    normalized_list = _normalize_scores(rows)
+    normalized_list.sort(key=lambda x: x[2], reverse=True)
+    top50 = normalized_list[:50]
+
+    ps_lookup: dict = {}
+    selections = (
+        db.query(SIHPSSelection, SIHProblemStatement)
+        .join(SIHProblemStatement, SIHPSSelection.problem_statement_id == SIHProblemStatement.id)
+        .all()
+    )
+    for sel, ps in selections:
+        ps_lookup[sel.team_id] = (ps.ps_number, ps.title)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "SIH Top 50 Shortlist"
+
+    headers_sl = [
+        "Rank", "Status", "Team Name", "Team Leader", "Leader Roll No.", "Leader Email",
+        "Room No.", "PS Number", "PS Title"
+    ]
+    num_cols_sl = len(headers_sl)
+
+    ws.merge_cells(f"A1:{openpyxl.utils.get_column_letter(num_cols_sl)}1")
+    ws["A1"] = "Smart India Hackathon 2026 — Top 50 Shortlisted Teams"
+    ws["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A1"].fill = PatternFill(start_color="1B2A4A", end_color="1B2A4A", fill_type="solid")
+    ws.row_dimensions[1].height = 45
+
+    header_fill_sl = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+    header_font_sl = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    thin_border_sl = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC')
+    )
+
+    ws.append([])
+    ws.append(headers_sl)
+    for col_idx in range(1, num_cols_sl + 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.fill = header_fill_sl
+        cell.font = header_font_sl
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = thin_border_sl
+    ws.row_dimensions[3].height = 30
+
+    selected_fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+    waitlist_fill = PatternFill(start_color="FFF9C4", end_color="FFF9C4", fill_type="solid")
+
+    row_num = 4
+    for rank_0, (s, t, norm) in enumerate(top50):
+        leader_m = next((m for m in t.members if m.is_leader), None)
+        leader_name = leader_m.full_name if leader_m else "—"
+        leader_roll = leader_m.roll_number if leader_m else "—"
+        leader_email = leader_m.college_email if leader_m else "—"
+        ps_number, ps_title = ps_lookup.get(t.id, ("—", "Not Selected"))
+        status = "✅ Selected" if rank_0 < 45 else "⏳ Waitlisted"
+        rank_label = f"#{rank_0 + 1}"
+
+        ws.append([
+            rank_label, status, t.team_name, leader_name,
+            leader_roll, leader_email,
+            t.room_number or "—", ps_number, ps_title
+        ])
+
+        row_fill = selected_fill if rank_0 < 45 else waitlist_fill
+        for col in range(1, num_cols_sl + 1):
+            cell = ws.cell(row=row_num, column=col)
+            cell.fill = row_fill
+            cell.border = thin_border_sl
+            if col in [1, 2, 5, 7, 8]:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+        ws.cell(row=row_num, column=1).font = Font(name="Calibri", size=10, bold=True)
+        ws.cell(row=row_num, column=2).font = Font(
+            name="Calibri", size=10, bold=True,
+            color="2E7D32" if rank_0 < 45 else "F57F17"
+        )
+        row_num += 1
+
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row == 1:
+                continue
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        if col_letter in ['C', 'D', 'F', 'I']:
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 28)
+        else:
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=SIH2026_Top50_Shortlist.xlsx"}
+    )

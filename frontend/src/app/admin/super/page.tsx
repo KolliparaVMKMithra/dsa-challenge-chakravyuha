@@ -860,6 +860,38 @@ export default function SuperAdminPage() {
     }
   };
 
+  const handleExportSihLeaderboard = async () => {
+    try {
+      const blob = await apiRequest('/api/admin/sih/export-leaderboard');
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = 'SIH2026_Full_Leaderboard.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export full leaderboard.');
+    }
+  };
+
+  const handleExportSihShortlist = async () => {
+    try {
+      const blob = await apiRequest('/api/admin/sih/export-shortlist');
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = 'SIH2026_Top50_Shortlist.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export Top-50 shortlist.');
+    }
+  };
+
   // --- PER-EVENT EXPORT (authenticated) ---
   const handleExportEventRegistrations = async (eventId: number, eventName: string) => {
     try {
@@ -3410,9 +3442,25 @@ export default function SuperAdminPage() {
                       {/* ── LEADERBOARD SECTION ─────────────────────── */}
                       {sihSubTab === 'leaderboard' && (
                         <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-white font-serif">🏆 Normalized Leaderboard</h4>
-                            <span className="text-[10px] text-zinc-500">{sihMarks.length} teams scored</span>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <h4 className="text-sm font-bold text-white font-serif">🏆 Normalized Leaderboard</h4>
+                              <span className="text-[10px] text-zinc-500">{sihMarks.length} teams scored</span>
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                              <button
+                                onClick={handleExportSihLeaderboard}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700"
+                              >
+                                📊 Full Leaderboard
+                              </button>
+                              <button
+                                onClick={handleExportSihShortlist}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition border border-[#d4af37]/40 text-[#d4af37] hover:bg-[#d4af37]/10"
+                              >
+                                🏅 Top 50 Shortlist
+                              </button>
+                            </div>
                           </div>
                           {sihMarksLoading ? (
                             <p className="text-zinc-500 text-xs text-center py-6">Loading…</p>
