@@ -675,9 +675,6 @@ function SIHFeedbackForm() {
       <div className="text-6xl">🎉</div>
       <h2 className="text-xl font-bold text-white font-serif">Feedback Submitted!</h2>
       <p className="text-sm text-zinc-400">Thank you for sharing your experience at SIH 2026. Your feedback helps us make future events even better.</p>
-      <div className="mt-4 p-4 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/5 text-xs text-[#d4af37]">
-        🎓 Don&apos;t forget to download your participation certificate from the SIH Dashboard home page!
-      </div>
     </div>
   );
 

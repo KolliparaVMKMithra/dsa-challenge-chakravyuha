@@ -165,6 +165,8 @@ export default function SuperAdminPage() {
   const [deleteMarksConfirm, setDeleteMarksConfirm] = useState<number|null>(null);
   const [sihFeedbacks, setSihFeedbacks] = useState<any[]>([]);
   const [sihFeedbacksLoading, setSihFeedbacksLoading] = useState(false);
+  const [sihFeedbackSearch, setSihFeedbackSearch] = useState('');
+  const [sihFeedbackQuestionsOpen, setSihFeedbackQuestionsOpen] = useState(true);
   const [sihEmailSending, setSihEmailSending] = useState(false);
   const [sihEmailPreviewOpen, setSihEmailPreviewOpen] = useState(false);
   const [sihEmailResult, setSihEmailResult] = useState<any>(null);
@@ -3547,11 +3549,6 @@ export default function SuperAdminPage() {
                                 <p className="text-zinc-400 leading-relaxed">We are incredibly proud to recognise your participation in the <strong className="text-yellow-300">Smart India Hackathon 2026 — Internal Round</strong> conducted by <strong className="text-white">Chakravyuha, Amrita Vishwa Vidyapeetham, Amaravati</strong>.</p>
                                 <p className="text-zinc-500 leading-relaxed">You demonstrated outstanding dedication, innovative thinking, and true team spirit throughout the hackathon.</p>
                               </div>
-                              <div className="border border-[#d4af37]/30 rounded-lg p-3 bg-[#d4af37]/5 space-y-2">
-                                <p className="text-[#d4af37] text-[9px] font-black uppercase tracking-wider">📜 Participation Certificate</p>
-                                <p className="text-zinc-300">Your participation certificate is available on the <strong className="text-[#d4af37]">SIH Dashboard</strong> in Chakravyuha.</p>
-                                <div className="inline-block bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black text-[9px] font-black px-3 py-1.5 rounded-lg">🎓 Download Certificate</div>
-                              </div>
                               <div className="border border-[#d4af37]/20 rounded-lg p-3 bg-[#d4af37]/3 space-y-2">
                                 <p className="text-[#d4af37] text-[9px] font-black uppercase tracking-wider">📝 Share Your Feedback</p>
                                 <p className="text-zinc-400">Help us make future hackathons better — fill out the SIH 2026 Feedback Form in the SIH Dashboard.</p>
@@ -3609,76 +3606,328 @@ export default function SuperAdminPage() {
 
                       {/* ── SIH FEEDBACK VIEWER ─────────────────────── */}
                       {sihSubTab === 'feedback_sih' && (
-                        <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
-                          <div className="flex items-center justify-between">
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-5">
+                          {/* Header & Controls */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-900">
                             <div>
-                              <h4 className="text-sm font-bold text-white font-serif">💬 SIH 2026 Participant Feedback</h4>
-                              <span className="text-[10px] text-zinc-500">{sihFeedbacks.length} response{sihFeedbacks.length !== 1 ? 's' : ''}</span>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-white font-serif">💬 SIH 2026 Participant Feedback</h4>
+                                <span className="bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/30 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                  {sihFeedbacks.length} response{sihFeedbacks.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-zinc-400 mt-0.5">Review responses and feedback questions submitted by hackathon participants</p>
                             </div>
-                            <button onClick={() => { setSihFeedbacksLoading(true); apiRequest('/api/admin/sih/feedback').then((d:any) => setSihFeedbacks(d||[])).catch(()=>{}).finally(()=>setSihFeedbacksLoading(false)); }}
-                              className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">
-                              🔄 Refresh
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => setSihFeedbackQuestionsOpen(!sihFeedbackQuestionsOpen)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition flex items-center gap-1.5 border ${
+                                  sihFeedbackQuestionsOpen
+                                    ? 'bg-[#d4af37]/15 text-[#d4af37] border-[#d4af37]/40'
+                                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
+                                }`}
+                              >
+                                📋 {sihFeedbackQuestionsOpen ? 'Hide Questions Guide' : 'Show All 13 Questions'}
+                              </button>
+                              {sihFeedbacks.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    const headers = [
+                                      'Student Name', 'Roll Number', 'College Email', 'Submitted At',
+                                      'Q1 Overall Experience (1-5)', 'Q2 Event Organisation (1-5)', 'Q3 Judging Fairness (1-5)',
+                                      'Q4 PS Relevance', 'Q5 Team Collaboration', 'Q6 Mentorship Quality',
+                                      'Q7 Venue Facilities (1-5)', 'Q8 Time Management',
+                                      'Q9 Best Part', 'Q10 Improvement Areas',
+                                      'Q11 Future Interest', 'Q12 Recommend to Juniors',
+                                      'Q13 General Feedback'
+                                    ];
+                                    const rows = sihFeedbacks.map((f: any) => [
+                                      `"${(f.student_name || '').replace(/"/g, '""')}"`,
+                                      `"${(f.roll_number || '').replace(/"/g, '""')}"`,
+                                      `"${(f.student_email || '').replace(/"/g, '""')}"`,
+                                      `"${(f.submitted_at || '').replace(/"/g, '""')}"`,
+                                      f.q1_overall_experience || '',
+                                      f.q2_event_organisation || '',
+                                      f.q3_judging_fairness || '',
+                                      `"${(f.q4_ps_relevance || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q5_team_collaboration || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q6_mentorship_quality || '').replace(/"/g, '""')}"`,
+                                      f.q7_venue_facilities || '',
+                                      `"${(f.q8_time_management || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q9_best_part || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q10_improvement || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q11_future_interest || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q12_recommend || '').replace(/"/g, '""')}"`,
+                                      `"${(f.q13_general_feedback || '').replace(/"/g, '""')}"`
+                                    ]);
+                                    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                    const url = URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    link.setAttribute('href', url);
+                                    link.setAttribute('download', `SIH2026_Feedback_Export_${new Date().toISOString().slice(0,10)}.csv`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-zinc-900 text-emerald-400 border border-emerald-800/40 hover:bg-emerald-950/30 transition flex items-center gap-1"
+                                >
+                                  📥 Export CSV
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setSihFeedbacksLoading(true);
+                                  apiRequest('/api/admin/sih/feedback')
+                                    .then((d: any) => setSihFeedbacks(d || []))
+                                    .catch(() => {})
+                                    .finally(() => setSihFeedbacksLoading(false));
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition"
+                              >
+                                🔄 Refresh
+                              </button>
+                            </div>
                           </div>
 
+                          {/* ── ALL 13 QUESTIONS QUESTIONNAIRE GUIDE ── */}
+                          {sihFeedbackQuestionsOpen && (
+                            <div className="rounded-xl border border-[#d4af37]/30 bg-[#0d0c0a] p-4 space-y-4">
+                              <div className="flex items-center justify-between pb-2 border-b border-[#d4af37]/20">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base">📋</span>
+                                  <span className="text-xs font-bold text-[#d4af37] font-serif uppercase tracking-wider">
+                                    Official SIH 2026 Feedback Questionnaire Reference (13 Questions)
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-zinc-400 font-mono">5 Sections · 13 Total Questions</span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                {/* Section A */}
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 space-y-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] block">
+                                    Section A — Overall Experience (Rating 1–5 ⭐)
+                                  </span>
+                                  <div className="space-y-1.5 text-[11px] text-zinc-300">
+                                    <p><strong className="text-white">Q1:</strong> Overall experience at SIH 2026 Internal Hackathon</p>
+                                    <p><strong className="text-white">Q2:</strong> How well was the event organised?</p>
+                                    <p><strong className="text-white">Q3:</strong> How fair did you find the judging process?</p>
+                                  </div>
+                                </div>
+
+                                {/* Section B */}
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 space-y-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] block">
+                                    Section B — Hackathon Experience (MCQ)
+                                  </span>
+                                  <div className="space-y-1.5 text-[11px] text-zinc-300">
+                                    <p><strong className="text-white">Q4:</strong> Were the problem statements relevant and challenging? <span className="text-zinc-400 text-[10px]">(Very relevant &amp; challenging / Moderately challenging / Too easy / Not relevant)</span></p>
+                                    <p><strong className="text-white">Q5:</strong> How was your team collaboration and support? <span className="text-zinc-400 text-[10px]">(Excellent / Good / Average / Poor)</span></p>
+                                    <p><strong className="text-white">Q6:</strong> Quality of mentorship and guidance provided <span className="text-zinc-400 text-[10px]">(Very helpful / Somewhat helpful / Not enough mentors / Did not use)</span></p>
+                                  </div>
+                                </div>
+
+                                {/* Section C */}
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 space-y-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] block">
+                                    Section C — Logistics &amp; Organisation
+                                  </span>
+                                  <div className="space-y-1.5 text-[11px] text-zinc-300">
+                                    <p><strong className="text-white">Q7:</strong> Venue, labs, power, and Wi-Fi facilities <span className="text-zinc-400 text-[10px]">(Rating 1–5 ⭐)</span></p>
+                                    <p><strong className="text-white">Q8:</strong> Schedule and time management <span className="text-zinc-400 text-[10px]">(Well managed / A bit rushed / Too lengthy / Poorly managed)</span></p>
+                                  </div>
+                                </div>
+
+                                {/* Section D */}
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 space-y-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] block">
+                                    Section D — Highlights &amp; Suggestions (Open Text)
+                                  </span>
+                                  <div className="space-y-1.5 text-[11px] text-zinc-300">
+                                    <p><strong className="text-white">Q9:</strong> What did you enjoy most about SIH 2026? <span className="text-zinc-400 text-[10px]">(Open-ended text)</span></p>
+                                    <p><strong className="text-white">Q10:</strong> What could be improved for the next hackathon? <span className="text-zinc-400 text-[10px]">(Open-ended text)</span></p>
+                                  </div>
+                                </div>
+
+                                {/* Section E */}
+                                <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 space-y-2 md:col-span-2">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-[#d4af37] block">
+                                    Section E — Looking Forward
+                                  </span>
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-zinc-300">
+                                    <p><strong className="text-white">Q11:</strong> Future Hackathon Interest <span className="text-zinc-400 text-[10px]">(Definitely yes / Probably yes / Maybe / Probably not)</span></p>
+                                    <p><strong className="text-white">Q12:</strong> Recommend to Juniors <span className="text-zinc-400 text-[10px]">(Definitely yes / Probably yes / Maybe / No)</span></p>
+                                    <p><strong className="text-white">Q13:</strong> Additional Feedback / Suggestions <span className="text-zinc-400 text-[10px]">(Open-ended text)</span></p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {sihFeedbacksLoading ? (
-                            <p className="text-zinc-500 text-xs text-center py-6">Loading…</p>
+                            <p className="text-zinc-500 text-xs text-center py-8">Loading participant feedback…</p>
                           ) : sihFeedbacks.length === 0 ? (
-                            <p className="text-zinc-600 text-xs text-center py-6">No feedback submitted yet.</p>
+                            <div className="rounded-xl border border-zinc-900 bg-zinc-950/30 p-8 text-center space-y-2">
+                              <p className="text-3xl">📭</p>
+                              <p className="text-white text-sm font-bold">No Feedback Responses Yet</p>
+                              <p className="text-zinc-500 text-xs max-w-md mx-auto">Participants can submit their feedback anytime from the SIH Dashboard. Once responses are submitted, they will appear here with full question-by-question breakdowns.</p>
+                            </div>
                           ) : (
                             <>
                               {/* Summary Stats */}
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {[
-                                  { label: 'Avg. Overall', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q1_overall_experience,0)/sihFeedbacks.length).toFixed(1) },
-                                  { label: 'Avg. Organisation', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q2_event_organisation,0)/sihFeedbacks.length).toFixed(1) },
-                                  { label: 'Avg. Judging', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q3_judging_fairness,0)/sihFeedbacks.length).toFixed(1) },
-                                  { label: 'Avg. Venue', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q7_venue_facilities,0)/sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Q1. Overall Experience', val: (sihFeedbacks.reduce((a: number, f: any) => a + (f.q1_overall_experience || 0), 0) / sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Q2. Event Organisation', val: (sihFeedbacks.reduce((a: number, f: any) => a + (f.q2_event_organisation || 0), 0) / sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Q3. Judging Fairness', val: (sihFeedbacks.reduce((a: number, f: any) => a + (f.q3_judging_fairness || 0), 0) / sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Q7. Venue & Facilities', val: (sihFeedbacks.reduce((a: number, f: any) => a + (f.q7_venue_facilities || 0), 0) / sihFeedbacks.length).toFixed(1) },
                                 ].map(s => (
-                                  <div key={s.label} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-                                    <p className="text-2xl font-black text-[#d4af37]">{s.val}<span className="text-sm text-zinc-500">/5</span></p>
-                                    <p className="text-[9px] uppercase tracking-wider text-zinc-500 mt-1">{s.label}</p>
+                                  <div key={s.label} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3.5 text-center">
+                                    <p className="text-2xl font-black text-[#d4af37]">{s.val}<span className="text-xs text-zinc-500">/5</span></p>
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 mt-1">{s.label}</p>
                                   </div>
                                 ))}
                               </div>
 
-                              {/* Individual Responses */}
-                              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                                {sihFeedbacks.map((fb: any) => (
-                                  <div key={fb.id} className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-xs font-bold text-white">{fb.student_name}</p>
-                                        <p className="text-[10px] text-zinc-500">{fb.student_email} · {fb.roll_number}</p>
-                                      </div>
-                                      <p className="text-[10px] text-zinc-600">{new Date(fb.submitted_at).toLocaleDateString('en-IN')}</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                      {[
-                                        ['Overall', fb.q1_overall_experience],
-                                        ['Organisation', fb.q2_event_organisation],
-                                        ['Judging', fb.q3_judging_fairness],
-                                        ['Venue', fb.q7_venue_facilities],
-                                      ].map(([lbl, val]) => (
-                                        <div key={lbl as string} className="text-center">
-                                          <p className="text-xs font-black text-[#d4af37]">{'⭐'.repeat(val as number)}</p>
-                                          <p className="text-[9px] text-zinc-500">{lbl}</p>
+                              {/* Search bar */}
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Search feedback by student name, roll number, or email…"
+                                  value={sihFeedbackSearch}
+                                  onChange={(e) => setSihFeedbackSearch(e.target.value)}
+                                  className="w-full bg-zinc-900/60 border border-zinc-800 rounded-lg px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#d4af37]/60"
+                                />
+                                {sihFeedbackSearch && (
+                                  <button
+                                    onClick={() => setSihFeedbackSearch('')}
+                                    className="px-2.5 py-2 bg-zinc-800 text-zinc-400 hover:text-white rounded-lg text-xs"
+                                  >
+                                    Clear
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Individual Responses with Question Labels */}
+                              <div className="space-y-4 max-h-[700px] overflow-y-auto pr-1">
+                                {sihFeedbacks
+                                  .filter((fb: any) => {
+                                    if (!sihFeedbackSearch) return true;
+                                    const q = sihFeedbackSearch.toLowerCase();
+                                    return (
+                                      (fb.student_name || '').toLowerCase().includes(q) ||
+                                      (fb.student_email || '').toLowerCase().includes(q) ||
+                                      (fb.roll_number || '').toLowerCase().includes(q)
+                                    );
+                                  })
+                                  .map((fb: any, idx: number) => (
+                                    <div key={fb.id || idx} className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-4 space-y-4 hover:border-zinc-700/80 transition">
+                                      {/* Participant Header */}
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-zinc-800/60 gap-2">
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <p className="text-xs font-bold text-white">{fb.student_name}</p>
+                                            <span className="text-[10px] font-mono text-[#d4af37] bg-[#d4af37]/10 px-2 py-0.5 rounded border border-[#d4af37]/20">
+                                              {fb.roll_number}
+                                            </span>
+                                          </div>
+                                          <p className="text-[10px] text-zinc-500 mt-0.5">{fb.student_email}</p>
                                         </div>
-                                      ))}
+                                        <p className="text-[10px] text-zinc-500 font-mono">
+                                          Submitted: {new Date(fb.submitted_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                        </p>
+                                      </div>
+
+                                      {/* Section A: Star Ratings */}
+                                      <div className="space-y-1.5">
+                                        <p className="text-[9px] font-black uppercase tracking-wider text-[#d4af37]">Section A &amp; C · Numerical Ratings</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                          {[
+                                            { num: 'Q1', lbl: 'Overall Experience', val: fb.q1_overall_experience },
+                                            { num: 'Q2', lbl: 'Event Organisation', val: fb.q2_event_organisation },
+                                            { num: 'Q3', lbl: 'Judging Fairness', val: fb.q3_judging_fairness },
+                                            { num: 'Q7', lbl: 'Venue & Facilities', val: fb.q7_venue_facilities },
+                                          ].map((item) => (
+                                            <div key={item.num} className="bg-zinc-950/60 border border-zinc-800/60 rounded-lg p-2.5 text-center">
+                                              <p className="text-xs font-black text-[#d4af37]">
+                                                {'⭐'.repeat(item.val || 0)} <span className="text-[11px] text-zinc-300 font-sans ml-1">({item.val}/5)</span>
+                                              </p>
+                                              <p className="text-[9px] text-zinc-400 font-medium mt-1"><strong className="text-white">{item.num}:</strong> {item.lbl}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Section B, C & E: MCQs */}
+                                      <div className="space-y-1.5">
+                                        <p className="text-[9px] font-black uppercase tracking-wider text-[#d4af37]">Section B, C &amp; E · Multiple Choice Responses</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
+                                          <div className="bg-zinc-950/60 border border-zinc-800/50 rounded-lg p-2.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold"><strong className="text-white">Q4:</strong> Problem Statement Relevance</p>
+                                            <p className="text-zinc-200 mt-1 font-semibold">{fb.q4_ps_relevance || '—'}</p>
+                                          </div>
+                                          <div className="bg-zinc-950/60 border border-zinc-800/50 rounded-lg p-2.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold"><strong className="text-white">Q5:</strong> Team Collaboration</p>
+                                            <p className="text-zinc-200 mt-1 font-semibold">{fb.q5_team_collaboration || '—'}</p>
+                                          </div>
+                                          <div className="bg-zinc-950/60 border border-zinc-800/50 rounded-lg p-2.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold"><strong className="text-white">Q6:</strong> Mentorship Quality</p>
+                                            <p className="text-zinc-200 mt-1 font-semibold">{fb.q6_mentorship_quality || '—'}</p>
+                                          </div>
+                                          <div className="bg-zinc-950/60 border border-zinc-800/50 rounded-lg p-2.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold"><strong className="text-white">Q8:</strong> Schedule &amp; Time Mgmt</p>
+                                            <p className="text-zinc-200 mt-1 font-semibold">{fb.q8_time_management || '—'}</p>
+                                          </div>
+                                          <div className="bg-zinc-950/60 border border-zinc-800/50 rounded-lg p-2.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold"><strong className="text-white">Q11:</strong> Future Hackathons</p>
+                                            <p className="text-zinc-200 mt-1 font-semibold">{fb.q11_future_interest || '—'}</p>
+                                          </div>
+                                          <div className="bg-zinc-950/60 border border-zinc-800/50 rounded-lg p-2.5">
+                                            <p className="text-[10px] text-zinc-400 font-bold"><strong className="text-white">Q12:</strong> Recommend to Juniors</p>
+                                            <p className="text-zinc-200 mt-1 font-semibold">{fb.q12_recommend || '—'}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Section D & Text Feedback */}
+                                      <div className="space-y-2">
+                                        <p className="text-[9px] font-black uppercase tracking-wider text-[#d4af37]">Section D · Open-Ended Written Feedback</p>
+                                        <div className="space-y-2">
+                                          {fb.q9_best_part && (
+                                            <div className="bg-zinc-950/70 border border-zinc-800/60 rounded-lg p-3 space-y-1">
+                                              <p className="text-[10px] font-bold text-zinc-400">
+                                                <strong className="text-yellow-400">Q9:</strong> What did you enjoy most about SIH 2026?
+                                              </p>
+                                              <p className="text-xs text-zinc-200 leading-relaxed font-light pl-2 border-l-2 border-yellow-500/50">
+                                                {fb.q9_best_part}
+                                              </p>
+                                            </div>
+                                          )}
+                                          {fb.q10_improvement && (
+                                            <div className="bg-zinc-950/70 border border-zinc-800/60 rounded-lg p-3 space-y-1">
+                                              <p className="text-[10px] font-bold text-zinc-400">
+                                                <strong className="text-yellow-400">Q10:</strong> What could be improved for the next hackathon?
+                                              </p>
+                                              <p className="text-xs text-zinc-200 leading-relaxed font-light pl-2 border-l-2 border-yellow-500/50">
+                                                {fb.q10_improvement}
+                                              </p>
+                                            </div>
+                                          )}
+                                          {fb.q13_general_feedback && (
+                                            <div className="bg-zinc-950/70 border border-zinc-800/60 rounded-lg p-3 space-y-1">
+                                              <p className="text-[10px] font-bold text-zinc-400">
+                                                <strong className="text-yellow-400">Q13:</strong> Additional feedback, thoughts, or suggestions
+                                              </p>
+                                              <p className="text-xs text-zinc-200 leading-relaxed font-light pl-2 border-l-2 border-yellow-500/50">
+                                                {fb.q13_general_feedback}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px]">
-                                      <div><span className="text-zinc-500">PS Relevance:</span> <span className="text-zinc-200">{fb.q4_ps_relevance}</span></div>
-                                      <div><span className="text-zinc-500">Team Collaboration:</span> <span className="text-zinc-200">{fb.q5_team_collaboration}</span></div>
-                                      <div><span className="text-zinc-500">Mentorship:</span> <span className="text-zinc-200">{fb.q6_mentorship_quality}</span></div>
-                                      <div><span className="text-zinc-500">Time Mgmt:</span> <span className="text-zinc-200">{fb.q8_time_management}</span></div>
-                                      <div><span className="text-zinc-500">Participate Again:</span> <span className="text-zinc-200">{fb.q11_future_interest}</span></div>
-                                      <div><span className="text-zinc-500">Recommend:</span> <span className="text-zinc-200">{fb.q12_recommend}</span></div>
-                                    </div>
-                                    {fb.q9_best_part && <div className="bg-zinc-950/60 rounded-lg p-2.5 space-y-1"><p className="text-[9px] font-black uppercase tracking-wider text-zinc-500">Best Part</p><p className="text-xs text-zinc-300 leading-relaxed">{fb.q9_best_part}</p></div>}
-                                    {fb.q10_improvement && <div className="bg-zinc-950/60 rounded-lg p-2.5 space-y-1"><p className="text-[9px] font-black uppercase tracking-wider text-zinc-500">Improvement</p><p className="text-xs text-zinc-300 leading-relaxed">{fb.q10_improvement}</p></div>}
-                                    {fb.q13_general_feedback && <div className="bg-zinc-950/60 rounded-lg p-2.5 space-y-1"><p className="text-[9px] font-black uppercase tracking-wider text-zinc-500">General Feedback</p><p className="text-xs text-zinc-300 leading-relaxed">{fb.q13_general_feedback}</p></div>}
-                                  </div>
-                                ))}
+                                  ))}
                               </div>
                             </>
                           )}

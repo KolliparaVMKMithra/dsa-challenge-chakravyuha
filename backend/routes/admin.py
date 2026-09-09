@@ -2873,22 +2873,6 @@ def send_sih_participation_email(
             'the hackathon. Competing in SIH is not just a milestone &mdash; it is a testament to your '
             'passion for building real-world solutions that matter.</p>'
             '</div>'
-            '<div style="margin:0 30px 28px;background:linear-gradient(135deg,#1c1917,#151310);'
-            'border:1px solid rgba(212,175,55,0.3);border-radius:10px;overflow:hidden;">'
-            '<div style="background:rgba(212,175,55,0.08);padding:12px 20px;border-bottom:1px solid rgba(212,175,55,0.15);">'
-            '<p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;">'
-            '&#x1F4DC; Participation Certificate</p></div>'
-            '<div style="padding:20px 24px;">'
-            '<p style="font-size:14px;color:#d4d4d8;margin:0 0 12px;line-height:1.7;">'
-            'Your <strong style="color:#fff;">Participation Certificate</strong> for SIH 2026 is now '
-            'available for download from the Chakravyuha portal.</p>'
-            '<p style="font-size:13px;color:#a1a1aa;margin:0 0 18px;">'
-            'Log in &rarr; <strong style="color:#d4af37;">Chakravyuha</strong> &rarr; SIH Dashboard &rarr; Download Certificate</p>'
-            '<a href="https://chakravyuha.amrita.edu/events/sih-dashboard" '
-            'style="display:inline-block;background:linear-gradient(135deg,#d4af37,#8c7030);'
-            'color:#0a0908;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:2px;'
-            'padding:12px 28px;border-radius:8px;text-decoration:none;">'
-            '&#x1F393; Download Certificate</a></div></div>'
             '<div style="margin:0 30px 28px;background:rgba(212,175,55,0.04);'
             'border:1px solid rgba(212,175,55,0.12);border-radius:10px;padding:22px 24px;">'
             '<p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;'
@@ -2897,9 +2881,9 @@ def send_sih_participation_email(
             'Your experience matters! Help us make future hackathons even better by filling out our '
             '<strong style="color:#fff;">SIH 2026 Feedback Form</strong> available in the SIH Dashboard on Chakravyuha.</p>'
             '<a href="https://chakravyuha.amrita.edu/events/sih-dashboard" '
-            'style="display:inline-block;border:1px solid #d4af37;color:#d4af37;font-weight:700;'
-            'font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:10px 22px;'
-            'border-radius:8px;text-decoration:none;">&#x1F4CB; Give Feedback</a></div>'
+            'style="display:inline-block;background:linear-gradient(135deg,#d4af37,#8c7030);'
+            'color:#0a0908;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:1px;'
+            'padding:12px 26px;border-radius:8px;text-decoration:none;">&#x1F4CB; Give Feedback</a></div>'
             '<div style="text-align:center;padding:20px 30px 35px;border-top:1px solid rgba(212,175,55,0.1);">'
             '<p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">'
             'Keep building. Keep innovating. &#x1F680;</p>'
@@ -2910,7 +2894,7 @@ def send_sih_participation_email(
 
         email_subject = (
             "\U0001f3c6 Congratulations on Participating in SIH 2026"
-            " \u2014 Certificate & Feedback Now Available!"
+            " \u2014 Share Your Feedback!"
         )
 
         payload_data = {
