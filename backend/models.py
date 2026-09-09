@@ -244,3 +244,38 @@ class SIHJudgingScore(Base):
     updated_at  = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
 
     team = relationship("SIHTeam")
+
+
+class SIHFeedback(Base):
+    """Stores student feedback for SIH 2026 Internal Hackathon."""
+    __tablename__ = "sih_feedback"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    student_id = Column(String(36), ForeignKey("students.id", ondelete="CASCADE"), nullable=False, unique=True)
+
+    # Section A: Overall Experience (Rating 1–5)
+    q1_overall_experience = Column(Integer, nullable=False)          # Rating 1–5
+    q2_event_organisation = Column(Integer, nullable=False)          # Rating 1–5
+    q3_judging_fairness   = Column(Integer, nullable=False)          # Rating 1–5
+
+    # Section B: Problem Statement & Teamwork (MCQ / Options)
+    q4_ps_relevance       = Column(String(100), nullable=False)      # "Very Relevant" / "Relevant" / "Neutral" / "Irrelevant"
+    q5_team_collaboration = Column(String(100), nullable=False)      # "Excellent" / "Good" / "Fair" / "Poor"
+    q6_mentorship_quality = Column(String(100), nullable=False)      # "Very Helpful" / "Somewhat Helpful" / "Not Helpful" / "N/A"
+
+    # Section C: Infrastructure (Rating 1–5)
+    q7_venue_facilities   = Column(Integer, nullable=False)          # Rating 1–5
+    q8_time_management    = Column(String(100), nullable=False)      # "Well-managed" / "Mostly on time" / "Delayed" / "Very delayed"
+
+    # Section D: Open-ended (Text Answers)
+    q9_best_part          = Column(String(1500), nullable=False)     # What did you enjoy most?
+    q10_improvement       = Column(String(1500), nullable=False)     # What could be improved?
+    q11_future_interest   = Column(String(100), nullable=False)      # "Yes, definitely" / "Maybe" / "No"
+
+    # Section E: Would you recommend (MCQ)
+    q12_recommend         = Column(String(100), nullable=False)      # "Yes" / "No" / "Maybe"
+    q13_general_feedback  = Column(String(1500), nullable=True)      # Optional open feedback
+
+    submitted_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    student = relationship("Student")

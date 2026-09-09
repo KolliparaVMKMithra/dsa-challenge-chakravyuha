@@ -153,7 +153,7 @@ export default function SuperAdminPage() {
   const [sihPage, setSihPage] = useState(1);
   const SIH_PAGE_SIZE = 5;
   // Marks sub-section
-  const [sihSubTab, setSihSubTab] = useState<'overview'|'marks'|'leaderboard'>('overview');
+  const [sihSubTab, setSihSubTab] = useState<'overview'|'marks'|'leaderboard'|'email'|'feedback_sih'>('overview');
   const [sihMarks, setSihMarks] = useState<any[]>([]);
   const [sihMarksLoading, setSihMarksLoading] = useState(false);
   const [marksModalOpen, setMarksModalOpen] = useState(false);
@@ -163,6 +163,11 @@ export default function SuperAdminPage() {
   const [marksError, setMarksError] = useState<string|null>(null);
   const [marksRoomFilter, setMarksRoomFilter] = useState('');
   const [deleteMarksConfirm, setDeleteMarksConfirm] = useState<number|null>(null);
+  const [sihFeedbacks, setSihFeedbacks] = useState<any[]>([]);
+  const [sihFeedbacksLoading, setSihFeedbacksLoading] = useState(false);
+  const [sihEmailSending, setSihEmailSending] = useState(false);
+  const [sihEmailPreviewOpen, setSihEmailPreviewOpen] = useState(false);
+  const [sihEmailResult, setSihEmailResult] = useState<any>(null);
   const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
   const [editingSihTeamId, setEditingSihTeamId] = useState<number | null>(null);
   const [editingSihTeamName, setEditingSihTeamName] = useState('');
@@ -2726,7 +2731,7 @@ export default function SuperAdminPage() {
                     <div className="space-y-6">
                       {/* Sub-Tab Bar */}
                       <div className="flex gap-2 border-b border-zinc-900 pb-3">
-                        {(['overview','marks','leaderboard'] as const).map(tab => (
+                        {(['overview','marks','leaderboard','email','feedback_sih'] as const).map(tab => (
                           <button
                             key={tab}
                             onClick={() => {
@@ -2737,11 +2742,18 @@ export default function SuperAdminPage() {
                                   .then((d:any) => setSihMarks(d || []))
                                   .finally(() => setSihMarksLoading(false));
                               }
+                              if (tab === 'feedback_sih') {
+                                setSihFeedbacksLoading(true);
+                                apiRequest('/api/admin/sih/feedback')
+                                  .then((d:any) => setSihFeedbacks(d || []))
+                                  .catch(() => {})
+                                  .finally(() => setSihFeedbacksLoading(false));
+                              }
                             }}
                             className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${sihSubTab===tab ? 'text-black' : 'bg-zinc-900/40 text-zinc-400 hover:text-white'}`}
                             style={sihSubTab===tab ? {background:'linear-gradient(135deg,#d4af37,#8c7030)'} : {}}
                           >
-                            {tab === 'overview' ? '📊 Overview' : tab === 'marks' ? '✏️ Marks Entry' : '🏆 Leaderboard'}
+                            {tab === 'overview' ? '📊 Overview' : tab === 'marks' ? '✏️ Marks Entry' : tab === 'leaderboard' ? '🏆 Leaderboard' : tab === 'email' ? '📧 Send Emails' : '💬 Feedback'}
                           </button>
                         ))}
                       </div>
@@ -3506,7 +3518,170 @@ export default function SuperAdminPage() {
                               </table>
                             </div>
                           )}
-                          <p className="text-[10px] text-zinc-600">📊 Scores are normalized per-room: each room's top scorer = 100. Ensures no cross-room bias.</p>
+                          <p className="text-[10px] text-zinc-600">📊 Scores are normalized per-room: each room&apos;s top scorer = 100. Ensures no cross-room bias.</p>
+                        </div>
+                      )}
+
+                      {/* ── EMAIL BLAST PANEL ─────────────────────── */}
+                      {sihSubTab === 'email' && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-sm font-bold text-white font-serif">📧 SIH 2026 Participation Emails</h4>
+                              <p className="text-[10px] text-zinc-500 mt-0.5">Send personalised congratulations emails to all registered SIH participants</p>
+                            </div>
+                          </div>
+
+                          {/* Email Preview */}
+                          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 space-y-3">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">📬 Email Preview</p>
+                            <div className="bg-[#0a0908] border border-[#c5a059]/40 rounded-xl p-4 space-y-3 max-h-[420px] overflow-y-auto text-xs">
+                              <div className="text-center border-b border-[#d4af37]/30 pb-3">
+                                <div className="text-2xl mb-1">🛡️</div>
+                                <p className="text-[#d4af37] font-black uppercase tracking-widest text-[10px]">CHAKRAVYUHA</p>
+                                <p className="text-[#8c7030] text-[9px] uppercase tracking-widest">Amrita Vishwa Vidyapeetham · Amaravati</p>
+                              </div>
+                              <div className="space-y-2 pt-2">
+                                <p className="text-[#d4af37] text-[9px] uppercase tracking-widest font-black">🏆 Smart India Hackathon 2026</p>
+                                <p className="text-white font-bold text-sm">Congratulations, <span className="text-[#d4af37]">[First Name]</span>! 🎉</p>
+                                <p className="text-zinc-400 leading-relaxed">We are incredibly proud to recognise your participation in the <strong className="text-yellow-300">Smart India Hackathon 2026 — Internal Round</strong> conducted by <strong className="text-white">Chakravyuha, Amrita Vishwa Vidyapeetham, Amaravati</strong>.</p>
+                                <p className="text-zinc-500 leading-relaxed">You demonstrated outstanding dedication, innovative thinking, and true team spirit throughout the hackathon.</p>
+                              </div>
+                              <div className="border border-[#d4af37]/30 rounded-lg p-3 bg-[#d4af37]/5 space-y-2">
+                                <p className="text-[#d4af37] text-[9px] font-black uppercase tracking-wider">📜 Participation Certificate</p>
+                                <p className="text-zinc-300">Your participation certificate is available on the <strong className="text-[#d4af37]">SIH Dashboard</strong> in Chakravyuha.</p>
+                                <div className="inline-block bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black text-[9px] font-black px-3 py-1.5 rounded-lg">🎓 Download Certificate</div>
+                              </div>
+                              <div className="border border-[#d4af37]/20 rounded-lg p-3 bg-[#d4af37]/3 space-y-2">
+                                <p className="text-[#d4af37] text-[9px] font-black uppercase tracking-wider">📝 Share Your Feedback</p>
+                                <p className="text-zinc-400">Help us make future hackathons better — fill out the SIH 2026 Feedback Form in the SIH Dashboard.</p>
+                                <div className="inline-block border border-[#d4af37] text-[#d4af37] text-[9px] font-black px-3 py-1.5 rounded-lg">📋 Give Feedback</div>
+                              </div>
+                              <div className="text-center border-t border-[#d4af37]/10 pt-3">
+                                <p className="text-white text-xs font-bold">Keep building. Keep innovating. 🚀</p>
+                                <p className="text-zinc-600 text-[9px] mt-1">Chakravyuha · Official Coding & DSA Club of Amrita · Amaravati</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Send Result */}
+                          {sihEmailResult && (
+                            <div className={`rounded-xl border p-4 text-xs space-y-1 ${sihEmailResult.success ? 'border-emerald-800/40 bg-emerald-950/20 text-emerald-300' : 'border-red-800/40 bg-red-950/20 text-red-300'}`}>
+                              <p className="font-bold">{sihEmailResult.success ? '✅ Emails Sent!' : '❌ Error'}</p>
+                              {sihEmailResult.success && (
+                                <>
+                                  <p>Total members: <strong>{sihEmailResult.total_members}</strong></p>
+                                  <p>Sent: <strong>{sihEmailResult.sent_count}</strong></p>
+                                  <p>Webhook configured: <strong>{sihEmailResult.webhook_configured ? 'Yes' : 'No (logged only)'}</strong></p>
+                                  {sihEmailResult.errors?.length > 0 && <p className="text-orange-400">Errors: {sihEmailResult.errors.join(', ')}</p>}
+                                </>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Warning + Send Button */}
+                          <div className="bg-amber-950/20 border border-amber-800/30 rounded-xl p-4 space-y-3">
+                            <p className="text-amber-300 text-xs font-bold">⚠️ Important</p>
+                            <p className="text-amber-400/80 text-[11px] leading-relaxed">This will send an email to <strong>every</strong> registered SIH 2026 team member. Review the preview above carefully before sending. This action cannot be undone.</p>
+                            <button
+                              onClick={async () => {
+                                if (!confirm('Are you sure you want to send participation emails to ALL SIH 2026 team members? This cannot be undone.')) return;
+                                setSihEmailSending(true);
+                                setSihEmailResult(null);
+                                try {
+                                  const result = await apiRequest('/api/admin/sih/send-participation-email', { method: 'POST' });
+                                  setSihEmailResult(result);
+                                } catch (err: any) {
+                                  setSihEmailResult({ success: false, error: err.message });
+                                } finally {
+                                  setSihEmailSending(false);
+                                }
+                              }}
+                              disabled={sihEmailSending}
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider text-black disabled:opacity-50 transition"
+                              style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)' }}
+                            >
+                              {sihEmailSending ? '⏳ Sending…' : '📧 Send Participation Emails'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── SIH FEEDBACK VIEWER ─────────────────────── */}
+                      {sihSubTab === 'feedback_sih' && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-sm font-bold text-white font-serif">💬 SIH 2026 Participant Feedback</h4>
+                              <span className="text-[10px] text-zinc-500">{sihFeedbacks.length} response{sihFeedbacks.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <button onClick={() => { setSihFeedbacksLoading(true); apiRequest('/api/admin/sih/feedback').then((d:any) => setSihFeedbacks(d||[])).catch(()=>{}).finally(()=>setSihFeedbacksLoading(false)); }}
+                              className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">
+                              🔄 Refresh
+                            </button>
+                          </div>
+
+                          {sihFeedbacksLoading ? (
+                            <p className="text-zinc-500 text-xs text-center py-6">Loading…</p>
+                          ) : sihFeedbacks.length === 0 ? (
+                            <p className="text-zinc-600 text-xs text-center py-6">No feedback submitted yet.</p>
+                          ) : (
+                            <>
+                              {/* Summary Stats */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {[
+                                  { label: 'Avg. Overall', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q1_overall_experience,0)/sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Avg. Organisation', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q2_event_organisation,0)/sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Avg. Judging', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q3_judging_fairness,0)/sihFeedbacks.length).toFixed(1) },
+                                  { label: 'Avg. Venue', val: (sihFeedbacks.reduce((a:number,f:any)=>a+f.q7_venue_facilities,0)/sihFeedbacks.length).toFixed(1) },
+                                ].map(s => (
+                                  <div key={s.label} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+                                    <p className="text-2xl font-black text-[#d4af37]">{s.val}<span className="text-sm text-zinc-500">/5</span></p>
+                                    <p className="text-[9px] uppercase tracking-wider text-zinc-500 mt-1">{s.label}</p>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Individual Responses */}
+                              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                                {sihFeedbacks.map((fb: any) => (
+                                  <div key={fb.id} className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-xs font-bold text-white">{fb.student_name}</p>
+                                        <p className="text-[10px] text-zinc-500">{fb.student_email} · {fb.roll_number}</p>
+                                      </div>
+                                      <p className="text-[10px] text-zinc-600">{new Date(fb.submitted_at).toLocaleDateString('en-IN')}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      {[
+                                        ['Overall', fb.q1_overall_experience],
+                                        ['Organisation', fb.q2_event_organisation],
+                                        ['Judging', fb.q3_judging_fairness],
+                                        ['Venue', fb.q7_venue_facilities],
+                                      ].map(([lbl, val]) => (
+                                        <div key={lbl as string} className="text-center">
+                                          <p className="text-xs font-black text-[#d4af37]">{'⭐'.repeat(val as number)}</p>
+                                          <p className="text-[9px] text-zinc-500">{lbl}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px]">
+                                      <div><span className="text-zinc-500">PS Relevance:</span> <span className="text-zinc-200">{fb.q4_ps_relevance}</span></div>
+                                      <div><span className="text-zinc-500">Team Collaboration:</span> <span className="text-zinc-200">{fb.q5_team_collaboration}</span></div>
+                                      <div><span className="text-zinc-500">Mentorship:</span> <span className="text-zinc-200">{fb.q6_mentorship_quality}</span></div>
+                                      <div><span className="text-zinc-500">Time Mgmt:</span> <span className="text-zinc-200">{fb.q8_time_management}</span></div>
+                                      <div><span className="text-zinc-500">Participate Again:</span> <span className="text-zinc-200">{fb.q11_future_interest}</span></div>
+                                      <div><span className="text-zinc-500">Recommend:</span> <span className="text-zinc-200">{fb.q12_recommend}</span></div>
+                                    </div>
+                                    {fb.q9_best_part && <div className="bg-zinc-950/60 rounded-lg p-2.5 space-y-1"><p className="text-[9px] font-black uppercase tracking-wider text-zinc-500">Best Part</p><p className="text-xs text-zinc-300 leading-relaxed">{fb.q9_best_part}</p></div>}
+                                    {fb.q10_improvement && <div className="bg-zinc-950/60 rounded-lg p-2.5 space-y-1"><p className="text-[9px] font-black uppercase tracking-wider text-zinc-500">Improvement</p><p className="text-xs text-zinc-300 leading-relaxed">{fb.q10_improvement}</p></div>}
+                                    {fb.q13_general_feedback && <div className="bg-zinc-950/60 rounded-lg p-2.5 space-y-1"><p className="text-[9px] font-black uppercase tracking-wider text-zinc-500">General Feedback</p><p className="text-xs text-zinc-300 leading-relaxed">{fb.q13_general_feedback}</p></div>}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
 

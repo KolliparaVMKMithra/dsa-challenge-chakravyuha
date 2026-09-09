@@ -1513,3 +1513,66 @@ def select_ps(
         "ps_number": ps.ps_number,
         "title": ps.title,
     }
+
+
+# ── SIH Feedback (student-facing) ─────────────────────────────────────────────
+
+from backend.models import SIHFeedback as _SIHFeedback
+
+
+@router.get("/sih/feedback/status")
+def get_sih_feedback_status(
+    current_student: Student = Depends(get_current_active_student),
+    db: Session = Depends(get_db)
+):
+    # Returns whether the current student has already submitted SIH feedback.
+    existing = db.query(_SIHFeedback).filter(_SIHFeedback.student_id == current_student.id).first()
+    return {"submitted": existing is not None}
+
+
+@router.post("/sih/feedback")
+def submit_sih_feedback(
+    payload: dict,
+    current_student: Student = Depends(get_current_active_student),
+    db: Session = Depends(get_db)
+):
+    # Submits SIH 2026 feedback for the authenticated student. One submission per student.
+    existing = db.query(_SIHFeedback).filter(_SIHFeedback.student_id == current_student.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="You have already submitted feedback for SIH 2026.")
+
+    required_int = ["q1_overall_experience", "q2_event_organisation", "q3_judging_fairness", "q7_venue_facilities"]
+    required_str = [
+        "q4_ps_relevance", "q5_team_collaboration", "q6_mentorship_quality",
+        "q8_time_management", "q9_best_part", "q10_improvement",
+        "q11_future_interest", "q12_recommend"
+    ]
+
+    for field in required_int:
+        val = payload.get(field)
+        if not isinstance(val, int) or val < 1 or val > 5:
+            raise HTTPException(status_code=400, detail=f"'{field}' must be an integer between 1 and 5.")
+    for field in required_str:
+        if not payload.get(field, "").strip():
+            raise HTTPException(status_code=400, detail=f"'{field}' is required.")
+
+    fb = _SIHFeedback(
+        student_id=current_student.id,
+        q1_overall_experience=payload["q1_overall_experience"],
+        q2_event_organisation=payload["q2_event_organisation"],
+        q3_judging_fairness=payload["q3_judging_fairness"],
+        q4_ps_relevance=payload["q4_ps_relevance"],
+        q5_team_collaboration=payload["q5_team_collaboration"],
+        q6_mentorship_quality=payload["q6_mentorship_quality"],
+        q7_venue_facilities=payload["q7_venue_facilities"],
+        q8_time_management=payload["q8_time_management"],
+        q9_best_part=payload["q9_best_part"].strip(),
+        q10_improvement=payload["q10_improvement"].strip(),
+        q11_future_interest=payload["q11_future_interest"],
+        q12_recommend=payload["q12_recommend"],
+        q13_general_feedback=(payload.get("q13_general_feedback") or "").strip() or None,
+    )
+    db.add(fb)
+    db.commit()
+    return {"success": True, "detail": "Thank you! Your feedback for SIH 2026 has been submitted."}
+

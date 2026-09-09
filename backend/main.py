@@ -200,31 +200,20 @@ def startup_db_init():
     except Exception as e:
         logger.warning(f"Failed to add room_number to sih_teams (may already exist): {e}")
 
-    # Run migration: create sih_judging_scores table
+    # Run migration: create sih_judging_scores and sih_feedback tables
     try:
         with engine.begin() as conn:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS sih_judging_scores (
-                    id SERIAL PRIMARY KEY,
-                    team_id INTEGER UNIQUE NOT NULL REFERENCES sih_teams(id) ON DELETE CASCADE,
-                    j1_problem_understanding INTEGER NOT NULL DEFAULT 0,
-                    j1_innovation INTEGER NOT NULL DEFAULT 0,
-                    j1_technical_feasibility INTEGER NOT NULL DEFAULT 0,
-                    j1_scalability_impact INTEGER NOT NULL DEFAULT 0,
-                    j1_presentation_qa INTEGER NOT NULL DEFAULT 0,
-                    j2_problem_understanding INTEGER NOT NULL DEFAULT 0,
-                    j2_innovation INTEGER NOT NULL DEFAULT 0,
-                    j2_technical_feasibility INTEGER NOT NULL DEFAULT 0,
-                    j2_scalability_impact INTEGER NOT NULL DEFAULT 0,
-                    j2_presentation_qa INTEGER NOT NULL DEFAULT 0,
-                    entered_by VARCHAR(100),
-                    entered_at TIMESTAMP NOT NULL DEFAULT NOW(),
-                    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-                );
-            """))
+            Base.metadata.tables['sih_judging_scores'].create(bind=conn, checkfirst=True)
         logger.info("sih_judging_scores table ensured.")
     except Exception as e:
         logger.warning(f"Failed to create sih_judging_scores table: {e}")
+
+    try:
+        with engine.begin() as conn:
+            Base.metadata.tables['sih_feedback'].create(bind=conn, checkfirst=True)
+        logger.info("sih_feedback table ensured.")
+    except Exception as e:
+        logger.warning(f"Failed to create sih_feedback table: {e}")
 
     from backend.database import SessionLocal
     db = SessionLocal()

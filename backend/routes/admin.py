@@ -11,7 +11,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
-from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection, SIHJudgingScore
+from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection, SIHJudgingScore, SIHFeedback
 from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse, SIHTeamRegistration, AdminPSOverrideRequest
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
@@ -2810,3 +2810,181 @@ def export_sih_shortlist(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=SIH2026_Top50_Shortlist.xlsx"}
     )
+
+
+# ── SIH Participation Email Blast ─────────────────────────────────────────────
+
+@router.post("/sih/send-participation-email")
+def send_sih_participation_email(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    # Sends personalised SIH 2026 participation emails to every registered team member via Power Automate.
+    import requests as _req
+
+    webhook_url = (
+        os.environ.get("POWER_AUTOMATE_SIH_WEBHOOK_URL")
+        or os.environ.get("POWER_AUTOMATE_SIGNUP_WEBHOOK_URL")
+        or os.environ.get("POWER_AUTOMATE_EVENT_WEBHOOK_URL")
+        or os.environ.get("POWER_AUTOMATE_WEBHOOK_URL")
+    )
+
+    all_members = db.query(SIHTeamMember).all()
+    if not all_members:
+        raise HTTPException(status_code=404, detail="No SIH team members found in the database.")
+
+    # Deduplicate by college_email
+    seen_emails = set()
+    members = []
+    for m in all_members:
+        em = (m.college_email or "").strip().lower()
+        if em and em not in seen_emails:
+            seen_emails.add(em)
+            members.append(m)
+
+    sent_to: list = []
+    errors: list = []
+
+    for m in members:
+        first_name = m.full_name.split()[0] if m.full_name else "Participant"
+
+        html_body = (
+            '<div style="font-family:Segoe UI,Helvetica,Arial,sans-serif;max-width:620px;margin:0 auto;'
+            'background:#0a0908;border:1px solid #c5a059;border-radius:12px;overflow:hidden;">'
+            '<div style="background:linear-gradient(135deg,#1a1508 0%,#0a0908 50%,#1a1508 100%);'
+            'padding:40px 30px 30px;text-align:center;border-bottom:2px solid #d4af37;">'
+            '<div style="width:60px;height:60px;margin:0 auto 16px;border:2px solid #d4af37;'
+            'border-radius:50%;line-height:60px;font-size:28px;">&#x1F6E1;&#xFE0F;</div>'
+            '<h1 style="color:#d4af37;text-transform:uppercase;letter-spacing:4px;'
+            'font-family:Georgia,serif;font-size:28px;margin:0 0 4px;">CHAKRAVYUHA</h1>'
+            '<p style="font-size:10px;text-transform:uppercase;color:#8c7030;letter-spacing:5px;margin:0;">'
+            'Amrita Vishwa Vidyapeetham &bull; Amaravati</p></div>'
+            '<div style="padding:35px 30px 10px;">'
+            '<p style="font-size:13px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;'
+            'font-weight:bold;margin:0 0 12px;">&#x1F3C6; Smart India Hackathon 2026 &mdash; Internal Round</p>'
+            f'<h2 style="font-size:24px;color:#ffffff;margin:0 0 20px;font-weight:700;line-height:1.3;">'
+            f'Congratulations, <span style="color:#d4af37;">{first_name}</span>! &#x1F389;</h2>'
+            '<p style="font-size:15px;color:#d4d4d8;line-height:1.9;margin:0 0 16px;">'
+            'We are incredibly proud to recognise your participation in the '
+            '<strong style="color:#f6e05e;">Smart India Hackathon 2026 &mdash; Internal Round</strong> '
+            'conducted by <strong style="color:#fff;">Chakravyuha, Amrita Vishwa Vidyapeetham, Amaravati</strong>.</p>'
+            '<p style="font-size:14px;color:#a1a1aa;line-height:1.8;margin:0 0 25px;">'
+            'You demonstrated outstanding dedication, innovative thinking, and true team spirit throughout '
+            'the hackathon. Competing in SIH is not just a milestone &mdash; it is a testament to your '
+            'passion for building real-world solutions that matter.</p>'
+            '</div>'
+            '<div style="margin:0 30px 28px;background:linear-gradient(135deg,#1c1917,#151310);'
+            'border:1px solid rgba(212,175,55,0.3);border-radius:10px;overflow:hidden;">'
+            '<div style="background:rgba(212,175,55,0.08);padding:12px 20px;border-bottom:1px solid rgba(212,175,55,0.15);">'
+            '<p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;font-weight:800;">'
+            '&#x1F4DC; Participation Certificate</p></div>'
+            '<div style="padding:20px 24px;">'
+            '<p style="font-size:14px;color:#d4d4d8;margin:0 0 12px;line-height:1.7;">'
+            'Your <strong style="color:#fff;">Participation Certificate</strong> for SIH 2026 is now '
+            'available for download from the Chakravyuha portal.</p>'
+            '<p style="font-size:13px;color:#a1a1aa;margin:0 0 18px;">'
+            'Log in &rarr; <strong style="color:#d4af37;">Chakravyuha</strong> &rarr; SIH Dashboard &rarr; Download Certificate</p>'
+            '<a href="https://chakravyuha.amrita.edu/events/sih-dashboard" '
+            'style="display:inline-block;background:linear-gradient(135deg,#d4af37,#8c7030);'
+            'color:#0a0908;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:2px;'
+            'padding:12px 28px;border-radius:8px;text-decoration:none;">'
+            '&#x1F393; Download Certificate</a></div></div>'
+            '<div style="margin:0 30px 28px;background:rgba(212,175,55,0.04);'
+            'border:1px solid rgba(212,175,55,0.12);border-radius:10px;padding:22px 24px;">'
+            '<p style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#d4af37;'
+            'font-weight:800;margin:0 0 10px;">&#x1F4DD; Share Your Feedback</p>'
+            '<p style="font-size:13px;color:#d4d4d8;margin:0 0 14px;line-height:1.7;">'
+            'Your experience matters! Help us make future hackathons even better by filling out our '
+            '<strong style="color:#fff;">SIH 2026 Feedback Form</strong> available in the SIH Dashboard on Chakravyuha.</p>'
+            '<a href="https://chakravyuha.amrita.edu/events/sih-dashboard" '
+            'style="display:inline-block;border:1px solid #d4af37;color:#d4af37;font-weight:700;'
+            'font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:10px 22px;'
+            'border-radius:8px;text-decoration:none;">&#x1F4CB; Give Feedback</a></div>'
+            '<div style="text-align:center;padding:20px 30px 35px;border-top:1px solid rgba(212,175,55,0.1);">'
+            '<p style="font-size:15px;color:#ffffff;font-weight:700;margin:0 0 6px;">'
+            'Keep building. Keep innovating. &#x1F680;</p>'
+            '<p style="font-size:10px;color:#52525b;text-transform:uppercase;letter-spacing:2px;margin:0;">'
+            'Chakravyuha &bull; Official Coding &amp; DSA Club of Amrita &bull; Amaravati</p>'
+            '</div></div>'
+        )
+
+        email_subject = (
+            "\U0001f3c6 Congratulations on Participating in SIH 2026"
+            " \u2014 Certificate & Feedback Now Available!"
+        )
+
+        payload_data = {
+            "email": m.college_email,
+            "full_name": m.full_name,
+            "roll_number": m.roll_number,
+            "subject": email_subject,
+            "html_body": html_body
+        }
+
+        try:
+            log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "debug_emails.log")
+            with open(log_path, "a", encoding="utf-8") as lf:
+                lf.write(
+                    f"[SIH PARTICIPATION] To: {m.college_email} ({m.full_name}) | "
+                    f"{datetime.datetime.utcnow()}\n"
+                )
+        except Exception:
+            pass
+
+        if webhook_url:
+            try:
+                _req.post(webhook_url, json=payload_data, timeout=10)
+                sent_to.append(m.college_email)
+            except Exception as exc:
+                errors.append(f"{m.college_email}: {exc}")
+        else:
+            sent_to.append(f"[NO_WEBHOOK] {m.college_email}")
+
+    return {
+        "success": True,
+        "total_members": len(members),
+        "sent_count": len([e for e in sent_to if not e.startswith("[NO_WEBHOOK]")]),
+        "sent_to": sent_to,
+        "errors": errors,
+        "webhook_configured": bool(webhook_url)
+    }
+
+
+# ── SIH Feedback Admin View ───────────────────────────────────────────────────
+
+@router.get("/sih/feedback")
+def get_sih_feedback_admin(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    # Returns all submitted SIH 2026 feedback entries with student details (Super Admin only).
+    rows = (
+        db.query(SIHFeedback, Student)
+        .join(Student, SIHFeedback.student_id == Student.id)
+        .order_by(SIHFeedback.submitted_at.desc())
+        .all()
+    )
+    result = []
+    for fb, stu in rows:
+        result.append({
+            "id": fb.id,
+            "student_id": stu.id,
+            "student_name": stu.full_name,
+            "student_email": stu.college_email,
+            "roll_number": stu.roll_number,
+            "q1_overall_experience": fb.q1_overall_experience,
+            "q2_event_organisation": fb.q2_event_organisation,
+            "q3_judging_fairness": fb.q3_judging_fairness,
+            "q4_ps_relevance": fb.q4_ps_relevance,
+            "q5_team_collaboration": fb.q5_team_collaboration,
+            "q6_mentorship_quality": fb.q6_mentorship_quality,
+            "q7_venue_facilities": fb.q7_venue_facilities,
+            "q8_time_management": fb.q8_time_management,
+            "q9_best_part": fb.q9_best_part,
+            "q10_improvement": fb.q10_improvement,
+            "q11_future_interest": fb.q11_future_interest,
+            "q12_recommend": fb.q12_recommend,
+            "q13_general_feedback": fb.q13_general_feedback,
+            "submitted_at": fb.submitted_at.isoformat() + "Z"
+        })
+    return result

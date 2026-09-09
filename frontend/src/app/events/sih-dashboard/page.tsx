@@ -57,7 +57,7 @@ type PSItem = {
   description: string | null;
 };
 
-type ActiveTab = 'home' | 'ps';
+type ActiveTab = 'home' | 'ps' | 'feedback';
 
 function PSSelectionCountdown() {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
@@ -587,6 +587,177 @@ function PSTab({ teamData }: { teamData: any }) {
   );
 }
 
+// ── SIH Feedback Form Component ────────────────────────────────────────────────
+function SIHFeedbackForm() {
+  const [submitted, setSubmitted] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Ratings (1–5)
+  const [q1, setQ1] = useState(0);
+  const [q2, setQ2] = useState(0);
+  const [q3, setQ3] = useState(0);
+  const [q7, setQ7] = useState(0);
+  // MCQ
+  const [q4, setQ4] = useState('');
+  const [q5, setQ5] = useState('');
+  const [q6, setQ6] = useState('');
+  const [q8, setQ8] = useState('');
+  const [q11, setQ11] = useState('');
+  const [q12, setQ12] = useState('');
+  // Open text
+  const [q9, setQ9] = useState('');
+  const [q10, setQ10] = useState('');
+  const [q13, setQ13] = useState('');
+
+  useEffect(() => {
+    apiRequest('/api/dsa/sih/feedback/status')
+      .then((d: any) => { if (d?.submitted) setAlreadySubmitted(true); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const StarRating = ({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) => (
+    <div className="space-y-2">
+      <p className="text-xs text-zinc-300 font-semibold">{label}</p>
+      <div className="flex gap-2">
+        {[1,2,3,4,5].map(n => (
+          <button key={n} type="button" onClick={() => onChange(n)}
+            className={`w-9 h-9 rounded-lg text-sm font-black border transition ${value >= n ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'border-zinc-700 text-zinc-500 hover:border-zinc-500'}`}>
+            {n}
+          </button>
+        ))}
+        {value > 0 && <span className="self-center text-[10px] text-zinc-500">{['','Poor','Fair','Good','Very Good','Excellent'][value]}</span>}
+      </div>
+    </div>
+  );
+
+  const RadioGroup = ({ value, onChange, options, label }: { value: string; onChange: (v: string) => void; options: string[]; label: string }) => (
+    <div className="space-y-2">
+      <p className="text-xs text-zinc-300 font-semibold">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button key={opt} type="button" onClick={() => onChange(opt)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition ${value === opt ? 'bg-[#d4af37]/15 border-[#d4af37] text-[#d4af37]' : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'}`}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!q1 || !q2 || !q3 || !q7) { setError('Please give a star rating for all rating questions.'); return; }
+    if (!q4 || !q5 || !q6 || !q8 || !q11 || !q12) { setError('Please answer all multiple-choice questions.'); return; }
+    if (!q9.trim() || !q10.trim()) { setError('Please fill in all open-ended questions.'); return; }
+    setSubmitting(true);
+    try {
+      await apiRequest('/api/dsa/sih/feedback', {
+        method: 'POST',
+        body: JSON.stringify({ q1_overall_experience: q1, q2_event_organisation: q2, q3_judging_fairness: q3, q4_ps_relevance: q4, q5_team_collaboration: q5, q6_mentorship_quality: q6, q7_venue_facilities: q7, q8_time_management: q8, q9_best_part: q9, q10_improvement: q10, q11_future_interest: q11, q12_recommend: q12, q13_general_feedback: q13 }),
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit feedback. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <div className="text-center py-16 text-zinc-500 text-sm">Loading…</div>;
+
+  if (alreadySubmitted || submitted) return (
+    <div className="max-w-xl mx-auto text-center py-16 space-y-4">
+      <div className="text-6xl">🎉</div>
+      <h2 className="text-xl font-bold text-white font-serif">Feedback Submitted!</h2>
+      <p className="text-sm text-zinc-400">Thank you for sharing your experience at SIH 2026. Your feedback helps us make future events even better.</p>
+      <div className="mt-4 p-4 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/5 text-xs text-[#d4af37]">
+        🎓 Don&apos;t forget to download your participation certificate from the SIH Dashboard home page!
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-8">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d4af37]">SIH 2026 · Internal Hackathon</p>
+        <h1 className="text-2xl font-extrabold font-serif text-white mt-1">Share Your Feedback</h1>
+        <p className="text-sm text-zinc-400 mt-1">Help us improve future hackathons. Your honest feedback matters. (One submission per participant)</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+
+        {/* Section A: Overall Experience */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 space-y-5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">Section A — Overall Experience</p>
+          <StarRating value={q1} onChange={setQ1} label="1. Overall experience at SIH 2026 Internal Hackathon" />
+          <StarRating value={q2} onChange={setQ2} label="2. How well was the event organised?" />
+          <StarRating value={q3} onChange={setQ3} label="3. How fair did you find the judging process?" />
+        </div>
+
+        {/* Section B: Problem Statement & Teamwork */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 space-y-5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">Section B — Problem Statement & Teamwork</p>
+          <RadioGroup value={q4} onChange={setQ4} label="4. How relevant was your Problem Statement to current industry needs?" options={['Very Relevant', 'Relevant', 'Neutral', 'Irrelevant']} />
+          <RadioGroup value={q5} onChange={setQ5} label="5. How would you rate your team&apos;s collaboration during the hackathon?" options={['Excellent', 'Good', 'Fair', 'Poor']} />
+          <RadioGroup value={q6} onChange={setQ6} label="6. How helpful was the mentorship / guidance provided?" options={['Very Helpful', 'Somewhat Helpful', 'Not Helpful', 'N/A']} />
+        </div>
+
+        {/* Section C: Infrastructure */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 space-y-5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">Section C — Infrastructure & Logistics</p>
+          <StarRating value={q7} onChange={setQ7} label="7. How satisfied were you with the venue / lab facilities?" />
+          <RadioGroup value={q8} onChange={setQ8} label="8. How was the time management throughout the event?" options={['Well-managed', 'Mostly on time', 'Slightly delayed', 'Very delayed']} />
+        </div>
+
+        {/* Section D: Open Ended */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 space-y-5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">Section D — Your Thoughts</p>
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-300 font-semibold">9. What did you enjoy the most about SIH 2026? *</label>
+            <textarea value={q9} onChange={e => setQ9(e.target.value)} rows={3} maxLength={1000}
+              className="w-full rounded-lg bg-zinc-900 border border-zinc-700 text-sm text-white px-3 py-2 focus:outline-none focus:border-[#d4af37] resize-none"
+              placeholder="Tell us what stood out the most…" />
+            <p className="text-[10px] text-zinc-600 text-right">{q9.length}/1000</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-300 font-semibold">10. What could be improved for the next hackathon? *</label>
+            <textarea value={q10} onChange={e => setQ10(e.target.value)} rows={3} maxLength={1000}
+              className="w-full rounded-lg bg-zinc-900 border border-zinc-700 text-sm text-white px-3 py-2 focus:outline-none focus:border-[#d4af37] resize-none"
+              placeholder="Suggestions, issues, or improvements…" />
+            <p className="text-[10px] text-zinc-600 text-right">{q10.length}/1000</p>
+          </div>
+        </div>
+
+        {/* Section E: Recommendation */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 space-y-5">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">Section E — Future Participation</p>
+          <RadioGroup value={q11} onChange={setQ11} label="11. Would you participate in SIH again in the future?" options={['Yes, definitely', 'Maybe', 'No']} />
+          <RadioGroup value={q12} onChange={setQ12} label="12. Would you recommend Chakravyuha SIH participation to juniors?" options={['Yes', 'No', 'Maybe']} />
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-300 font-semibold">13. Any other comments or suggestions? (Optional)</label>
+            <textarea value={q13} onChange={e => setQ13(e.target.value)} rows={3} maxLength={1000}
+              className="w-full rounded-lg bg-zinc-900 border border-zinc-700 text-sm text-white px-3 py-2 focus:outline-none focus:border-[#d4af37] resize-none"
+              placeholder="Anything else on your mind…" />
+          </div>
+        </div>
+
+        {error && <p className="text-red-400 text-xs text-center bg-red-950/20 border border-red-900/40 rounded-lg px-4 py-3">{error}</p>}
+
+        <button type="submit" disabled={submitting}
+          className="w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-widest text-black transition disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)' }}>
+          {submitting ? 'Submitting…' : '📝 Submit Feedback'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function SihDashboard() {
   const router = useRouter();
   const [teamData, setTeamData] = useState<any>(null);
@@ -650,12 +821,12 @@ export default function SihDashboard() {
               </div>
             </div>
             <div className="hidden md:flex items-center gap-1">
-              {(['home', 'ps'] as ActiveTab[]).map(t => (
+              {(['home', 'ps', 'feedback'] as ActiveTab[]).map(t => (
                 <button key={t}
                   onClick={() => setActiveTab(t)}
                   className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition ${activeTab === t ? 'text-[#d4af37] border-b-2 border-[#d4af37]/70' : 'text-zinc-400 hover:text-white'}`}
                 >
-                  {t === 'home' ? 'Home' : 'Problem Statements'}
+                  {t === 'home' ? 'Home' : t === 'ps' ? 'Problem Statements' : '📝 Feedback'}
                 </button>
               ))}
               <button
@@ -673,11 +844,11 @@ export default function SihDashboard() {
           </div>
         </div>
         <div className="md:hidden flex overflow-x-auto border-t border-zinc-900/40 px-4">
-          {(['home', 'ps'] as ActiveTab[]).map(t => (
+          {(['home', 'ps', 'feedback'] as ActiveTab[]).map(t => (
             <button key={t} onClick={() => setActiveTab(t)}
               className={`flex-shrink-0 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider transition ${activeTab === t ? 'text-[#d4af37] border-b-2 border-[#d4af37]/70' : 'text-zinc-500 hover:text-white'}`}
             >
-              {t === 'home' ? 'Home' : 'Problem Statements'}
+              {t === 'home' ? 'Home' : t === 'ps' ? 'PS Selection' : '📝 Feedback'}
             </button>
           ))}
           <button onClick={() => setComingSoonModal('Internal Hackathon')} className="flex-shrink-0 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500 hover:text-white transition">Hackathon</button>
@@ -1006,6 +1177,9 @@ export default function SihDashboard() {
             </div>
             <PSTab teamData={teamData} />
           </div>
+        )}
+        {activeTab === 'feedback' && (
+          <SIHFeedbackForm />
         )}
       </div>
       {comingSoonModal && <ComingSoonModal title={comingSoonModal} onClose={() => setComingSoonModal(null)} />}
