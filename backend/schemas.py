@@ -252,3 +252,9 @@ class PSSelectRequest(BaseModel):
 class AdminPSOverrideRequest(BaseModel):
     """Admin overrides a team's PS selection."""
     problem_statement_id: int
+
+
+class SendSIHEmailPayload(BaseModel):
+    """Payload to send SIH participation emails to all or specific members."""
+    member_ids: Optional[List[int]] = None
+    emails: Optional[List[str]] = None

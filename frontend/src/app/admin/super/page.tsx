@@ -170,6 +170,27 @@ export default function SuperAdminPage() {
   const [sihEmailSending, setSihEmailSending] = useState(false);
   const [sihEmailPreviewOpen, setSihEmailPreviewOpen] = useState(false);
   const [sihEmailResult, setSihEmailResult] = useState<any>(null);
+  const [sihParticipants, setSihParticipants] = useState<any[]>([]);
+  const [sihParticipantsLoading, setSihParticipantsLoading] = useState(false);
+  const [sihEmailTargetMode, setSihEmailTargetMode] = useState<'all' | 'selected'>('all');
+  const [sihSelectedMemberIds, setSihSelectedMemberIds] = useState<number[]>([]);
+  const [sihParticipantSearch, setSihParticipantSearch] = useState('');
+  const [sihPreviewMember, setSihPreviewMember] = useState<any | null>(null);
+
+  const fetchSihParticipants = async () => {
+    setSihParticipantsLoading(true);
+    try {
+      const data: any = await apiRequest('/api/admin/sih/participants');
+      setSihParticipants(data || []);
+      if (data && data.length > 0) {
+        setSihPreviewMember((prev: any) => prev || data[0]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch SIH participants:', err);
+    } finally {
+      setSihParticipantsLoading(false);
+    }
+  };
   const [editSihTeamModalOpen, setEditSihTeamModalOpen] = useState(false);
   const [editingSihTeamId, setEditingSihTeamId] = useState<number | null>(null);
   const [editingSihTeamName, setEditingSihTeamName] = useState('');
@@ -236,6 +257,12 @@ export default function SuperAdminPage() {
       .catch((err) => console.error('Error fetching PS teams list:', err))
       .finally(() => setPsTeamsLoading(false));
   }, [isAdmin, psFilter, psTeamsPage, psTeamsSearch]);
+
+  useEffect(() => {
+    if (isAdmin && sihSubTab === 'email' && sihParticipants.length === 0) {
+      fetchSihParticipants();
+    }
+  }, [isAdmin, sihSubTab]);
 
   // Inline Login states
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -2744,6 +2771,9 @@ export default function SuperAdminPage() {
                                   .then((d:any) => setSihMarks(d || []))
                                   .finally(() => setSihMarksLoading(false));
                               }
+                              if (tab === 'email') {
+                                fetchSihParticipants();
+                              }
                               if (tab === 'feedback_sih') {
                                 setSihFeedbacksLoading(true);
                                 apiRequest('/api/admin/sih/feedback')
@@ -3527,17 +3557,289 @@ export default function SuperAdminPage() {
                       {/* ── EMAIL BLAST PANEL ─────────────────────── */}
                       {sihSubTab === 'email' && (
                         <div className="rounded-xl border border-zinc-900 bg-zinc-950/50 p-5 space-y-5">
-                          <div className="flex items-center justify-between">
+                          {/* Header & Mode Switcher */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-900">
                             <div>
                               <h4 className="text-sm font-bold text-white font-serif">📧 SIH 2026 Participation Emails</h4>
-                              <p className="text-[10px] text-zinc-500 mt-0.5">Send personalised congratulations emails to all registered SIH participants</p>
+                              <p className="text-[11px] text-zinc-400 mt-0.5">Send personalised congratulations &amp; feedback emails to all participants or selected individuals</p>
+                            </div>
+                            <div className="flex items-center gap-2 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800 flex-wrap">
+                              <button
+                                onClick={() => setSihEmailTargetMode('all')}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+                                  sihEmailTargetMode === 'all'
+                                    ? 'bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black shadow-md'
+                                    : 'text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                👥 All Participants ({sihParticipants.length})
+                              </button>
+                              <button
+                                onClick={() => setSihEmailTargetMode('selected')}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition flex items-center gap-1.5 ${
+                                  sihEmailTargetMode === 'selected'
+                                    ? 'bg-gradient-to-r from-[#d4af37] to-[#8c7030] text-black shadow-md'
+                                    : 'text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                🎯 Select Person(s)
+                                {sihSelectedMemberIds.length > 0 && (
+                                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black ${
+                                    sihEmailTargetMode === 'selected' ? 'bg-black text-[#d4af37]' : 'bg-[#d4af37] text-black'
+                                  }`}>
+                                    {sihSelectedMemberIds.length}
+                                  </span>
+                                )}
+                              </button>
                             </div>
                           </div>
 
+                          {/* ── RECIPIENT SEARCH & SELECTION (When in 'selected' mode) ── */}
+                          {sihEmailTargetMode === 'selected' && (
+                            <div className="rounded-xl border border-[#d4af37]/30 bg-zinc-950/70 p-4 space-y-4">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">Search &amp; Select Individual / Multiple Recipients</p>
+                                  <p className="text-[11px] text-zinc-400">Search by participant name, roll number, college email, or team name. Click checkboxes to add or remove.</p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-xs font-bold text-white bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-lg">
+                                    <strong className="text-[#d4af37]">{sihSelectedMemberIds.length}</strong> of {sihParticipants.length} selected
+                                  </span>
+                                  {sihSelectedMemberIds.length > 0 && (
+                                    <button
+                                      onClick={() => setSihSelectedMemberIds([])}
+                                      className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg bg-zinc-900 text-zinc-400 hover:text-rose-400 border border-zinc-800 transition"
+                                    >
+                                      Clear All
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Search Input & Batch Controls */}
+                              {(() => {
+                                const q = sihParticipantSearch.toLowerCase().trim();
+                                const filtered = sihParticipants.filter((m: any) => {
+                                  if (!q) return true;
+                                  return (
+                                    (m.full_name || '').toLowerCase().includes(q) ||
+                                    (m.roll_number || '').toLowerCase().includes(q) ||
+                                    (m.college_email || '').toLowerCase().includes(q) ||
+                                    (m.team_name || '').toLowerCase().includes(q) ||
+                                    (m.room_number || '').toLowerCase().includes(q)
+                                  );
+                                });
+
+                                const allFilteredSelected = filtered.length > 0 && filtered.every((m: any) => sihSelectedMemberIds.includes(m.id));
+
+                                return (
+                                  <>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                      <div className="relative flex-1">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
+                                        <input
+                                          type="text"
+                                          placeholder="Search participant by name, roll no, email, or team..."
+                                          value={sihParticipantSearch}
+                                          onChange={(e) => setSihParticipantSearch(e.target.value)}
+                                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#d4af37]/60"
+                                        />
+                                        {sihParticipantSearch && (
+                                          <button
+                                            onClick={() => setSihParticipantSearch('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                          onClick={() => {
+                                            if (allFilteredSelected) {
+                                              const filteredIds = new Set(filtered.map((m: any) => m.id));
+                                              setSihSelectedMemberIds(prev => prev.filter(id => !filteredIds.has(id)));
+                                            } else {
+                                              const newIds = new Set([...sihSelectedMemberIds, ...filtered.map((m: any) => m.id)]);
+                                              setSihSelectedMemberIds(Array.from(newIds));
+                                            }
+                                          }}
+                                          disabled={filtered.length === 0}
+                                          className="px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800 disabled:opacity-40 transition"
+                                        >
+                                          {allFilteredSelected ? 'Deselect Filtered' : `Select All Filtered (${filtered.length})`}
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Selected Pills Ribbon */}
+                                    {sihSelectedMemberIds.length > 0 && (
+                                      <div className="bg-zinc-900/40 rounded-xl p-2.5 border border-zinc-800/80 space-y-1.5">
+                                        <div className="flex items-center justify-between text-[10px] text-zinc-400 font-bold px-1">
+                                          <span>Selected Recipients ({sihSelectedMemberIds.length}):</span>
+                                          <span className="text-[#d4af37]">Emails will only be sent to these people</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                          {sihSelectedMemberIds.map((id: number) => {
+                                            const member = sihParticipants.find((m: any) => m.id === id);
+                                            if (!member) return null;
+                                            return (
+                                              <span
+                                                key={id}
+                                                className="inline-flex items-center gap-1.5 bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/30 text-[10px] font-bold px-2 py-0.5 rounded-md"
+                                              >
+                                                {member.full_name} ({member.roll_number})
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSihSelectedMemberIds(prev => prev.filter(mId => mId !== id));
+                                                  }}
+                                                  className="hover:text-rose-400 text-zinc-400 ml-0.5"
+                                                >
+                                                  <X className="h-2.5 w-2.5" />
+                                                </button>
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Scrollable Participants Table */}
+                                    {sihParticipantsLoading ? (
+                                      <p className="text-zinc-500 text-xs text-center py-6">Loading registered SIH participants…</p>
+                                    ) : filtered.length === 0 ? (
+                                      <p className="text-zinc-500 text-xs text-center py-6">No participants match &quot;{sihParticipantSearch}&quot;.</p>
+                                    ) : (
+                                      <div className="border border-zinc-800 rounded-xl overflow-hidden max-h-[360px] overflow-y-auto">
+                                        <table className="w-full text-left text-xs">
+                                          <thead className="sticky top-0 bg-zinc-900/95 backdrop-blur border-b border-zinc-800 text-[10px] font-black uppercase tracking-wider text-zinc-400 z-10">
+                                            <tr>
+                                              <th className="py-2 px-3 w-10 text-center">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={allFilteredSelected}
+                                                  onChange={() => {
+                                                    if (allFilteredSelected) {
+                                                      const filteredIds = new Set(filtered.map((m: any) => m.id));
+                                                      setSihSelectedMemberIds(prev => prev.filter(id => !filteredIds.has(id)));
+                                                    } else {
+                                                      const newIds = new Set([...sihSelectedMemberIds, ...filtered.map((m: any) => m.id)]);
+                                                      setSihSelectedMemberIds(Array.from(newIds));
+                                                    }
+                                                  }}
+                                                  className="rounded border-zinc-700 bg-zinc-800 text-[#d4af37] focus:ring-0 cursor-pointer"
+                                                />
+                                              </th>
+                                              <th className="py-2 px-3">Participant</th>
+                                              <th className="py-2 px-3">Team &amp; Room</th>
+                                              <th className="py-2 px-3">Roll No &amp; Branch</th>
+                                              <th className="py-2 px-3">College Email</th>
+                                              <th className="py-2 px-3 text-right">Action</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-zinc-900/60 bg-zinc-950/40">
+                                            {filtered.map((m: any) => {
+                                              const isSelected = sihSelectedMemberIds.includes(m.id);
+                                              const isPreviewing = sihPreviewMember?.id === m.id;
+
+                                              return (
+                                                <tr
+                                                  key={m.id}
+                                                  onClick={() => {
+                                                    setSihSelectedMemberIds(prev =>
+                                                      isSelected ? prev.filter(id => id !== m.id) : [...prev, m.id]
+                                                    );
+                                                  }}
+                                                  className={`cursor-pointer transition select-none ${
+                                                    isSelected
+                                                      ? 'bg-[#d4af37]/10 text-white'
+                                                      : isPreviewing
+                                                      ? 'bg-zinc-900/40 text-zinc-200'
+                                                      : 'hover:bg-zinc-900/30 text-zinc-300'
+                                                  }`}
+                                                >
+                                                  <td className="py-2.5 px-3 text-center" onClick={e => e.stopPropagation()}>
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        setSihSelectedMemberIds(prev =>
+                                                          isSelected ? prev.filter(id => id !== m.id) : [...prev, m.id]
+                                                        );
+                                                      }}
+                                                      className="rounded border-zinc-700 bg-zinc-800 text-[#d4af37] focus:ring-0 cursor-pointer"
+                                                    />
+                                                  </td>
+                                                  <td className="py-2.5 px-3 font-semibold text-white">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <span>{m.full_name}</span>
+                                                      {m.is_leader && (
+                                                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/40">
+                                                          Leader
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                  <td className="py-2.5 px-3">
+                                                    <p className="font-bold text-zinc-200">{m.team_name}</p>
+                                                    <p className="text-[10px] text-zinc-500">Room: {m.room_number || '—'}</p>
+                                                  </td>
+                                                  <td className="py-2.5 px-3 font-mono text-[11px] text-[#d4af37]">
+                                                    {m.roll_number}
+                                                    <span className="text-zinc-500 font-sans ml-1 text-[10px]">({m.branch} Y{m.study_year})</span>
+                                                  </td>
+                                                  <td className="py-2.5 px-3 text-zinc-400 font-mono text-[11px]">
+                                                    {m.college_email}
+                                                  </td>
+                                                  <td className="py-2.5 px-3 text-right" onClick={e => e.stopPropagation()}>
+                                                    <button
+                                                      onClick={() => setSihPreviewMember(m)}
+                                                      className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition border ${
+                                                        isPreviewing
+                                                          ? 'bg-[#d4af37] text-black border-[#d4af37]'
+                                                          : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
+                                                      }`}
+                                                    >
+                                                      {isPreviewing ? '👁️ Viewing' : '👁️ Preview'}
+                                                    </button>
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
+
                           {/* Email Preview */}
                           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 space-y-3">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">📬 Email Preview</p>
-                            <div className="bg-[#0a0908] border border-[#c5a059]/40 rounded-xl p-4 space-y-3 max-h-[420px] overflow-y-auto text-xs">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-[#d4af37]">
+                                📬 Email Preview
+                                {sihPreviewMember && (
+                                  <span className="ml-2 text-zinc-400 font-normal normal-case">
+                                    (Personalized for <strong className="text-white">{sihPreviewMember.full_name}</strong> &bull; {sihPreviewMember.roll_number})
+                                  </span>
+                                )}
+                              </p>
+                              {sihPreviewMember && (
+                                <button
+                                  onClick={() => setSihPreviewMember(null)}
+                                  className="text-[10px] text-zinc-500 hover:text-zinc-300 underline"
+                                >
+                                  Reset to template view
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="bg-[#0a0908] border border-[#c5a059]/40 rounded-xl p-5 space-y-3 max-h-[420px] overflow-y-auto text-xs">
                               <div className="text-center border-b border-[#d4af37]/30 pb-3">
                                 <div className="text-2xl mb-1">🛡️</div>
                                 <p className="text-[#d4af37] font-black uppercase tracking-widest text-[10px]">CHAKRAVYUHA</p>
@@ -3545,9 +3847,17 @@ export default function SuperAdminPage() {
                               </div>
                               <div className="space-y-2 pt-2">
                                 <p className="text-[#d4af37] text-[9px] uppercase tracking-widest font-black">🏆 Smart India Hackathon 2026</p>
-                                <p className="text-white font-bold text-sm">Congratulations, <span className="text-[#d4af37]">[First Name]</span>! 🎉</p>
-                                <p className="text-zinc-400 leading-relaxed">We are incredibly proud to recognise your participation in the <strong className="text-yellow-300">Smart India Hackathon 2026 — Internal Round</strong> conducted by <strong className="text-white">Chakravyuha, Amrita Vishwa Vidyapeetham, Amaravati</strong>.</p>
-                                <p className="text-zinc-500 leading-relaxed">You demonstrated outstanding dedication, innovative thinking, and true team spirit throughout the hackathon.</p>
+                                <p className="text-white font-bold text-sm">
+                                  Congratulations, <span className="text-[#d4af37]">{sihPreviewMember ? sihPreviewMember.full_name.split(' ')[0] : '[First Name]'}</span>! 🎉
+                                </p>
+                                <p className="text-zinc-400 leading-relaxed">
+                                  We are incredibly proud to recognise your participation in the{' '}
+                                  <strong className="text-yellow-300">Smart India Hackathon 2026 — Internal Round</strong> conducted by{' '}
+                                  <strong className="text-white">Chakravyuha, Amrita Vishwa Vidyapeetham, Amaravati</strong>.
+                                </p>
+                                <p className="text-zinc-500 leading-relaxed">
+                                  You demonstrated outstanding dedication, innovative thinking, and true team spirit throughout the hackathon.
+                                </p>
                               </div>
                               <div className="border border-[#d4af37]/20 rounded-lg p-3 bg-[#d4af37]/3 space-y-2">
                                 <p className="text-[#d4af37] text-[9px] font-black uppercase tracking-wider">📝 Share Your Feedback</p>
@@ -3556,37 +3866,85 @@ export default function SuperAdminPage() {
                               </div>
                               <div className="text-center border-t border-[#d4af37]/10 pt-3">
                                 <p className="text-white text-xs font-bold">Keep building. Keep innovating. 🚀</p>
-                                <p className="text-zinc-600 text-[9px] mt-1">Chakravyuha · Official Coding & DSA Club of Amrita · Amaravati</p>
+                                <p className="text-zinc-600 text-[9px] mt-1">Chakravyuha · Official Coding &amp; DSA Club of Amrita · Amaravati</p>
                               </div>
                             </div>
                           </div>
 
                           {/* Send Result */}
                           {sihEmailResult && (
-                            <div className={`rounded-xl border p-4 text-xs space-y-1 ${sihEmailResult.success ? 'border-emerald-800/40 bg-emerald-950/20 text-emerald-300' : 'border-red-800/40 bg-red-950/20 text-red-300'}`}>
-                              <p className="font-bold">{sihEmailResult.success ? '✅ Emails Sent!' : '❌ Error'}</p>
+                            <div className={`rounded-xl border p-4 text-xs space-y-2 ${sihEmailResult.success ? 'border-emerald-800/40 bg-emerald-950/20 text-emerald-300' : 'border-red-800/40 bg-red-950/20 text-red-300'}`}>
+                              <p className="font-bold text-sm">{sihEmailResult.success ? '✅ Emails Processed Successfully!' : '❌ Error Sending Emails'}</p>
                               {sihEmailResult.success && (
-                                <>
-                                  <p>Total members: <strong>{sihEmailResult.total_members}</strong></p>
-                                  <p>Sent: <strong>{sihEmailResult.sent_count}</strong></p>
-                                  <p>Webhook configured: <strong>{sihEmailResult.webhook_configured ? 'Yes' : 'No (logged only)'}</strong></p>
-                                  {sihEmailResult.errors?.length > 0 && <p className="text-orange-400">Errors: {sihEmailResult.errors.join(', ')}</p>}
-                                </>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                                  <div className="bg-emerald-950/40 border border-emerald-900/30 rounded-lg p-2 text-center">
+                                    <span className="text-zinc-400 block text-[9px] uppercase">Recipients Target</span>
+                                    <strong className="text-base text-white">{sihEmailResult.total_members}</strong>
+                                  </div>
+                                  <div className="bg-emerald-950/40 border border-emerald-900/30 rounded-lg p-2 text-center">
+                                    <span className="text-zinc-400 block text-[9px] uppercase">Sent Successfully</span>
+                                    <strong className="text-base text-emerald-300">{sihEmailResult.sent_count}</strong>
+                                  </div>
+                                  <div className="bg-emerald-950/40 border border-emerald-900/30 rounded-lg p-2 text-center">
+                                    <span className="text-zinc-400 block text-[9px] uppercase">Power Automate Webhook</span>
+                                    <strong className="text-base text-white">{sihEmailResult.webhook_configured ? 'Active' : 'Logged Only'}</strong>
+                                  </div>
+                                </div>
+                              )}
+                              {sihEmailResult.sent_to && sihEmailResult.sent_to.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-emerald-900/30">
+                                  <p className="text-[10px] text-zinc-400 font-bold mb-1">Recipients ({sihEmailResult.sent_to.length}):</p>
+                                  <div className="max-h-24 overflow-y-auto font-mono text-[10px] text-zinc-300 space-y-0.5 pr-1">
+                                    {sihEmailResult.sent_to.map((e: string, i: number) => (
+                                      <div key={i} className="truncate">• {e}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {sihEmailResult.errors?.length > 0 && (
+                                <div className="mt-2 text-orange-400 text-[10px]">
+                                  <strong>Errors:</strong> {sihEmailResult.errors.join(', ')}
+                                </div>
                               )}
                             </div>
                           )}
 
-                          {/* Warning + Send Button */}
+                          {/* Action Button & Confirmation Card */}
                           <div className="bg-amber-950/20 border border-amber-800/30 rounded-xl p-4 space-y-3">
-                            <p className="text-amber-300 text-xs font-bold">⚠️ Important</p>
-                            <p className="text-amber-400/80 text-[11px] leading-relaxed">This will send an email to <strong>every</strong> registered SIH 2026 team member. Review the preview above carefully before sending. This action cannot be undone.</p>
+                            <p className="text-amber-300 text-xs font-bold">⚠️ Important Verification</p>
+                            {sihEmailTargetMode === 'all' ? (
+                              <p className="text-amber-400/80 text-[11px] leading-relaxed">
+                                You are about to send participation emails to <strong>ALL {sihParticipants.length || 'registered'} SIH 2026 team members</strong>. Each participant will receive a personalized email with their own first name. This action cannot be undone.
+                              </p>
+                            ) : (
+                              <p className="text-amber-400/80 text-[11px] leading-relaxed">
+                                You are sending participation emails <strong>ONLY to the {sihSelectedMemberIds.length} selected participant(s)</strong>. Please confirm the recipient selection above.
+                              </p>
+                            )}
+
                             <button
                               onClick={async () => {
-                                if (!confirm('Are you sure you want to send participation emails to ALL SIH 2026 team members? This cannot be undone.')) return;
+                                if (sihEmailTargetMode === 'selected' && sihSelectedMemberIds.length === 0) {
+                                  alert('Please select at least one participant from the list above.');
+                                  return;
+                                }
+
+                                const confirmMsg = sihEmailTargetMode === 'all'
+                                  ? `Are you sure you want to send participation emails to ALL ${sihParticipants.length || ''} SIH 2026 participants? This cannot be undone.`
+                                  : `Are you sure you want to send participation emails to the ${sihSelectedMemberIds.length} selected participant(s)?`;
+
+                                if (!confirm(confirmMsg)) return;
+
                                 setSihEmailSending(true);
                                 setSihEmailResult(null);
                                 try {
-                                  const result = await apiRequest('/api/admin/sih/send-participation-email', { method: 'POST' });
+                                  const payload = sihEmailTargetMode === 'selected'
+                                    ? { member_ids: sihSelectedMemberIds }
+                                    : {};
+                                  const result = await apiRequest('/api/admin/sih/send-participation-email', {
+                                    method: 'POST',
+                                    body: JSON.stringify(payload)
+                                  });
                                   setSihEmailResult(result);
                                 } catch (err: any) {
                                   setSihEmailResult({ success: false, error: err.message });
@@ -3594,11 +3952,17 @@ export default function SuperAdminPage() {
                                   setSihEmailSending(false);
                                 }
                               }}
-                              disabled={sihEmailSending}
-                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider text-black disabled:opacity-50 transition"
+                              disabled={sihEmailSending || (sihEmailTargetMode === 'selected' && sihSelectedMemberIds.length === 0)}
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider text-black disabled:opacity-40 transition cursor-pointer"
                               style={{ background: 'linear-gradient(135deg,#d4af37,#8c7030)' }}
                             >
-                              {sihEmailSending ? '⏳ Sending…' : '📧 Send Participation Emails'}
+                              {sihEmailSending ? (
+                                <>⏳ Sending…</>
+                              ) : sihEmailTargetMode === 'all' ? (
+                                <>📧 Send to ALL ({sihParticipants.length || 'All'}) Participants</>
+                              ) : (
+                                <>📧 Send to {sihSelectedMemberIds.length} Selected Participant{sihSelectedMemberIds.length !== 1 ? 's' : ''}</>
+                              )}
                             </button>
                           </div>
                         </div>

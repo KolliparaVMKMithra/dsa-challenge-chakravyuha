@@ -12,7 +12,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 from backend.database import get_db
 from backend.models import Student, Problem, Submission, Attendance, CodeChefContest, CodeChefParticipation, Feedback, Event, EventRegistration, SIHTeam, SIHTeamMember, SIHProblemStatement, SIHPSSelection, SIHJudgingScore, SIHFeedback
-from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse, SIHTeamRegistration, AdminPSOverrideRequest
+from backend.schemas import ProblemCreate, ProblemResponse, CodeChefContestCreate, CodeChefContestResponse, ScanAdminCreate, ScanAdminResponse, EventCreate, EventResponse, SIHTeamRegistration, AdminPSOverrideRequest, SendSIHEmailPayload
 from backend.auth import get_current_attendance_admin, get_current_super_admin, get_password_hash
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -2812,14 +2812,49 @@ def export_sih_shortlist(
     )
 
 
+# ── SIH Participants List (for email targeting & search) ──────────────────────
+
+@router.get("/sih/participants")
+def get_sih_participants(
+    current_admin: Student = Depends(get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Lists all individual SIH team members with team and room details for email targeting."""
+    members = (
+        db.query(SIHTeamMember)
+        .join(SIHTeam, SIHTeamMember.team_id == SIHTeam.id)
+        .order_by(SIHTeam.team_name.asc(), SIHTeamMember.is_leader.desc(), SIHTeamMember.full_name.asc())
+        .all()
+    )
+    result = []
+    for m in members:
+        result.append({
+            "id": m.id,
+            "team_id": m.team_id,
+            "team_name": m.team.team_name if m.team else "No Team",
+            "room_number": m.team.room_number if m.team else None,
+            "is_leader": m.is_leader,
+            "full_name": m.full_name,
+            "roll_number": m.roll_number,
+            "college_email": m.college_email,
+            "personal_email": m.personal_email,
+            "phone_number": m.phone_number,
+            "branch": m.branch,
+            "study_year": m.study_year,
+            "gender": m.gender
+        })
+    return result
+
+
 # ── SIH Participation Email Blast ─────────────────────────────────────────────
 
 @router.post("/sih/send-participation-email")
 def send_sih_participation_email(
+    payload: Optional[SendSIHEmailPayload] = None,
     current_admin: Student = Depends(get_current_super_admin),
     db: Session = Depends(get_db)
 ):
-    # Sends personalised SIH 2026 participation emails to every registered team member via Power Automate.
+    # Sends personalised SIH 2026 participation emails to all or selected team members via Power Automate.
     import requests as _req
 
     webhook_url = (
@@ -2829,9 +2864,18 @@ def send_sih_participation_email(
         or os.environ.get("POWER_AUTOMATE_WEBHOOK_URL")
     )
 
-    all_members = db.query(SIHTeamMember).all()
+    query = db.query(SIHTeamMember)
+    if payload:
+        if payload.member_ids and len(payload.member_ids) > 0:
+            query = query.filter(SIHTeamMember.id.in_(payload.member_ids))
+        elif payload.emails and len(payload.emails) > 0:
+            norm_emails = [e.strip().lower() for e in payload.emails if e and e.strip()]
+            if norm_emails:
+                query = query.filter(func.lower(SIHTeamMember.college_email).in_(norm_emails))
+
+    all_members = query.all()
     if not all_members:
-        raise HTTPException(status_code=404, detail="No SIH team members found in the database.")
+        raise HTTPException(status_code=404, detail="No matching SIH team members found in the database.")
 
     # Deduplicate by college_email
     seen_emails = set()
