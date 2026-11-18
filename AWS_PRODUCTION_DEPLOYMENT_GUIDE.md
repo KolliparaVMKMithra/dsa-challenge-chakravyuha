@@ -55,44 +55,44 @@ To access the server terminal from your local computer:
 
 ---
 
-## 🚀 4. How to Deploy Future Code Updates (Step-by-Step)
+## 🚀 4. Automated CI/CD & Deployment Procedures
 
-Follow this exact procedure whenever you edit code, add new features, or fix bugs:
+The repository is equipped with **GitHub Actions CI/CD** (`.github/workflows/deploy.yml`). Any push to the `main` branch automatically deploys changes to your AWS EC2 server without any manual SSH commands!
 
-### Step 4.1: Commit and Push from Your Local Computer
-In your local PowerShell:
+### 4.1 Automated GitHub Actions Deployment
+Whenever you push changes:
 ```powershell
-# 1. Check changed files
-git status
-
-# 2. Add your changes
 git add .
-
-# 3. Commit with a meaningful message
-git commit -m "Description of changes made"
-
-# 4. Push to GitHub
+git commit -m "Your update message"
 git push origin main
 ```
+1. GitHub Actions will trigger automatically on your push.
+2. It securely connects to your EC2 instance via SSH.
+3. It pulls the latest code from `main`.
+4. It rebuilds the updated containers with `docker compose up -d --build`.
+5. It cleans dangling build layers to conserve disk space.
+6. Your live site updates automatically with zero downtime.
 
-### Step 4.2: Pull and Rebuild on the EC2 Production Server
-SSH into your server:
-```powershell
-ssh -i "chakravyuha-v2-key.pem" ubuntu@52.64.81.93
-```
-Once inside the EC2 terminal, run:
-```bash
-# 1. Go to the project directory
-cd ~/dsa-challenge-chakravyuha
+#### Required GitHub Secrets:
+Set these once under **GitHub Repository** -> **Settings** -> **Secrets and variables** -> **Actions**:
+* **`EC2_HOST`**: `52.64.81.93`
+* **`EC2_USER`**: `ubuntu`
+* **`EC2_SSH_KEY`**: Complete private key contents of `chakravyuha-v2-key.pem`
 
-# 2. Pull the latest code from GitHub
-git pull origin main
+---
 
-# 3. Rebuild and restart the containers in detached mode
-docker compose up -d --build
-```
-> [!TIP]
-> `docker compose up -d --build` rebuilds only the containers whose code changed, keeping the PostgreSQL database running with **zero data loss** and zero downtime.
+### 4.2 Manual Deployment Fallback (If Ever Needed)
+If you ever want to update the server manually from your terminal:
+1. SSH into the server:
+   ```powershell
+   ssh -i "chakravyuha-v2-key.pem" ubuntu@52.64.81.93
+   ```
+2. Run inside EC2:
+   ```bash
+   cd ~/dsa-challenge-chakravyuha
+   git pull origin main
+   docker compose up -d --build
+   ```
 
 ---
 
@@ -175,3 +175,4 @@ The project `.gitignore` is strictly configured to protect private credentials. 
 * **Log Files (`*.log`)**: Debug email and outbox logs contain transient verification codes and credentials.
 
 If you ever need to set new environment variables in production, edit them directly on the server via `nano ~/dsa-challenge-chakravyuha/.env` and run `docker compose up -d`.
+
