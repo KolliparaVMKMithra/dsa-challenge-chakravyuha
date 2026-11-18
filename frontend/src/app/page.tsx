@@ -133,6 +133,7 @@ const teamMembers: TeamMember[] = [
   { name: "Gayatri", role: "Events & PR Lead", img: "/team/events and pr leads/gayatri.jpg", dept: "events" },
   { name: "Karthik", role: "Events & PR Lead", img: "/team/events and pr leads/karthik.jpg", dept: "events" },
   { name: "Lalith Aditya", role: "Events & PR Lead", img: "/team/events and pr leads/lalith aditya.jpg", dept: "events" },
+  { name: "Mahith Sai Chowdary Pendela", role: "Events & PR Lead", img: "/team/events and pr leads/mahith.jpg", dept: "events" },
   { name: "Pranavi", role: "Events & PR Lead", img: "/team/events and pr leads/pranavi.jpg", dept: "events" },
   { name: "Rithvik", role: "Events & PR Lead", img: "/team/events and pr leads/rithvik.jpg", dept: "events" },
   { name: "Satya Shivani", role: "Events & PR Lead", img: "/team/events and pr leads/satya_shivani.jpg", dept: "events" },
